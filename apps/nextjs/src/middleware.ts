@@ -1,9 +1,6 @@
-export { auth as middleware } from "@acme/auth";
+import { authMiddleware } from "@acme/auth/middleware";
 
-// Or like this if you need to do something here.
-// export default auth((req) => {
-//   console.log(req.auth) //  { session: { user: { ... } } }
-// })
+export default authMiddleware
 
 // Read more: https://nextjs.org/docs/app/building-your-application/routing/middleware#matcher
 export const config = {
