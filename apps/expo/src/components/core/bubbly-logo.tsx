@@ -15,6 +15,7 @@ export const BubblyLogo = ({loop = true}: {loop?: boolean}) => {
           key={`${char}-${index}`} // Use a unique key
           character={char}
           index={index}
+          color="#f472b6" 
           loop={loop}
           // You can optionally pass amplitude, duration, delayFactor here
           // amplitude={3}

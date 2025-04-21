@@ -293,9 +293,9 @@ export default function WorkoutLibraryScreen() {
   }
 
   return (
-    <SafeAreaView
-      style={{ paddingTop: Constants.statusBarHeight }}
-      className="flex-1 bg-white"
+    <LinearGradient
+      colors={['#e5e7eb', '#fff']}
+      style={{ flexGrow: 1, paddingTop: Constants.statusBarHeight }} 
     >
       {/* Header */}
       <View className="flex-row items-center justify-between p-6">
@@ -386,6 +386,6 @@ export default function WorkoutLibraryScreen() {
         accentColor="#f472b6"
         bgColor="#FDF2F8"
       />
-    </SafeAreaView>
+    </LinearGradient>
   )
 }

@@ -3,5 +3,6 @@
     {
       "mode": "auto"
     }
-  ]
+  ],
+  "prettier.configPath": "./tooling/prettier/index.js"
 }

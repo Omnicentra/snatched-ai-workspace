@@ -17,6 +17,7 @@ interface AnimatedBubbleLetterProps {
   amplitude?: number // How many pixels to move up/down
   duration?: number // Duration of one full up/down cycle
   delayFactor?: number // How much delay between adjacent letters
+  color?: string // Color of the letter
   loop?: boolean // Whether to loop the animation
 }
 
@@ -26,7 +27,8 @@ export const AnimatedBubbleLetter: React.FC<AnimatedBubbleLetterProps> = ({
   amplitude = 2, // Default: move 2px up/down
   duration = 2000, // Default: 1.5 seconds per cycle
   delayFactor = 0.05, // Default: 10% of duration delay per index
-  loop = true // Default: true
+  loop = true, // Default: true
+  color = 'white' // Default: white
 }) => {
   const phase = useSharedValue(0)
 
@@ -79,7 +81,7 @@ export const AnimatedBubbleLetter: React.FC<AnimatedBubbleLetterProps> = ({
 
   // Render space characters without animation if desired, or apply minimal animation
   if (character === ' ') {
-    return <Text style={letterStyle}> </Text>
+    return <Text style={[letterStyle, { color: color }]}> </Text>
   }
 
   return (
@@ -95,7 +97,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Fredoka-Bold', // MAKE SURE this matches the font loaded in _layout.tsx
     fontSize: 22, // Equivalent to text-xl
     fontWeight: 'bold', // Handled by custom font usually
-    color: 'white',
     letterSpacing: 2.5,
     // Apply text shadow using inline style or StyleSheet
     textShadowColor: 'rgba(0, 0, 0, 0.1)',

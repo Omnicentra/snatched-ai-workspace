@@ -33,8 +33,8 @@ export default function SplashScreen() {
   const router = useRouter()
 
   const handleGetStarted = () => {
-    Haptics.selectionAsync().then(() => {
-      router.push('/(onboarding)/paywall')
+    void Haptics.selectionAsync().then(() => {
+      router.push('/(onboarding)/body-positivity')
     })
   }
 
