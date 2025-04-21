@@ -45,6 +45,7 @@
     "jiti": "^1.21.7",
     "prettier": "catalog:",
     "tailwindcss": "catalog:",
+    "trpc-ui": "^1.0.15",
     "typescript": "catalog:"
   },
   "prettier": "@acme/prettier-config"

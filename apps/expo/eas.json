@@ -1,15 +1,20 @@
 {
   "cli": {
-    "version": ">= 4.1.2",
+    "version": ">= 16.2.2",
     "appVersionSource": "remote"
   },
   "build": {
     "base": {
-      "node": "22.12.0",
-      "pnpm": "9.15.4",
+      "node": "20.16.0",
+      "pnpm": "9.7.1",
+      "android": {
+        "image": "latest"
+      },
       "ios": {
-        "resourceClass": "m-medium"
-      }
+        "resourceClass": "m-medium",
+        "image": "latest"
+      },
+      "channel": "base"
     },
     "development": {
       "extends": "base",
@@ -18,13 +23,13 @@
     },
     "preview": {
       "extends": "base",
-      "distribution": "internal",
-      "ios": {
-        "simulator": true
-      }
+      "channel": "preview",
+      "distribution": "internal"
     },
     "production": {
-      "extends": "base"
+      "extends": "base",
+      "autoIncrement": true,
+      "channel": "production"
     }
   },
   "submit": {

@@ -2,7 +2,7 @@ import type { TRPCRouterRecord } from "@trpc/server";
 import { z } from "zod";
 
 import { desc, eq } from "@acme/db";
-import { recipes } from "@acme/db/schema";
+import { createRecipeSchema, recipes } from "@acme/db/schema";
 
 import { protectedProcedure, publicProcedure } from "../trpc";
 
@@ -28,7 +28,7 @@ export const recipeRouter = {
       });
     }),
 
-  /*create: protectedProcedure
+  create: protectedProcedure
     .input(createRecipeSchema)
     .mutation(({ ctx, input }) => {
       return ctx.db.insert(recipes).values({
@@ -44,7 +44,7 @@ export const recipeRouter = {
         rating: input.rating,
         reviewCount: input.reviewCount,
       });
-    }),*/
+    }),
 
   delete: protectedProcedure.input(z.string()).mutation(({ ctx, input }) => {
     return ctx.db.delete(recipes).where(eq(recipes.id, input));
