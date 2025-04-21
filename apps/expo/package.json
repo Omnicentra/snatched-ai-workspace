@@ -15,6 +15,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@bacons/text-decoder": "^0.0.0",
+    "@better-auth/expo": "1.2.7",
+    "@better-fetch/fetch": "^1.1.18",
     "@expo-google-fonts/inter": "^0.3.0",
     "@expo/metro-config": "^0.19.12",
     "@expo/vector-icons": "^14.0.4",
@@ -28,6 +31,7 @@
     "@trpc/server": "catalog:",
     "@trpc/tanstack-react-query": "catalog:",
     "add": "^2.0.6",
+    "better-auth": "^1.2.7",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "expo": "~52.0.46",

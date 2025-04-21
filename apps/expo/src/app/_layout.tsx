@@ -1,3 +1,5 @@
+import "@bacons/text-decoder/install";
+
 import { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Stack } from "expo-router";
@@ -12,8 +14,6 @@ import {
 } from "@expo-google-fonts/inter";
 
 import "react-native-reanimated";
-
-import { PortalHost } from "@rn-primitives/portal";
 
 import { TRPCProvider } from "~/utils/api";
 
@@ -70,7 +70,6 @@ export default function RootLayout() {
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="(modals)" options={{ presentation: "modal" }} />
         </Stack>
-        <PortalHost />
       </GestureHandlerRootView>
     </TRPCProvider>
   );
