@@ -52,7 +52,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name,
   slug: "snatched-ai",
-  version: "1.0.2",
+  version: "1.0.3",
   orientation: "portrait",
   icon: "./assets/icon.png",
   scheme,
@@ -134,6 +134,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     },
     eas: {
       projectId: "8bcf08a2-4cad-4b0d-a2c0-197528f19cc7",
+      appVariant: process.env.APP_VARIANT
     },
   },
   owner: "omnicentra",

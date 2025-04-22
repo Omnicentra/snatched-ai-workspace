@@ -7,6 +7,8 @@ import * as Haptics from 'expo-haptics'
 import brandLogo from '../../assets/images/logo2.png'
 import { Image } from 'expo-image'
 
+const appVariant = String(Constants.expoConfig?.extra?.eas?.appVariant) || 'development'
+
 // Basic animation placeholder (needs Reanimated for real effect)
 // Keep the className directly on Text
 const BubbleLetter = ({
@@ -36,7 +38,15 @@ export default function SplashScreen() {
     void Haptics.selectionAsync().then(() => {
       router.push('/(onboarding)/body-positivity')
     })
+    }
+
+  const handleSkip = () => {
+    void Haptics.selectionAsync().then(() => {
+      router.push('/(onboarding)/desired-shape')
+    })
   }
+
+  console.log('appVariant', appVariant)
 
   // Apply className directly to LinearGradient if supported, otherwise use style
   // NativeWind v4 aims to support this, but if not: style={{ flex: 1 }}
@@ -91,6 +101,17 @@ export default function SplashScreen() {
               Get Started
             </Text>
           </Pressable>
+
+          {appVariant === 'development' && (
+            <Pressable
+              className="rounded-full bg-black px-16 py-4 shadow-lg active:scale-95"
+              onPress={handleSkip}
+            >
+            <Text className="text-center font-inter-semibold text-base text-white">
+              Skip
+              </Text>
+            </Pressable>
+          )}
         </View>
       </SafeAreaView>
     </LinearGradient>

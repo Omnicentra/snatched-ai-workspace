@@ -130,7 +130,7 @@ export default function GetSnatchedScreen() {
             </View>
           </View>
 
-          <Text className="mb-8 text-center text-base text-gray-800">
+          <Text className="text-center text-base text-gray-800">
             Snatched AI gives you structure, visual tracking, and accountability
             that gets results faster.
           </Text>
