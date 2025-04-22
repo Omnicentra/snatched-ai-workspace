@@ -1,8 +1,8 @@
 import type { TRPCRouterRecord } from "@trpc/server";
 import { z } from "zod";
 
-import { desc, eq } from "@acme/db";
-import { createRecipeSchema, recipes } from "@acme/db/schema";
+import { desc, eq } from "@omc/db";
+import { createRecipeSchema, recipes } from "@omc/db/schema";
 
 import { protectedProcedure, publicProcedure } from "../trpc";
 

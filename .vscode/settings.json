@@ -4,5 +4,7 @@
       "mode": "auto"
     }
   ],
-  "prettier.configPath": "./tooling/prettier/index.js"
+  "prettier.configPath": "./tooling/prettier/index.js",
+  "eslint.format.enable": false,
+  "eslint.codeActionsOnSave.rules": null
 }
