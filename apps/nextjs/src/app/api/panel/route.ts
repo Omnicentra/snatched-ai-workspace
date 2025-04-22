@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { appRouter } from "@omc/api";
 
 export async function GET() {
-  if (process.env.NODE_ENV !== "development") {
+  if (process.env.DOPPLER_ENVIRONMENT === "prd") {
     return new NextResponse("Not Found", { status: 404 });
   }
 
