@@ -10,13 +10,15 @@
     "build": "turbo run build",
     "clean": "git clean -xdf node_modules",
     "clean:workspaces": "turbo run clean",
-    "nextjs:build": "turbo run build --filter=@acme/nextjs...",
-    "expo:build": "turbo run build --filter=@acme/expo...",
-    "nextjs:start": "turbo run start --filter=@acme/nextjs...",
-    "db:push": "turbo -F @acme/db push",
-    "db:studio": "turbo -F @acme/db studio",
+    "nextjs:dev": "turbo run dev --filter=@omc/nextjs...",
+    "nextjs:build": "turbo run build --filter=@omc/nextjs...",
+    "nextjs:start": "turbo run start --filter=@omc/nextjs...",
+    "expo:build": "turbo run build --filter=@omc/expo...",
+    "api:dev": "turbo run dev --filter=@omc/api...",
+    "db:push": "turbo -F @omc/db push",
+    "db:studio": "turbo -F @omc/db studio",
     "dev": "turbo watch dev --continue",
-    "dev:next": "turbo watch dev -F @acme/nextjs...",
+    "dev:next": "turbo watch dev -F @omc/nextjs...",
     "format": "turbo run format --continue -- --cache --cache-location .cache/.prettiercache",
     "format:fix": "turbo run format --continue -- --write --cache --cache-location .cache/.prettiercache",
     "lint": "turbo run lint --continue -- --cache --cache-location .cache/.eslintcache",
@@ -27,11 +29,11 @@
     "ui-add": "turbo run ui-add"
   },
   "devDependencies": {
-    "@acme/prettier-config": "workspace:*",
+    "@omc/prettier-config": "workspace:*",
     "@turbo/gen": "^2.4.4",
     "prettier": "catalog:",
     "turbo": "^2.4.4",
     "typescript": "catalog:"
   },
-  "prettier": "@acme/prettier-config"
+  "prettier": "@omc/prettier-config"
 }

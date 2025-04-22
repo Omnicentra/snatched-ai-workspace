@@ -1,4 +1,4 @@
-import { auth } from "@acme/auth";
+import { auth } from "@omc/auth";
 
 const handler = auth.handler
 

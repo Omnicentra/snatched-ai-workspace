@@ -1,4 +1,4 @@
-import { db } from "@acme/db/client";
+import { db } from "@omc/db/client";
 import { oAuthProxy } from "better-auth/plugins"
 import type { BetterAuthOptions } from "better-auth";
 import { betterAuth } from "better-auth";

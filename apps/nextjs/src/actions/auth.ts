@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 
-import { auth } from "@acme/auth";
+import { auth } from "@omc/auth";
 
 export async function signIn(formData: FormData) {
 	console.log(formData);
