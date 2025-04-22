@@ -14,8 +14,8 @@ import { env } from "~/env";
 
 export const metadata: Metadata = {
   metadataBase: new URL(
-    env.VERCEL_ENV === "production"
-      ? "https://snatched.ai"
+    env.DOPPLER_ENVIRONMENT === "prd"
+      ? "https://snatched-ai-ljnck.ondigitalocean.app/"
       : "http://localhost:3000",
   ),
   title: "Snatched AI - Your Personal Body Transformation Assistant",
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
     title: "Snatched AI - Your Personal Body Transformation Assistant",
     description:
       "Visualise, achieve, and track your ideal body shape through personalised AI plans combining workouts, nutrition, body analysis, and styling tips.",
-    url: "https://snatched.ai",
+    url: "https://snatched-ai-ljnck.ondigitalocean.app/",
     siteName: "Snatched AI",
   },
 };
