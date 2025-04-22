@@ -15,21 +15,19 @@ import { env } from "~/env";
 export const metadata: Metadata = {
   metadataBase: new URL(
     env.VERCEL_ENV === "production"
-      ? "https://turbo.t3.gg"
+      ? "https://snatched.ai"
       : "http://localhost:3000",
   ),
-  title: "Create T3 Turbo",
-  description: "Simple monorepo with shared backend for web & mobile apps",
+  title: "Snatched AI - Your Personal Body Transformation Assistant",
+  description:
+    "Visualise, achieve, and track your ideal body shape through personalised AI plans combining workouts, nutrition, body analysis, and styling tips.",
+  generator: "v0.dev",
   openGraph: {
-    title: "Create T3 Turbo",
-    description: "Simple monorepo with shared backend for web & mobile apps",
-    url: "https://create-t3-turbo.vercel.app",
-    siteName: "Create T3 Turbo",
-  },
-  twitter: {
-    card: "summary_large_image",
-    site: "@jullerino",
-    creator: "@jullerino",
+    title: "Snatched AI - Your Personal Body Transformation Assistant",
+    description:
+      "Visualise, achieve, and track your ideal body shape through personalised AI plans combining workouts, nutrition, body analysis, and styling tips.",
+    url: "https://snatched.ai",
+    siteName: "Snatched AI",
   },
 };
 
@@ -50,7 +48,7 @@ export default function RootLayout(props: { children: React.ReactNode }) {
           GeistMono.variable,
         )}
       >
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
           <TRPCReactProvider>{props.children}</TRPCReactProvider>
           <div className="absolute bottom-4 right-4">
             <ThemeToggle />
