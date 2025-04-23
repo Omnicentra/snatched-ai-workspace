@@ -3,11 +3,11 @@
     "apps": [],
     "details": [
       {
-        "appID": "6744844397.com.omnicentra.snatched-ai",
+        "appID": "U665535C27.com.omnicentra.snatched-ai",
         "paths": ["/api/auth/callback/*"]
       },
       {
-        "appIDs": ["6744844397.com.omnicentra.snatched-ai", "6744844397.com.omnicentra.snatched-ai-dev", "6744844397.com.omnicentra.snatched-ai-preview"],
+        "appIDs": ["U665535C27.com.omnicentra.snatched-ai", "U665535C27.com.omnicentra.snatched-ai-dev", "U665535C27.com.omnicentra.snatched-ai-preview"],
         "components": [
           {
             "/": "*",
@@ -15,7 +15,7 @@
           },
           {
             "/api/auth/callback/*": "*",
-            "comment": "Matches all routes"
+            "comment": "Matches all callback api routes"
           },
           {
             "#": "no_universal_links",
@@ -27,9 +27,9 @@
     ]
   },
   "activitycontinuation": {
-    "apps": ["6744844397.com.omnicentra.snatched-ai", "6744844397.com.omnicentra.snatched-ai-dev", "6744844397.com.omnicentra.snatched-ai-preview"]
+    "apps": ["U665535C27.com.omnicentra.snatched-ai", "U665535C27.com.omnicentra.snatched-ai-dev", "U665535C27.com.omnicentra.snatched-ai-preview"]
   },
   "webcredentials": {
-    "apps": ["6744844397.com.omnicentra.snatched-ai", "6744844397.com.omnicentra.snatched-ai-dev", "6744844397.com.omnicentra.snatched-ai-preview"]
+    "apps": ["U665535C27.com.omnicentra.snatched-ai", "U665535C27.com.omnicentra.snatched-ai-dev", "U665535C27.com.omnicentra.snatched-ai-preview"]
   }
 }

@@ -11,7 +11,7 @@ export default function SignupScreen() {
 
   const handleAppleSignIn = async () => {
     try {
-      await authClient.signIn.social({ provider: 'apple' });
+      await authClient.signIn.social({ provider: 'discord' });
       router.push('/(onboarding)/paywall');
     } catch (error) {
       if (error instanceof Error) {
