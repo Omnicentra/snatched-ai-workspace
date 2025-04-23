@@ -11,6 +11,7 @@ export const authClient = createAuthClient({
     expoClient({
       scheme,
       storage: SecureStore,
+      disableCache: true
     }),
   ],
   baseURL,
