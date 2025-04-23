@@ -1,3 +1,4 @@
+import { appVariant } from "@/lib/utils";
 import Constants from "expo-constants";
 
 /**
@@ -22,4 +23,12 @@ export const getBaseUrl = () => {
   } else {
     return "https://snatched-ai-ljnck.ondigitalocean.app/";
   }
+};
+
+export const getScheme = () => {
+  return appVariant === "production"
+    ? "snatched-ai"
+    : appVariant === "preview"
+    ? "snatched-ai-preview"
+    : "snatched-ai-dev";
 };

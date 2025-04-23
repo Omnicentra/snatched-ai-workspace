@@ -8,11 +8,11 @@ import {
   integer,
   numeric,
   pgTable,
+  serial,
   text,
   time,
   timestamp,
   unique,
-  uuid,
   varchar,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
@@ -21,8 +21,8 @@ import { z } from "zod";
 export const bodyMeasurements = pgTable(
   "body_measurements",
   {
-    id: uuid().defaultRandom().primaryKey().notNull(),
-    userId: uuid("user_id").notNull(),
+    id: serial().primaryKey().notNull(),
+    userId: integer("user_id").notNull(),
     measurementDate: date("measurement_date")
       .default(sql`CURRENT_DATE`)
       .notNull(),
@@ -35,12 +35,12 @@ export const bodyMeasurements = pgTable(
   (table) => [
     index("idx_body_measurements_user_id_date").using(
       "btree",
-      table.userId.asc().nullsLast().op("date_ops"),
+      table.userId.asc().nullsLast().op("int4_ops"),
       table.measurementDate.asc().nullsLast().op("date_ops"),
     ),
     foreignKey({
       columns: [table.userId],
-      foreignColumns: [users.id],
+      foreignColumns: [user.id],
       name: "body_measurements_user_id_fkey",
     }),
     check(
@@ -54,8 +54,8 @@ export const bodyMeasurements = pgTable(
 export const fitnessBlockers = pgTable(
   "fitness_blockers",
   {
-    id: uuid().defaultRandom().primaryKey().notNull(),
-    userId: uuid("user_id").notNull(),
+    id: serial().primaryKey().notNull(),
+    userId: integer("user_id").notNull(),
     blockerType: varchar("blocker_type", { length: 50 }).notNull(),
     createdAt: timestamp("created_at", {
       withTimezone: true,
@@ -65,28 +65,34 @@ export const fitnessBlockers = pgTable(
   (table) => [
     foreignKey({
       columns: [table.userId],
-      foreignColumns: [users.id],
+      foreignColumns: [user.id],
       name: "fitness_blockers_user_id_fkey",
     }),
   ],
 );
 
-export const users = pgTable(
-  "users",
+export const user = pgTable(
+  "user",
   {
-    id: uuid().defaultRandom().primaryKey().notNull(),
+    id: serial().primaryKey().notNull(),
     name: varchar({ length: 100 }).notNull(),
+    email: varchar({ length: 100 }).notNull(),
+    emailVerified: timestamp("email_verified", {
+      withTimezone: true,
+      mode: "date",
+    }),
+    image: text("image"),
     age: integer().notNull(),
     heightCm: integer("height_cm").notNull(),
     weightKg: numeric("weight_kg", { precision: 5, scale: 2 }).notNull(),
     ethnicity: varchar({ length: 50 }),
     createdAt: timestamp("created_at", {
       withTimezone: true,
-      mode: "string",
+      mode: "date",
     }).default(sql`CURRENT_TIMESTAMP`),
     updatedAt: timestamp("updated_at", {
       withTimezone: true,
-      mode: "string",
+      mode: "date",
     }).default(sql`CURRENT_TIMESTAMP`),
   },
   (table) => [
@@ -115,8 +121,8 @@ export const users = pgTable(
 export const foodCravings = pgTable(
   "food_cravings",
   {
-    id: uuid().defaultRandom().primaryKey().notNull(),
-    userId: uuid("user_id").notNull(),
+    id: serial().primaryKey().notNull(),
+    userId: integer("user_id").notNull(),
     cravingType: varchar("craving_type", { length: 50 }).notNull(),
     otherCravings: text("other_cravings"),
     createdAt: timestamp("created_at", {
@@ -127,7 +133,7 @@ export const foodCravings = pgTable(
   (table) => [
     foreignKey({
       columns: [table.userId],
-      foreignColumns: [users.id],
+      foreignColumns: [user.id],
       name: "food_cravings_user_id_fkey",
     }),
   ],
@@ -136,8 +142,8 @@ export const foodCravings = pgTable(
 export const previousExperiences = pgTable(
   "previous_experiences",
   {
-    id: uuid().defaultRandom().primaryKey().notNull(),
-    userId: uuid("user_id").notNull(),
+    id: serial().primaryKey().notNull(),
+    userId: integer("user_id").notNull(),
     experienceType: varchar("experience_type", { length: 50 }).notNull(),
     createdAt: timestamp("created_at", {
       withTimezone: true,
@@ -147,7 +153,7 @@ export const previousExperiences = pgTable(
   (table) => [
     foreignKey({
       columns: [table.userId],
-      foreignColumns: [users.id],
+      foreignColumns: [user.id],
       name: "previous_experiences_user_id_fkey",
     }),
   ],
@@ -156,7 +162,7 @@ export const previousExperiences = pgTable(
 export const workouts = pgTable(
   "workouts",
   {
-    id: uuid().defaultRandom().primaryKey().notNull(),
+    id: serial().primaryKey().notNull(),
     title: varchar({ length: 100 }).notNull(),
     description: text(),
     durationMinutes: integer("duration_minutes").notNull(),
@@ -164,7 +170,7 @@ export const workouts = pgTable(
     caloriesBurn: integer("calories_burn"),
     rating: numeric({ precision: 2, scale: 1 }),
     imageUrl: text("image_url"),
-    categoryId: uuid("category_id"),
+    categoryId: integer("category_id"),
     createdAt: timestamp("created_at", {
       withTimezone: true,
       mode: "string",
@@ -177,7 +183,7 @@ export const workouts = pgTable(
   (table) => [
     index("idx_workouts_category").using(
       "btree",
-      table.categoryId.asc().nullsLast().op("uuid_ops"),
+      table.categoryId.asc().nullsLast().op("int4_ops"),
     ),
     foreignKey({
       columns: [table.categoryId],
@@ -200,8 +206,8 @@ export const workouts = pgTable(
 export const healthConditions = pgTable(
   "health_conditions",
   {
-    id: uuid().defaultRandom().primaryKey().notNull(),
-    userId: uuid("user_id").notNull(),
+    id: serial().primaryKey().notNull(),
+    userId: integer("user_id").notNull(),
     hasConditions: boolean("has_conditions").notNull(),
     conditionsDescription: text("conditions_description"),
     createdAt: timestamp("created_at", {
@@ -212,7 +218,7 @@ export const healthConditions = pgTable(
   (table) => [
     foreignKey({
       columns: [table.userId],
-      foreignColumns: [users.id],
+      foreignColumns: [user.id],
       name: "health_conditions_user_id_fkey",
     }),
   ],
@@ -221,8 +227,8 @@ export const healthConditions = pgTable(
 export const bodyConsiderations = pgTable(
   "body_considerations",
   {
-    id: uuid().defaultRandom().primaryKey().notNull(),
-    userId: uuid("user_id").notNull(),
+    id: serial().primaryKey().notNull(),
+    userId: integer("user_id").notNull(),
     considerationType: varchar("consideration_type", { length: 50 }).notNull(),
     customDescription: text("custom_description"),
     createdAt: timestamp("created_at", {
@@ -233,7 +239,7 @@ export const bodyConsiderations = pgTable(
   (table) => [
     foreignKey({
       columns: [table.userId],
-      foreignColumns: [users.id],
+      foreignColumns: [user.id],
       name: "body_considerations_user_id_fkey",
     }),
   ],
@@ -242,7 +248,7 @@ export const bodyConsiderations = pgTable(
 export const workoutCategories = pgTable(
   "workout_categories",
   {
-    id: uuid().defaultRandom().primaryKey().notNull(),
+    id: serial().primaryKey().notNull(),
     name: varchar({ length: 50 }).notNull(),
     description: text(),
     createdAt: timestamp("created_at", {
@@ -256,9 +262,9 @@ export const workoutCategories = pgTable(
 export const userWorkoutProgress = pgTable(
   "user_workout_progress",
   {
-    id: uuid().defaultRandom().primaryKey().notNull(),
-    userId: uuid("user_id").notNull(),
-    workoutId: uuid("workout_id").notNull(),
+    id: serial().primaryKey().notNull(),
+    userId: integer("user_id").notNull(),
+    workoutId: integer("workout_id").notNull(),
     completedAt: timestamp("completed_at", {
       withTimezone: true,
       mode: "string",
@@ -273,11 +279,11 @@ export const userWorkoutProgress = pgTable(
   (table) => [
     index("idx_user_workout_progress_user").using(
       "btree",
-      table.userId.asc().nullsLast().op("uuid_ops"),
+      table.userId.asc().nullsLast().op("int4_ops"),
     ),
     foreignKey({
       columns: [table.userId],
-      foreignColumns: [users.id],
+      foreignColumns: [user.id],
       name: "user_workout_progress_user_id_fkey",
     }),
     foreignKey({
@@ -291,8 +297,8 @@ export const userWorkoutProgress = pgTable(
 export const fitnessGoals = pgTable(
   "fitness_goals",
   {
-    id: uuid().defaultRandom().primaryKey().notNull(),
-    userId: uuid("user_id").notNull(),
+    id: serial().primaryKey().notNull(),
+    userId: integer("user_id").notNull(),
     desiredShape: varchar("desired_shape", { length: 50 }).notNull(),
     timelineWeeks: integer("timeline_weeks").notNull(),
     bodyTonePreference: integer("body_tone_preference"),
@@ -313,11 +319,11 @@ export const fitnessGoals = pgTable(
   (table) => [
     index("idx_fitness_goals_user_id").using(
       "btree",
-      table.userId.asc().nullsLast().op("uuid_ops"),
+      table.userId.asc().nullsLast().op("int4_ops"),
     ),
     foreignKey({
       columns: [table.userId],
-      foreignColumns: [users.id],
+      foreignColumns: [user.id],
       name: "fitness_goals_user_id_fkey",
     }),
     check(
@@ -346,9 +352,9 @@ export const fitnessGoals = pgTable(
 export const workoutExercises = pgTable(
   "workout_exercises",
   {
-    id: uuid().defaultRandom().primaryKey().notNull(),
-    workoutId: uuid("workout_id").notNull(),
-    exerciseId: uuid("exercise_id").notNull(),
+    id: serial().primaryKey().notNull(),
+    workoutId: integer("workout_id").notNull(),
+    exerciseId: integer("exercise_id").notNull(),
     sets: integer().notNull(),
     reps: integer().notNull(),
     restSeconds: integer("rest_seconds").notNull(),
@@ -361,7 +367,7 @@ export const workoutExercises = pgTable(
   (table) => [
     index("idx_workout_exercises_workout").using(
       "btree",
-      table.workoutId.asc().nullsLast().op("uuid_ops"),
+      table.workoutId.asc().nullsLast().op("int4_ops"),
     ),
     foreignKey({
       columns: [table.workoutId],
@@ -396,7 +402,7 @@ export const workoutExercises = pgTable(
 );
 
 export const exercises = pgTable("exercises", {
-  id: uuid().defaultRandom().primaryKey().notNull(),
+  id: serial().primaryKey().notNull(),
   name: varchar({ length: 100 }).notNull(),
   description: text(),
   targetMuscles: text("target_muscles"),
@@ -411,8 +417,8 @@ export const exercises = pgTable("exercises", {
 export const recipeIngredients = pgTable(
   "recipe_ingredients",
   {
-    id: uuid().defaultRandom().primaryKey().notNull(),
-    recipeId: uuid("recipe_id").notNull(),
+    id: serial().primaryKey().notNull(),
+    recipeId: integer("recipe_id").notNull(),
     ingredientName: varchar("ingredient_name", { length: 100 }).notNull(),
     amount: numeric({ precision: 8, scale: 2 }).notNull(),
     unit: varchar({ length: 20 }).notNull(),
@@ -425,7 +431,7 @@ export const recipeIngredients = pgTable(
   (table) => [
     index("idx_recipe_ingredients_recipe").using(
       "btree",
-      table.recipeId.asc().nullsLast().op("uuid_ops"),
+      table.recipeId.asc().nullsLast().op("int4_ops"),
     ),
     foreignKey({
       columns: [table.recipeId],
@@ -447,9 +453,9 @@ export const recipeIngredients = pgTable(
 export const mealSchedule = pgTable(
   "meal_schedule",
   {
-    id: uuid().defaultRandom().primaryKey().notNull(),
-    mealPlanId: uuid("meal_plan_id").notNull(),
-    recipeId: uuid("recipe_id").notNull(),
+    id: serial().primaryKey().notNull(),
+    mealPlanId: integer("meal_plan_id").notNull(),
+    recipeId: integer("recipe_id").notNull(),
     mealType: varchar("meal_type", { length: 20 }).notNull(),
     scheduledTime: time("scheduled_time").notNull(),
     completed: boolean().default(false),
@@ -465,7 +471,7 @@ export const mealSchedule = pgTable(
   (table) => [
     index("idx_meal_schedule_meal_plan").using(
       "btree",
-      table.mealPlanId.asc().nullsLast().op("uuid_ops"),
+      table.mealPlanId.asc().nullsLast().op("int4_ops"),
     ),
     foreignKey({
       columns: [table.mealPlanId],
@@ -483,9 +489,9 @@ export const mealSchedule = pgTable(
 export const userMilestoneProgress = pgTable(
   "user_milestone_progress",
   {
-    id: uuid().defaultRandom().primaryKey().notNull(),
-    userId: uuid("user_id").notNull(),
-    levelId: uuid("level_id").notNull(),
+    id: serial().primaryKey().notNull(),
+    userId: integer("user_id").notNull(),
+    levelId: integer("level_id").notNull(),
     currentDay: integer("current_day").notNull(),
     completed: boolean().default(false),
     createdAt: timestamp("created_at", {
@@ -500,11 +506,11 @@ export const userMilestoneProgress = pgTable(
   (table) => [
     index("idx_user_milestone_progress_user").using(
       "btree",
-      table.userId.asc().nullsLast().op("uuid_ops"),
+      table.userId.asc().nullsLast().op("int4_ops"),
     ),
     foreignKey({
       columns: [table.userId],
-      foreignColumns: [users.id],
+      foreignColumns: [user.id],
       name: "user_milestone_progress_user_id_fkey",
     }),
     foreignKey({
@@ -523,7 +529,7 @@ export const userMilestoneProgress = pgTable(
 export const milestoneLevels = pgTable(
   "milestone_levels",
   {
-    id: uuid().defaultRandom().primaryKey().notNull(),
+    id: serial().primaryKey().notNull(),
     level: integer().notNull(),
     totalDays: integer("total_days").notNull(),
     emoji: varchar({ length: 10 }),
@@ -550,8 +556,8 @@ export const milestoneLevels = pgTable(
 export const mealPlans = pgTable(
   "meal_plans",
   {
-    id: uuid().defaultRandom().primaryKey().notNull(),
-    userId: uuid("user_id").notNull(),
+    id: serial().primaryKey().notNull(),
+    userId: integer("user_id").notNull(),
     date: date().notNull(),
     targetCalories: integer("target_calories").notNull(),
     targetProtein: integer("target_protein").notNull(),
@@ -569,12 +575,12 @@ export const mealPlans = pgTable(
   (table) => [
     index("idx_meal_plans_user_date").using(
       "btree",
-      table.userId.asc().nullsLast().op("date_ops"),
-      table.date.asc().nullsLast().op("uuid_ops"),
+      table.userId.asc().nullsLast().op("int4_ops"),
+      table.date.asc().nullsLast().op("date_ops"),
     ),
     foreignKey({
       columns: [table.userId],
-      foreignColumns: [users.id],
+      foreignColumns: [user.id],
       name: "meal_plans_user_id_fkey",
     }),
     unique("meal_plans_user_id_date_key").on(table.userId, table.date),
@@ -604,8 +610,8 @@ export const mealPlans = pgTable(
 export const recipeInstructions = pgTable(
   "recipe_instructions",
   {
-    id: uuid().defaultRandom().primaryKey().notNull(),
-    recipeId: uuid("recipe_id").notNull(),
+    id: serial().primaryKey().notNull(),
+    recipeId: integer("recipe_id").notNull(),
     stepNumber: integer("step_number").notNull(),
     instruction: text().notNull(),
     createdAt: timestamp("created_at", {
@@ -616,7 +622,7 @@ export const recipeInstructions = pgTable(
   (table) => [
     index("idx_recipe_instructions_recipe").using(
       "btree",
-      table.recipeId.asc().nullsLast().op("uuid_ops"),
+      table.recipeId.asc().nullsLast().op("int4_ops"),
     ),
     foreignKey({
       columns: [table.recipeId],
@@ -638,9 +644,9 @@ export const recipeInstructions = pgTable(
 export const userRecipes = pgTable(
   "user_recipes",
   {
-    id: uuid().defaultRandom().primaryKey().notNull(),
-    userId: uuid("user_id").notNull(),
-    recipeId: uuid("recipe_id").notNull(),
+    id: serial().primaryKey().notNull(),
+    userId: integer("user_id").notNull(),
+    recipeId: integer("recipe_id").notNull(),
     isFavorite: boolean("is_favorite").default(false),
     personalNotes: text("personal_notes"),
     servingSizeOverride: integer("serving_size_override"),
@@ -663,21 +669,21 @@ export const userRecipes = pgTable(
     index("idx_user_recipes_favorite")
       .using(
         "btree",
-        table.userId.asc().nullsLast().op("bool_ops"),
-        table.isFavorite.asc().nullsLast().op("uuid_ops"),
+        table.userId.asc().nullsLast().op("int4_ops"),
+        table.isFavorite.asc().nullsLast().op("bool_ops"),
       )
       .where(sql`(is_favorite = true)`),
     index("idx_user_recipes_recipe").using(
       "btree",
-      table.recipeId.asc().nullsLast().op("uuid_ops"),
+      table.recipeId.asc().nullsLast().op("int4_ops"),
     ),
     index("idx_user_recipes_user").using(
       "btree",
-      table.userId.asc().nullsLast().op("uuid_ops"),
+      table.userId.asc().nullsLast().op("int4_ops"),
     ),
     foreignKey({
       columns: [table.userId],
-      foreignColumns: [users.id],
+      foreignColumns: [user.id],
       name: "user_recipes_user_id_fkey",
     }),
     foreignKey({
@@ -700,7 +706,7 @@ export const userRecipes = pgTable(
 export const recipes = pgTable(
   "recipes",
   {
-    id: uuid().defaultRandom().primaryKey().notNull(),
+    id: serial().primaryKey().notNull(),
     title: varchar({ length: 100 }).notNull(),
     description: text(),
     servings: integer().notNull(),
@@ -721,7 +727,7 @@ export const recipes = pgTable(
       mode: "string",
     }).default(sql`CURRENT_TIMESTAMP`),
   },
-  (table) => [
+  (_table) => [
     check(
       "recipes_servings_check",
       sql`servings
@@ -773,7 +779,122 @@ export const createRecipeSchema = createInsertSchema(recipes, {
   rating: z.string().optional(),
   reviewCount: z.number().min(1).max(1000),
 }).omit({
-  id: true,
   createdAt: true,
   updatedAt: true,
 });
+
+export const session = pgTable(
+  "session",
+  {
+    id: serial().primaryKey().notNull(),
+    userId: integer("user_id").notNull(),
+    token: varchar({ length: 255 }).notNull(),
+    expiresAt: timestamp("expires_at", {
+      withTimezone: true,
+      mode: "date",
+    }).notNull(),
+    ipAddress: varchar({ length: 45 }),
+    userAgent: text(),
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+      mode: "date",
+    }).default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: timestamp("updated_at", {
+      withTimezone: true,
+      mode: "date",
+    }).default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    index("idx_session_user").using(
+      "btree",
+      table.userId.asc().nullsLast().op("int4_ops"),
+    ),
+    index("idx_session_token").using(
+      "btree",
+      table.token.asc().nullsLast().op("text_ops"),
+    ),
+    foreignKey({
+      columns: [table.userId],
+      foreignColumns: [user.id],
+      name: "session_user_id_fkey",
+    }),
+  ],
+);
+
+export const account = pgTable(
+  "account",
+  {
+    id: serial().primaryKey().notNull(),
+    userId: integer("user_id").notNull(),
+    accountId: varchar({ length: 255 }).notNull(),
+    providerId: varchar({ length: 255 }).notNull(),
+    accessToken: varchar({ length: 255 }),
+    refreshToken: varchar({ length: 255 }),
+    accessTokenExpiresAt: timestamp("access_token_expires_at", {
+      withTimezone: true,
+      mode: "date",
+    }),
+    refreshTokenExpiresAt: timestamp("refresh_token_expires_at", {
+      withTimezone: true,
+      mode: "date",
+    }),
+    scope: varchar({ length: 255 }),
+    idToken: text(),
+    password: varchar({ length: 255 }),
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+      mode: "date",
+    }).default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: timestamp("updated_at", {
+      withTimezone: true,
+      mode: "date",
+    }).default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    index("idx_account_user").using(
+      "btree",
+      table.userId.asc().nullsLast().op("int4_ops"),
+    ),
+    index("idx_account_provider").using(
+      "btree",
+      table.providerId.asc().nullsLast().op("text_ops"),
+    ),
+    foreignKey({
+      columns: [table.userId],
+      foreignColumns: [user.id],
+      name: "account_user_id_fkey",
+    }),
+    unique("account_provider_account").on(table.providerId, table.accountId),
+  ],
+);
+
+export const verification = pgTable(
+  "verification",
+  {
+    id: serial().primaryKey().notNull(),
+    identifier: varchar({ length: 255 }).notNull(),
+    value: varchar({ length: 255 }).notNull(),
+    expiresAt: timestamp("expires_at", {
+      withTimezone: true,
+      mode: "date",
+    }).notNull(),
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+      mode: "date",
+    }).default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: timestamp("updated_at", {
+      withTimezone: true,
+      mode: "date",
+    }).default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    index("idx_verification_identifier").using(
+      "btree",
+      table.identifier.asc().nullsLast().op("text_ops"),
+    ),
+    index("idx_verification_expires").using(
+      "btree",
+      table.expiresAt.asc().nullsLast().op("timestamptz_ops"),
+    ),
+  ],
+);

@@ -1,6 +1,6 @@
 {
-  "id": "45dc270c-a87e-4b15-b3d1-e488d8015288",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "2a0730ee-4511-4298-a85a-d1ab0700f5ea",
+  "prevId": "45dc270c-a87e-4b15-b3d1-e488d8015288",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -127,7 +127,7 @@
         "account_user_id_fkey": {
           "name": "account_user_id_fkey",
           "tableFrom": "account",
-          "tableTo": "users",
+          "tableTo": "user",
           "columnsFrom": [
             "user_id"
           ],
@@ -194,7 +194,7 @@
         "body_considerations_user_id_fkey": {
           "name": "body_considerations_user_id_fkey",
           "tableFrom": "body_considerations",
-          "tableTo": "users",
+          "tableTo": "user",
           "columnsFrom": [
             "user_id"
           ],
@@ -277,7 +277,7 @@
         "body_measurements_user_id_fkey": {
           "name": "body_measurements_user_id_fkey",
           "tableFrom": "body_measurements",
-          "tableTo": "users",
+          "tableTo": "user",
           "columnsFrom": [
             "user_id"
           ],
@@ -390,7 +390,7 @@
         "fitness_blockers_user_id_fkey": {
           "name": "fitness_blockers_user_id_fkey",
           "tableFrom": "fitness_blockers",
-          "tableTo": "users",
+          "tableTo": "user",
           "columnsFrom": [
             "user_id"
           ],
@@ -490,7 +490,7 @@
         "fitness_goals_user_id_fkey": {
           "name": "fitness_goals_user_id_fkey",
           "tableFrom": "fitness_goals",
-          "tableTo": "users",
+          "tableTo": "user",
           "columnsFrom": [
             "user_id"
           ],
@@ -565,7 +565,7 @@
         "food_cravings_user_id_fkey": {
           "name": "food_cravings_user_id_fkey",
           "tableFrom": "food_cravings",
-          "tableTo": "users",
+          "tableTo": "user",
           "columnsFrom": [
             "user_id"
           ],
@@ -623,7 +623,7 @@
         "health_conditions_user_id_fkey": {
           "name": "health_conditions_user_id_fkey",
           "tableFrom": "health_conditions",
-          "tableTo": "users",
+          "tableTo": "user",
           "columnsFrom": [
             "user_id"
           ],
@@ -730,7 +730,7 @@
         "meal_plans_user_id_fkey": {
           "name": "meal_plans_user_id_fkey",
           "tableFrom": "meal_plans",
-          "tableTo": "users",
+          "tableTo": "user",
           "columnsFrom": [
             "user_id"
           ],
@@ -977,7 +977,7 @@
         "previous_experiences_user_id_fkey": {
           "name": "previous_experiences_user_id_fkey",
           "tableFrom": "previous_experiences",
-          "tableTo": "users",
+          "tableTo": "user",
           "columnsFrom": [
             "user_id"
           ],
@@ -1406,7 +1406,7 @@
         "session_user_id_fkey": {
           "name": "session_user_id_fkey",
           "tableFrom": "session",
-          "tableTo": "users",
+          "tableTo": "user",
           "columnsFrom": [
             "user_id"
           ],
@@ -1421,6 +1421,117 @@
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.user": {
+      "name": "user",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email_verified": {
+          "name": "email_verified",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "image": {
+          "name": "image",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "age": {
+          "name": "age",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "height_cm": {
+          "name": "height_cm",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "weight_kg": {
+          "name": "weight_kg",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ethnicity": {
+          "name": "ethnicity",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "CURRENT_TIMESTAMP"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "CURRENT_TIMESTAMP"
+        }
+      },
+      "indexes": {
+        "idx_users_created_at": {
+          "name": "idx_users_created_at",
+          "columns": [
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "timestamptz_ops"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "users_age_check": {
+          "name": "users_age_check",
+          "value": "age\n      > 0"
+        },
+        "users_height_cm_check": {
+          "name": "users_height_cm_check",
+          "value": "height_cm\n      > 0"
+        },
+        "users_weight_kg_check": {
+          "name": "users_weight_kg_check",
+          "value": "weight_kg\n      > (0)::numeric"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.user_milestone_progress": {
@@ -1495,7 +1606,7 @@
         "user_milestone_progress_user_id_fkey": {
           "name": "user_milestone_progress_user_id_fkey",
           "tableFrom": "user_milestone_progress",
-          "tableTo": "users",
+          "tableTo": "user",
           "columnsFrom": [
             "user_id"
           ],
@@ -1666,7 +1777,7 @@
         "user_recipes_user_id_fkey": {
           "name": "user_recipes_user_id_fkey",
           "tableFrom": "user_recipes",
-          "tableTo": "users",
+          "tableTo": "user",
           "columnsFrom": [
             "user_id"
           ],
@@ -1780,7 +1891,7 @@
         "user_workout_progress_user_id_fkey": {
           "name": "user_workout_progress_user_id_fkey",
           "tableFrom": "user_workout_progress",
-          "tableTo": "users",
+          "tableTo": "user",
           "columnsFrom": [
             "user_id"
           ],
@@ -1808,117 +1919,6 @@
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.users": {
-      "name": "users",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "serial",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "name": {
-          "name": "name",
-          "type": "varchar(100)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "email": {
-          "name": "email",
-          "type": "varchar(100)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "email_verified": {
-          "name": "email_verified",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "image": {
-          "name": "image",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "age": {
-          "name": "age",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "height_cm": {
-          "name": "height_cm",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "weight_kg": {
-          "name": "weight_kg",
-          "type": "numeric(5, 2)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "ethnicity": {
-          "name": "ethnicity",
-          "type": "varchar(50)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "CURRENT_TIMESTAMP"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "CURRENT_TIMESTAMP"
-        }
-      },
-      "indexes": {
-        "idx_users_created_at": {
-          "name": "idx_users_created_at",
-          "columns": [
-            {
-              "expression": "created_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last",
-              "opclass": "timestamptz_ops"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {
-        "users_age_check": {
-          "name": "users_age_check",
-          "value": "age\n      > 0"
-        },
-        "users_height_cm_check": {
-          "name": "users_height_cm_check",
-          "value": "height_cm\n      > 0"
-        },
-        "users_weight_kg_check": {
-          "name": "users_weight_kg_check",
-          "value": "weight_kg\n      > (0)::numeric"
-        }
-      },
       "isRLSEnabled": false
     },
     "public.verification": {
