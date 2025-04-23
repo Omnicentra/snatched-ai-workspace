@@ -11,7 +11,11 @@ function getAppConfig() {
         intentFilters: [
           {
             scheme: "https",
-            host: "snatched-ai-dev.ngrok.io",
+            host: "snatched-ai.ngrok.io",
+          },
+          {
+            scheme: "https",
+            host: "snatched-ai-dev-oh2uj.ondigitalocean.app",
           },
         ],
       };
@@ -89,6 +93,14 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       "android.permission.CAMERA",
       "android.permission.RECORD_AUDIO",
     ],
+    intentFilters: [
+      {
+        action: "VIEW",
+        autoVerify: true,
+        data: intentFilters,
+        category: ["BROWSABLE", "DEFAULT"],
+      },
+    ],
   },
   web: {
     bundler: "metro",
@@ -123,6 +135,19 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         imageWidth: 200,
       },
     ],
+    [
+      "expo-build-properties",
+      {
+        android: {
+          compileSdkVersion: 35,
+          targetSdkVersion: 35,
+          buildToolsVersion: "35.0.0",
+        },
+        ios: {
+          deploymentTarget: "15.1",
+        },
+      },
+    ]
   ],
   experiments: {
     typedRoutes: true,

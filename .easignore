@@ -61,3 +61,6 @@ ios/
 
 # Ignore test coverage reports
 /coverage
+
+credentials.json
+credentials/
