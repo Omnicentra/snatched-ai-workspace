@@ -3,7 +3,7 @@ import { GeistMono } from "geist/font/mono";
 import { GeistSans } from "geist/font/sans";
 
 import { cn } from "@omc/ui";
-import { ThemeProvider, ThemeToggle } from "@omc/ui/theme";
+import { ThemeProvider } from "@omc/ui/theme";
 import { Toaster } from "@omc/ui/toast";
 
 import { TRPCReactProvider } from "~/trpc/react";

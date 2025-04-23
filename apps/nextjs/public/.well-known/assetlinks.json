@@ -1,0 +1,14 @@
+[
+    {
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.omnicentra.snatched_ai_dev",
+        "sha256_cert_fingerprints": [
+          // Supports multiple fingerprints for different apps and keys
+          "F3:C9:F9:B6:D3:B6:47:01:7D:79:4B:69:BF:DB:47:02:86:1D:C1:6B:1B:11:E9:CA:C0:48:0F:FA:4E:20:8D:BE"
+        ]
+      }
+    }
+  ]
+  
