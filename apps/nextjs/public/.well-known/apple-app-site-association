@@ -4,13 +4,17 @@
     "details": [
       {
         "appID": "6744844397.com.omnicentra.snatched-ai",
-        "paths": ["/records/*"]
+        "paths": ["/api/auth/callback/*"]
       },
       {
         "appIDs": ["6744844397.com.omnicentra.snatched-ai", "6744844397.com.omnicentra.snatched-ai-dev", "6744844397.com.omnicentra.snatched-ai-preview"],
         "components": [
           {
             "/": "*",
+            "comment": "Matches all routes"
+          },
+          {
+            "/api/auth/callback/*": "*",
             "comment": "Matches all routes"
           },
           {
