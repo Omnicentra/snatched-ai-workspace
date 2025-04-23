@@ -1,4 +1,4 @@
-import { appVariant } from "@/lib/utils";
+import { appVariant, ngrokUrl } from "@/lib/utils";
 import Constants from "expo-constants";
 
 /**
@@ -16,8 +16,14 @@ export const getBaseUrl = () => {
    */
   const debuggerHost = Constants.expoConfig?.hostUri;
   const localhost = debuggerHost?.split(":")[0];
+  console.log("localhost", localhost);
+  console.log("ngrokUrl", ngrokUrl);
   if (localhost) {
-    return `http://${localhost}:3000`;
+    if (localhost.includes("ngrok")) {
+      return ngrokUrl;
+    } else {
+      return `http://${localhost}:3000`;
+    }
   } else if (appVariant !== "production") {
     return "https://snatched-ai-dev-oh2uj.ondigitalocean.app";
   } else {

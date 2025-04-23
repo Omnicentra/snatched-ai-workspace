@@ -12,7 +12,9 @@
     "format": "prettier --check . --ignore-path ../../.gitignore --ignore-path .prettierignore",
     "ios": "expo run:ios",
     "lint": "eslint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build:local:ios": "eas build --profile ios-simulator --platform ios --local",
+    "build:local:android": "eas build --profile development --platform android --local"
   },
   "dependencies": {
     "@bacons/text-decoder": "^0.0.0",

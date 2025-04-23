@@ -70,6 +70,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     config: {
       usesNonExemptEncryption: false,
     },
+    associatedDomains: [
+      "applinks:snatched-ai.ngrok.io",
+      "applinks:snatched-ai-dev-oh2uj.ondigitalocean.app",
+      "applinks:snatched-ai-ljnck.ondigitalocean.app",
+    ],
   },
   android: {
     adaptiveIcon: {
@@ -134,7 +139,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     },
     eas: {
       projectId: "8bcf08a2-4cad-4b0d-a2c0-197528f19cc7",
-      appVariant: process.env.APP_VARIANT
+      appVariant: process.env.APP_VARIANT,
+      ngrokUrl: process.env.NGROK_URL,
     },
   },
   owner: "omnicentra",

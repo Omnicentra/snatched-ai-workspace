@@ -15,6 +15,34 @@
       "when": 1745366339725,
       "tag": "0001_cute_tyrannus",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1745393544554,
+      "tag": "0002_sturdy_midnight",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1745393562354,
+      "tag": "0003_yellow_the_fury",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1745393660556,
+      "tag": "0004_lucky_veda",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1745393683816,
+      "tag": "0005_gorgeous_bloodstorm",
+      "breakpoints": true
     }
   ]
 }

@@ -77,14 +77,11 @@ export const user = pgTable(
     id: serial().primaryKey().notNull(),
     name: varchar({ length: 100 }).notNull(),
     email: varchar({ length: 100 }).notNull(),
-    emailVerified: timestamp("email_verified", {
-      withTimezone: true,
-      mode: "date",
-    }),
+    emailVerified: boolean("email_verified").default(false),
     image: text("image"),
-    age: integer().notNull(),
-    heightCm: integer("height_cm").notNull(),
-    weightKg: numeric("weight_kg", { precision: 5, scale: 2 }).notNull(),
+    age: integer(),
+    heightCm: integer("height_cm"),
+    weightKg: numeric("weight_kg", { precision: 5, scale: 2 }),
     ethnicity: varchar({ length: 50 }),
     createdAt: timestamp("created_at", {
       withTimezone: true,

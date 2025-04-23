@@ -1,0 +1,31 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "6744844397.com.omnicentra.snatched-ai",
+        "paths": ["/records/*"]
+      },
+      {
+        "appIDs": ["6744844397.com.omnicentra.snatched-ai", "6744844397.com.omnicentra.snatched-ai-dev", "6744844397.com.omnicentra.snatched-ai-preview"],
+        "components": [
+          {
+            "/": "*",
+            "comment": "Matches all routes"
+          },
+          {
+            "#": "no_universal_links",
+            "exclude": true,
+            "comment": "Matches any URL whose fragment equals no_universal_links and instructs the system not to open it as a universal link"
+          }
+        ]
+      }
+    ]
+  },
+  "activitycontinuation": {
+    "apps": ["6744844397.com.omnicentra.snatched-ai", "6744844397.com.omnicentra.snatched-ai-dev", "6744844397.com.omnicentra.snatched-ai-preview"]
+  },
+  "webcredentials": {
+    "apps": ["6744844397.com.omnicentra.snatched-ai", "6744844397.com.omnicentra.snatched-ai-dev", "6744844397.com.omnicentra.snatched-ai-preview"]
+  }
+}
