@@ -1,9 +1,9 @@
 // app/(onboarding)/timeline-goal.tsx
-import React, { useState } from 'react'
-import { View, Text, SafeAreaView, ScrollView } from 'react-native'
-import { useRouter } from 'expo-router'
-import Constants from 'expo-constants'
 import { OnboardingHeader, OptionCard, StyledButton } from '@/components/core'
+import Constants from 'expo-constants'
+import { useRouter } from 'expo-router'
+import React, { useState } from 'react'
+import { SafeAreaView, ScrollView, View } from 'react-native'
 
 const timelineOptions = [
   {
@@ -43,7 +43,7 @@ export default function TimelineGoalScreen() {
   const handleContinue = () => {
     // Store selectedTimeline
     // Start the "analysis" process
-    router.push('/(onboarding)/analyzing')
+    router.push('/(onboarding)/paywall')
   }
 
   return (

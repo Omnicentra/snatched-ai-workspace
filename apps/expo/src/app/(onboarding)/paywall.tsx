@@ -169,7 +169,7 @@ const CommunitySection = () => {
               <Text className="mx-2 font-inter-medium text-xs text-gray-600">•</Text>
               <Text className="font-inter-medium text-xs text-gray-500">{post.time}</Text>
             </View>
-            <View className="flex-row space-x-4">
+            <View className="flex-row gap-x-4">
               <View className="flex-row items-center">
                 <Ionicons name="chatbubble-outline" size={14} color="#9CA3AF" />
                 <Text className="ml-1 font-inter-medium text-xs text-gray-400">{post.reactions.comments}</Text>

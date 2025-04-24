@@ -1,14 +1,14 @@
-import React, { useState } from "react";
-import { Pressable, SafeAreaView, ScrollView, Text, View } from "react-native";
-import * as Progress from "react-native-progress";
+import logo from "@/assets/images/logo-dark.png";
+import { ProgressRing } from "@/components/core";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import Constants from "expo-constants";
+import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { ProgressRing } from "@/components/core";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { Image } from "expo-image";
-import logo from "@/assets/images/logo-dark.png";
+import React, { useState } from "react";
+import { Pressable, ScrollView, Text, View } from "react-native";
+import * as Progress from "react-native-progress";
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
@@ -46,85 +46,83 @@ const WeeklyProgressBarChart = () => {
 
 // Nutrition Stats Card Component
 const NutritionStats = () => {
-  const stats: Array<{
+  const router = useRouter();
+  const bodyPartStats: {
     label: string;
     value: string;
     icon: IconName;
-  }> = [
-    { label: "Calories left", value: "1918", icon: "flame-outline" },
-    { label: "Protein left", value: "120g", icon: "fish-outline" },
-    { label: "Carbs left", value: "239g", icon: "nutrition-outline" },
-    { label: "Fat left", value: "53g", icon: "water-outline" },
+  }[] = [
+    { label: "Waist Definition", value: "65", icon: "hourglass-outline" },
+    { label: "Arm Shape", value: "72", icon: "barbell" },
+    { label: "Glute Progress", value: "58", icon: "fitness" },
+    { label: "Leg Definition", value: "70", icon: "walk" },
+    { label: "Back Shape", value: "63", icon: "body" },
+    { label: "Core Strength", value: "68", icon: "shield" },
   ];
 
   return (
     <View className="mb-8">
-      {/* Main Calories Card */}
-      <View className="mb-4 rounded-3xl bg-white p-6 shadow-sm">
-        <View className="flex-row items-center justify-between">
-          <View>
-            <Text className="font-inter-bold text-4xl text-black">
-              {stats[0].value}
-            </Text>
-            <Text className="font-inter mt-1 text-sm text-gray-500">
-              {stats[0].label}
-            </Text>
-          </View>
-          <View className="relative">
+      {/* Main Snatched Score Card */}
+      <View className="mb-6 rounded-3xl bg-white p-6 shadow-sm">
+        <View className="items-center">
+          <View className="relative mb-4">
             <ProgressRing
-              size={80}
-              strokeWidth={6}
-              progress={0.65}
+              size={160}
+              strokeWidth={12}
+              progress={0.72}
               bgColor="#F3F4F6"
               progressColor="#F472B6"
             />
             <View className="absolute inset-0 items-center justify-center">
-              <Ionicons name={stats[0].icon} size={32} color="#F472B6" />
+              <Text className="font-inter-bold text-4xl text-black">72</Text>
+              <Text className="font-inter mt-1 text-sm text-gray-500">
+                Snatched Score
+              </Text>
             </View>
           </View>
+          <Pressable 
+            className="flex-row items-center rounded-full bg-pink-50 px-4 py-2"
+            onPress={() => router.push("/(modals)/transformation-preview")}
+          >
+            <Ionicons name="image" size={18} color="#F472B6" />
+            <Text className="font-inter-medium ml-2 text-sm text-pink-500">
+              See Snatched Transformation
+            </Text>
+          </Pressable>
         </View>
       </View>
 
-      {/* Macros Grid */}
-      <View className="flex-row justify-between gap-x-4">
-        {stats.slice(1).map((stat, index) => {
-          const iconColor =
-            index === 0
-              ? "#EF4444" // Red for protein
-              : index === 1
-                ? "#F59E0B" // Orange for carbs
-                : "#3B82F6"; // Blue for fat
-
-          return (
-            <View
-              key={index}
-              className="flex-1 rounded-3xl bg-white p-4 shadow-sm"
-            >
-              <Text className="font-inter-bold text-xl text-black">
-                {stat.value}
-              </Text>
-              <Text className="font-inter mt-1 text-xs text-gray-500">
-                {stat.label}
-              </Text>
-              <View className="mt-3 items-center">
-                <View className="relative h-[50px] w-[50px]">
-                  <ProgressRing
-                    size={50}
-                    strokeWidth={4}
-                    progress={0.3 + index * 0.2}
-                    bgColor="#F3F4F6"
-                    progressColor={iconColor}
-                  />
-                  <View className="absolute inset-0 items-center justify-center">
-                    <View className="h-6 w-6 items-center justify-center rounded-full bg-white/80">
-                      <Ionicons name={stat.icon} size={18} color={iconColor} />
-                    </View>
+      {/* Body Part Stats Grid */}
+      <View className="flex-row flex-wrap justify-between gap-y-4">
+        {bodyPartStats.map((stat, index) => (
+          <View
+            key={index}
+            className="w-[48%] rounded-3xl bg-white p-4 shadow-sm"
+          >
+            <Text className="font-inter-bold text-xl text-black">
+              {stat.value}%
+            </Text>
+            <Text className="font-inter mt-1 text-xs text-gray-500">
+              {stat.label}
+            </Text>
+            <View className="mt-3 items-center">
+              <View className="relative h-[50px] w-[50px]">
+                <ProgressRing
+                  size={50}
+                  strokeWidth={4}
+                  progress={parseInt(stat.value) / 100}
+                  bgColor="#F3F4F6"
+                  progressColor="#F472B6"
+                />
+                <View className="absolute inset-0 items-center justify-center">
+                  <View className="h-6 w-6 items-center justify-center rounded-full bg-white/80">
+                    <Ionicons name={stat.icon} size={18} color="#F472B6" />
                   </View>
                 </View>
               </View>
             </View>
-          );
-        })}
+          </View>
+        ))}
       </View>
     </View>
   );
@@ -280,6 +278,33 @@ export default function HomeScreen() {
         {/* Nutrition Stats */}
         <NutritionStats />
 
+        {/* Snatch Hack Card */}
+        <Pressable
+          className="mb-8 rounded-3xl bg-white p-6 shadow-sm"
+          onPress={navigateToSnatchHack}
+        >
+          <View className="mb-4 flex-row items-center justify-between">
+            <Text className="font-inter-bold text-lg text-black">
+              Today's Snatch Hack
+            </Text>
+            <Text className="font-inter text-sm text-gray-400">Day 17</Text>
+          </View>
+          <View className="flex-row items-start gap-x-4">
+            <View className="flex h-12 w-12 items-center justify-center rounded-full bg-purple-50">
+              <Ionicons name="sparkles-outline" size={24} color="#A855F7" />
+            </View>
+            <View className="flex-1">
+              <Text className="font-inter-medium mb-2 text-base text-black">
+                Posture Check
+              </Text>
+              <Text className="font-inter text-sm leading-6 text-gray-500">
+                Set hourly reminders to check your posture. Good posture
+                instantly makes you look more toned and confident.
+              </Text>
+            </View>
+          </View>
+        </Pressable>
+
         {/* Recently Logged Section */}
         <RecentlyLogged />
 
@@ -325,33 +350,6 @@ export default function HomeScreen() {
             </Pressable>
           </View>
         </View>
-
-        {/* Snatch Hack Card */}
-        <Pressable
-          className="mb-8 rounded-3xl bg-white p-6 shadow-sm"
-          onPress={navigateToSnatchHack}
-        >
-          <View className="mb-4 flex-row items-center justify-between">
-            <Text className="font-inter-bold text-lg text-black">
-              Today's Snatch Hack
-            </Text>
-            <Text className="font-inter text-sm text-gray-400">Day 17</Text>
-          </View>
-          <View className="flex-row items-start gap-x-4">
-            <View className="flex h-12 w-12 items-center justify-center rounded-full bg-purple-50">
-              <Ionicons name="sparkles-outline" size={24} color="#A855F7" />
-            </View>
-            <View className="flex-1">
-              <Text className="font-inter-medium mb-2 text-base text-black">
-                Posture Check
-              </Text>
-              <Text className="font-inter text-sm leading-6 text-gray-500">
-                Set hourly reminders to check your posture. Good posture
-                instantly makes you look more toned and confident.
-              </Text>
-            </View>
-          </View>
-        </Pressable>
       </ScrollView>
     </LinearGradient>
   );

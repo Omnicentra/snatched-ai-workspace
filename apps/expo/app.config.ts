@@ -11,11 +11,7 @@ function getAppConfig() {
         intentFilters: [
           {
             scheme: "https",
-            host: "snatched-ai.ngrok.io",
-          },
-          {
-            scheme: "https",
-            host: "snatched-ai-dev-oh2uj.ondigitalocean.app",
+            host: "painfully-classic-egret.ngrok-free.app",
           },
         ],
       };
@@ -28,7 +24,7 @@ function getAppConfig() {
         intentFilters: [
           {
             scheme: "https",
-            host: "dev.snatched.ai",
+            host: "snatched-ai-dev-oh2uj.ondigitalocean.app",
           },
         ],
       };
@@ -56,7 +52,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name,
   slug: "snatched-ai",
-  version: "1.0.3",
+  version: "1.0.4",
   orientation: "portrait",
   icon: "./assets/icon.png",
   scheme,
@@ -75,7 +71,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       usesNonExemptEncryption: false,
     },
     associatedDomains: [
-      "applinks:snatched-ai.ngrok.io",
+      "applinks:painfully-classic-egret.ngrok-free.app",
       "applinks:snatched-ai-dev-oh2uj.ondigitalocean.app",
       "applinks:snatched-ai-ljnck.ondigitalocean.app",
     ],

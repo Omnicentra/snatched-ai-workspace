@@ -1,11 +1,13 @@
-import React, { useState } from 'react'
-import { Text, View, Pressable, SafeAreaView, ScrollView } from 'react-native'
+import React from 'react'
+import { Pressable, SafeAreaView, ScrollView, Text, View } from 'react-native'
 // No 'styled' import
-import { useRouter } from 'expo-router'
+import { OnboardingHeader, StyledButton } from '@/components/core'
+import { store$ } from '@/stores/onboarding.store'
+import { Ionicons } from '@expo/vector-icons'; // Assuming you need checkmark
+import { use$ } from '@legendapp/state/react'
 import Constants from 'expo-constants'
-import { Ionicons } from '@expo/vector-icons' // Assuming you need checkmark
-import { OnboardingHeader, ProgressBar, StyledButton } from '@/components/core'
 import * as Haptics from 'expo-haptics'
+import { useRouter } from 'expo-router'
 // Reusable Goal Card Component (put in components/GoalCard.tsx)
 // Use standard components with className
 const GoalCard = ({
@@ -62,7 +64,8 @@ const GoalCard = ({
 
 export default function GoalScreen() {
   const router = useRouter()
-  const [selectedGoals, setSelectedGoals] = useState<string[]>([])
+  const selectedGoals = use$(store$.onboarding.goals)
+  // const [selectedGoals, setSelectedGoals] = useState<string[]>([])
 
   const goals = [
     {
@@ -92,7 +95,7 @@ export default function GoalScreen() {
   ]
 
   const toggleGoal = (id: string) => {
-    setSelectedGoals((prev) =>
+    store$.onboarding.goals.set((prev) =>
       prev.includes(id) ? prev.filter((bId) => bId !== id) : [...prev, id]
     )
   }
@@ -126,7 +129,7 @@ export default function GoalScreen() {
                 iconBg={goal.iconBg}
                 selected={selectedGoals.includes(goal.id)}
                 onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy)
+                  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy)
                   toggleGoal(goal.id)
                 }}
               />

@@ -37,8 +37,14 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
-# jetbrains
+# misc
 .idea/
+.cursor/
+.github/
+.vscode/
+.turbo/
+
+apps/nextjs
 
 # android
 android/
@@ -64,3 +70,5 @@ ios/
 
 credentials.json
 credentials/
+
+apps/expo/build-1745434169808.ipa

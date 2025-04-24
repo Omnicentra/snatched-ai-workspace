@@ -7,6 +7,14 @@
         "paths": ["/api/auth/callback/*"]
       },
       {
+        "appID": "U665535C27.com.omnicentra.snatched-ai-dev",
+        "paths": ["/api/auth/callback/*"]
+      },
+      {
+        "appID": "U665535C27.com.omnicentra.snatched-ai-preview",
+        "paths": ["/api/auth/callback/*"]
+      },
+      {
         "appIDs": ["U665535C27.com.omnicentra.snatched-ai", "U665535C27.com.omnicentra.snatched-ai-dev", "U665535C27.com.omnicentra.snatched-ai-preview"],
         "components": [
           {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, SafeAreaView, ScrollView, Pressable } from 'react-native';
+import { View, Text, SafeAreaView, ScrollView, Pressable, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import Constants from 'expo-constants';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,8 +11,13 @@ export default function SignupScreen() {
 
   const handleAppleSignIn = async () => {
     try {
-      await authClient.signIn.social({ provider: 'discord' });
-      router.push('/(onboarding)/paywall');
+      const result = await authClient.signIn.social({ provider: 'discord' });
+      console.log('result', result);
+      if (result.data?.url) {
+        router.push('/(onboarding)/analyzing');
+      } else {
+        Alert.alert('Apple sign in failed');
+      }
     } catch (error) {
       if (error instanceof Error) {
         console.error('Apple sign in failed:', error.message);
@@ -22,8 +27,12 @@ export default function SignupScreen() {
 
   const handleGoogleSignIn = async () => {
     try {
-      await authClient.signIn.social({ provider: 'google' });
-      router.push('/(onboarding)/paywall');
+      const result = await authClient.signIn.social({ provider: 'google' });
+      if (result.data?.url) {
+        router.push('/(onboarding)/analyzing');
+      } else {
+        Alert.alert('Google sign in failed');
+      }
     } catch (error) {
       if (error instanceof Error) {
         console.error('Google sign in failed:', error.message);
@@ -84,9 +93,9 @@ export default function SignupScreen() {
         </View>
 
         {/* Skip Option */}
-        <View className="mt-auto">
+        {/* <View className="mt-auto">
           <Pressable
-            onPress={() => router.push('/(onboarding)/paywall')}
+            onPress={() => router.push('/(onboarding)/analyzing')}
             className="flex-row items-center justify-center"
           >
             <Text className="font-inter text-sm text-gray-600">
@@ -94,7 +103,7 @@ export default function SignupScreen() {
               <Text className="font-inter-medium text-pink-400">Skip for now</Text>
             </Text>
           </Pressable>
-        </View>
+        </View> */}
       </ScrollView>
     </SafeAreaView>
   );

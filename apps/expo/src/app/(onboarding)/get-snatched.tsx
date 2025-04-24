@@ -107,7 +107,7 @@ export default function GetSnatchedScreen() {
         <View className="flex-1">
           <OnboardingHeader
             progress={15 / 20}
-            title="Users see 2x faster waist-slimming results with Snatched AI"
+            title="Users see 3x faster waist-slimming results with Snatched AI"
             subtitle=""
             subtitleClassName="text-[28px] leading-9"
           />
