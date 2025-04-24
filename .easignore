@@ -37,8 +37,14 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
-# jetbrains
+# misc
 .idea/
+.cursor/
+.github/
+.vscode/
+.turbo/
+
+apps/nextjs
 
 # android
 android/
@@ -61,3 +67,8 @@ ios/
 
 # Ignore test coverage reports
 /coverage
+
+credentials.json
+credentials/
+
+apps/expo/build-1745434169808.ipa

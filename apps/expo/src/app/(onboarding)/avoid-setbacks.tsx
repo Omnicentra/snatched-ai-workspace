@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { View, SafeAreaView, ScrollView } from 'react-native'
 import { useRouter } from 'expo-router'
 import Constants from 'expo-constants'
@@ -8,60 +8,67 @@ import {
   MaterialCommunityIcons,
   FontAwesome5
 } from '@expo/vector-icons'
+import { previousMethodEnum } from '@omc/validators/onboarding'
+import { onboardingStore$ } from '@/stores/onboarding.store'
+import { use$ } from '@legendapp/state/react'
 
-const previousExperiences = [
-  {
-    id: 'calorie_counting',
+type PreviousMethod = typeof previousMethodEnum.options[number]
+
+// Map of previous methods to their display properties
+type MethodMapType = Record<PreviousMethod, {
+  icon: JSX.Element
+  description: string
+  iconBg: string
+}>
+
+const methodMap: MethodMapType = {
+  'Calorie counting': {
     icon: <Ionicons name="time-outline" size={24} color="black" />,
-    text: 'Calorie counting',
     description: 'Tracking macros, calories, or using apps like MyFitnessPal.',
     iconBg: 'bg-red-100'
   },
-  {
-    id: 'gym_workouts',
+  'Gym workouts': {
     icon: <MaterialCommunityIcons name="dumbbell" size={24} color="black" />,
-    text: 'Gym workouts',
     description: 'Weight training, machines, classes, in a gym setting.',
     iconBg: 'bg-blue-100'
   },
-  {
-    id: 'pilates_home',
+  'Pilates / home workouts': {
     icon: <MaterialCommunityIcons name="yoga" size={24} color="black" />,
-    text: 'Pilates / home workouts',
     description: 'YouTube videos, IG routines, bodyweight exercises at home.',
     iconBg: 'bg-green-100'
   },
-  {
-    id: 'tiktok_plans',
+  'TikTok fitness plans': {
     icon: <FontAwesome5 name="tiktok" size={24} color="black" />,
-    text: 'TikTok fitness plans',
     description: 'Chloe Ting, Hot Girl Walks, Booty Day trends, etc.',
     iconBg: 'bg-purple-100'
   }
-]
+}
 
 export default function AvoidSetbacksScreen() {
   const router = useRouter()
-  const [selectedExperiences, setSelectedExperiences] = useState<Set<string>>(
-    new Set()
-  )
+  const selectedMethods = use$(onboardingStore$.onboarding.triedInPast)
 
-  const toggleExperience = (id: string) => {
-    setSelectedExperiences((prev) => {
-      const newSet = new Set(prev)
-      if (newSet.has(id)) {
-        newSet.delete(id)
-      } else {
-        newSet.add(id)
-      }
-      return newSet
-    })
+  const toggleMethod = (id: PreviousMethod) => {
+    if (previousMethodEnum.safeParse(id).success) {
+      onboardingStore$.onboarding.triedInPast.set((prev: string[]) =>
+        prev.includes(id) ? prev.filter((mId) => mId !== id) : [...prev, id]
+      )
+    }
   }
 
   const handleContinue = () => {
-    // Store selected experiences
-    router.push('/(onboarding)/ideal-body')
+    // Validate all selected methods
+    const validMethods = selectedMethods.every(method => previousMethodEnum.safeParse(method).success)
+    if (selectedMethods.length && validMethods) {
+      router.push('/(onboarding)/ideal-body')
+    }
   }
+
+  const methods = previousMethodEnum.options.map(method => ({
+    id: method,
+    ...methodMap[method],
+    text: method
+  }))
 
   return (
     <SafeAreaView
@@ -76,14 +83,14 @@ export default function AvoidSetbacksScreen() {
         />
 
         <View className="flex-1 gap-y-4">
-          {previousExperiences.map((experience) => (
+          {methods.map((method) => (
             <OptionCard
-              key={experience.id}
-              icon={experience.icon}
-              text={experience.text}
-              iconBg={experience.iconBg}
-              selected={selectedExperiences.has(experience.id)}
-              onPress={() => toggleExperience(experience.id)}
+              key={method.id}
+              icon={method.icon}
+              text={method.text}
+              iconBg={method.iconBg}
+              selected={selectedMethods.includes(method.id)}
+              onPress={() => toggleMethod(method.id)}
             />
           ))}
         </View>
@@ -92,7 +99,7 @@ export default function AvoidSetbacksScreen() {
           <StyledButton
             title="Continue"
             onPress={handleContinue}
-            disabled={selectedExperiences.size === 0}
+            disabled={selectedMethods.length === 0}
             variant="primary"
           />
         </View>

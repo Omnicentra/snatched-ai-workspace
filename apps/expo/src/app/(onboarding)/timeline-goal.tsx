@@ -1,34 +1,45 @@
 // app/(onboarding)/timeline-goal.tsx
-import React, { useState } from 'react'
-import { View, Text, SafeAreaView, ScrollView } from 'react-native'
-import { useRouter } from 'expo-router'
-import Constants from 'expo-constants'
 import { OnboardingHeader, OptionCard, StyledButton } from '@/components/core'
+import Constants from 'expo-constants'
+import { useRouter } from 'expo-router'
+import React, { useState } from 'react'
+import { SafeAreaView, ScrollView, View } from 'react-native'
+import { timelineEnum } from '@omc/validators/onboarding'
+import type { z } from 'zod'
+import { onboardingStore$ } from '@/stores/onboarding.store'
 
-const timelineOptions = [
+interface TimelineOption {
+  id: z.infer<typeof timelineEnum>
+  emoji: string
+  text: string
+  description: string
+  iconBg: string
+}
+
+const timelineOptions: TimelineOption[] = [
   {
-    id: 'asap',
+    id: 'As soon as possible',
     emoji: '🚀',
     text: 'As soon as possible',
     description: "We'll build a fast-tracked plan",
     iconBg: 'bg-red-100'
   },
   {
-    id: '1_2_months',
+    id: 'In 1-2 months',
     emoji: '🗓️',
-    text: 'In 1–2 months',
+    text: 'In 1-2 months',
     description: "You'll be snatched by early summer",
     iconBg: 'bg-blue-100'
   },
   {
-    id: '3_6_months',
+    id: 'In 3-6 months',
     emoji: '📅',
-    text: 'In 3–6 months',
+    text: 'In 3-6 months',
     description: 'Gradually and sustainably',
     iconBg: 'bg-green-100'
   },
   {
-    id: 'no_rush',
+    id: 'No rush, just want to feel better',
     emoji: '🌸',
     text: 'No rush, just want to feel better',
     description: 'For chill vibes, at your pace',
@@ -38,12 +49,12 @@ const timelineOptions = [
 
 export default function TimelineGoalScreen() {
   const router = useRouter()
-  const [selectedTimeline, setSelectedTimeline] = useState<string>('1_2_months') // Default
+  const [selectedTimeline, setSelectedTimeline] = useState<z.infer<typeof timelineEnum>>('In 1-2 months')
 
   const handleContinue = () => {
-    // Store selectedTimeline
-    // Start the "analysis" process
-    router.push('/(onboarding)/analyzing')
+    // Store selectedTimeline in the store
+    onboardingStore$.onboarding.goalTimeline.set(selectedTimeline)
+    router.push('/(onboarding)/signup')
   }
 
   return (
@@ -60,11 +71,10 @@ export default function TimelineGoalScreen() {
 
         <View className="mb-5 gap-y-4">
           {timelineOptions.map((option) => (
-            // Using OptionCard directly and passing structured text
             <OptionCard
               key={option.id}
               emoji={option.emoji}
-              text={option.text} // Combine text and description
+              text={option.text}
               iconBg={option.iconBg}
               selected={selectedTimeline === option.id}
               onPress={() => setSelectedTimeline(option.id)}

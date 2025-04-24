@@ -1,15 +1,14 @@
 // app/(onboarding)/feature-adjust.tsx
-import React, { useState } from 'react'
-import { View, Text, SafeAreaView, ScrollView, Image } from 'react-native'
-import { useRouter } from 'expo-router'
-import Constants from 'expo-constants'
 import {
-  StyledButton,
-  CarouselIndicator,
   InfoCard,
-  SliderComponent
+  SliderComponent,
+  StyledButton
 } from '@/components/core'
 import { Ionicons } from '@expo/vector-icons'
+import Constants from 'expo-constants'
+import { useRouter } from 'expo-router'
+import React, { useState } from 'react'
+import { Image, SafeAreaView, ScrollView, Text, View } from 'react-native'
 
 // Placeholders
 const currentShape =
@@ -27,7 +26,7 @@ export default function FeatureAdjustScreen() {
     // This is likely the final step before showing the paywall or welcome
     // For now, let's go to the Welcome screen
     router.dismissAll()
-    router.replace('/(tabs)/progress');
+    router.replace('/(tabs)/home');
   }
 
   const handleTryDifferentGoal = () => {

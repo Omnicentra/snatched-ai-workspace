@@ -9,6 +9,12 @@
       "dependsOn": ["^build"],
       "outputs": [".cache/tsbuildinfo.json", "dist/**"]
     },
+    "expo": {
+      "dependsOn": ["^dev"],
+      "cache": false,
+      "persistent": true,
+      "interactive": true
+    },
     "dev": {
       "dependsOn": ["^dev"],
       "cache": false,
@@ -56,6 +62,8 @@
     "AUTH_DISCORD_SECRET",
     "AUTH_REDIRECT_PROXY_URL",
     "AUTH_SECRET",
+    "AUTH_GOOGLE_ID",
+    "AUTH_GOOGLE_SECRET",
     "PORT",
     "BETTER_AUTH_URL"
   ],

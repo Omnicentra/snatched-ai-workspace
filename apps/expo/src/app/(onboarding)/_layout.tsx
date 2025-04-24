@@ -29,10 +29,11 @@ export default function OnboardingLayout() {
       <Stack.Screen name="timeline-goal" />
       <Stack.Screen name="analyzing" />
       <Stack.Screen name="results" />
+      <Stack.Screen name="signup" />
+      <Stack.Screen name="paywall" />
       <Stack.Screen name="composition-detail" />
       <Stack.Screen name="feature-welcome" />
       <Stack.Screen name="feature-testimonials" />
-      {/*<Stack.Screen name="feature-plan-generated" />*/}
       <Stack.Screen name="feature-adjust" />
       <Stack.Screen name="feature-craft" />
       <Stack.Screen name="feature-motivated" />

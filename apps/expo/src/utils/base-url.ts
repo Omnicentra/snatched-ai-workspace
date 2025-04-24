@@ -1,3 +1,4 @@
+import { appVariant, ngrokUrl } from "@/lib/utils";
 import Constants from "expo-constants";
 
 /**
@@ -15,12 +16,25 @@ export const getBaseUrl = () => {
    */
   const debuggerHost = Constants.expoConfig?.hostUri;
   const localhost = debuggerHost?.split(":")[0];
-
-  if (!localhost) {
-    // return "https://turbo.t3.gg";
-    throw new Error(
-      "Failed to get localhost. Please point to your production server.",
-    );
+  console.log("localhost", localhost);
+  console.log("ngrokUrl", ngrokUrl);
+  if (localhost) {
+    if (localhost.includes("ngrok")) {
+      return ngrokUrl;
+    } else {
+      return `http://${localhost}:3000`;
+    }
+  } else if (appVariant !== "production") {
+    return "https://snatched-ai-dev-oh2uj.ondigitalocean.app";
+  } else {
+    return "https://snatched-ai-ljnck.ondigitalocean.app/";
   }
-  return `http://${localhost}:3000`;
+};
+
+export const getScheme = () => {
+  return appVariant === "production"
+    ? "snatched-ai"
+    : appVariant === "preview"
+    ? "snatched-ai-preview"
+    : "snatched-ai-dev";
 };

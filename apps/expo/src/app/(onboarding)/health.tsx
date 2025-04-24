@@ -1,39 +1,53 @@
 // app/(onboarding)/health.tsx
-import React, { useState } from 'react'
-import { View, Text, SafeAreaView, ScrollView, TextInput, KeyboardAvoidingView } from 'react-native'
-import { useRouter } from 'expo-router'
-import Constants from 'expo-constants'
+import React, { useState } from "react";
+import {
+  KeyboardAvoidingView,
+  SafeAreaView,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
+import Constants from "expo-constants";
+import { useRouter } from "expo-router";
 import {
   OnboardingHeader,
   OptionCard,
-  InfoCard,
-  StyledButton
-} from '@/components/core'
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons' // Example icons
+  StyledButton,
+} from "@/components/core";
+import { onboardingStore$ } from "@/stores/onboarding.store";
+import { medicalConditionResponseEnum } from "@omc/validators/onboarding";
+import { z } from "zod";
 
-const healthOptions = [
-  { id: 'yes', text: 'Yes' },
-  { id: 'no', text: 'No' },
-  { id: 'prefer_not_to_say', text: 'Prefer not to say' }
-]
+type MedicalConditionResponse = z.infer<typeof medicalConditionResponseEnum>;
 
-// Simple radio button style icon
-const RadioIcon = ({ selected }: { selected: boolean }) => (
-  <View
-    className={`h-6 w-6 rounded-full border-2 ${selected ? 'border-black' : 'border-gray-400'} mr-4 items-center justify-center`}
-  >
-    {selected && <View className="h-3 w-3 rounded-full bg-black" />}
-  </View>
-)
+const healthValidationSchema = z.object({
+  has_medical_conditions: medicalConditionResponseEnum,
+  medical_conditions_details: z.string().optional(),
+});
 
 export default function HealthScreen() {
-  const router = useRouter()
-  const [selectedOption, setSelectedOption] = useState<string | null>(null)
+  const router = useRouter();
+  const [selectedOption, setSelectedOption] = useState<MedicalConditionResponse>();
+  const [healthDetails, setHealthDetails] = useState("");
 
   const handleContinue = () => {
-    // Store selectedOption if needed (especially if 'yes')
-    router.push('/(onboarding)/cycle')
-  }
+    if (!selectedOption) return;
+
+    const healthData = {
+      has_medical_conditions: selectedOption,
+      medical_conditions_details: selectedOption === "Yes" ? healthDetails : undefined,
+    };
+
+    const result = healthValidationSchema.safeParse(healthData);
+
+    if (result.success) {
+      onboardingStore$.onboarding.hasHealthConditions.set(selectedOption === "Yes");
+      onboardingStore$.onboarding.healthConditions.set(healthDetails);
+      router.push("/(onboarding)/cycle");
+    } else {
+      console.error("Health validation failed:", result.error);
+    }
+  };
 
   return (
     <SafeAreaView
@@ -49,44 +63,32 @@ export default function HealthScreen() {
           />
 
           <View className="mb-8 flex-1 gap-y-4">
-            {healthOptions.map((option) => (
+            {medicalConditionResponseEnum.options.map((option) => (
               <OptionCard
-                key={option.id}
-                // icon={<RadioIcon selected={selectedOption === option.id} />}
-                text={option.text}
-                selected={selectedOption === option.id}
-                onPress={() => setSelectedOption(option.id)}
+                key={option}
+                text={option}
+                selected={selectedOption === option}
+                onPress={() => setSelectedOption(option)}
               />
             ))}
+            
+            {selectedOption === "Yes" && (
+              <View className="mt-4 mb-8">
+                <Text className="font-inter-medium mb-2 text-sm">
+                  Please specify (optional):
+                </Text>
+                <TextInput
+                  placeholder="E.g., Knee injury, Diabetes"
+                  className="w-full rounded-xl border border-gray-200 p-4 text-base text-black"
+                  multiline
+                  value={healthDetails}
+                  onChangeText={setHealthDetails}
+                />
+              </View>
+            )}
           </View>
-
-          {/* Optional: Show a text input if 'Yes' is selected */}
-          {selectedOption === 'yes' && (
-            <View className="mb-8 flex-1">
-              <Text className="mb-2 font-inter-medium text-sm">
-                Please specify (optional):
-              </Text>
-              <TextInput
-                placeholder="E.g., Knee injury, Diabetes"
-                className="w-full rounded-xl border border-gray-200 p-4 text-base text-black"
-                multiline // Allow multiple lines
-              />
-            </View>
-          )}
-
-          {/* <InfoCard
-            icon={
-              <MaterialCommunityIcons
-                name="heart-pulse"
-                size={20}
-                color="black"
-              />
-            }
-            text="Your safety is our priority. We'll adjust your plan to accommodate any health conditions."
-          /> */}
         </KeyboardAvoidingView>
       </View>
-
 
       <View className="mt-auto p-8">
         <StyledButton
@@ -96,7 +98,6 @@ export default function HealthScreen() {
           variant="primary"
         />
       </View>
-
     </SafeAreaView>
-  )
+  );
 }

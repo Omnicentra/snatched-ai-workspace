@@ -3,7 +3,7 @@ import { GeistMono } from "geist/font/mono";
 import { GeistSans } from "geist/font/sans";
 
 import { cn } from "@omc/ui";
-import { ThemeProvider, ThemeToggle } from "@omc/ui/theme";
+import { ThemeProvider } from "@omc/ui/theme";
 import { Toaster } from "@omc/ui/toast";
 
 import { TRPCReactProvider } from "~/trpc/react";
@@ -14,8 +14,8 @@ import { env } from "~/env";
 
 export const metadata: Metadata = {
   metadataBase: new URL(
-    env.VERCEL_ENV === "production"
-      ? "https://snatched.ai"
+    env.DOPPLER_ENVIRONMENT === "prd"
+      ? "https://snatched-ai-ljnck.ondigitalocean.app/"
       : "http://localhost:3000",
   ),
   title: "Snatched AI - Your Personal Body Transformation Assistant",
@@ -26,8 +26,37 @@ export const metadata: Metadata = {
     title: "Snatched AI - Your Personal Body Transformation Assistant",
     description:
       "Visualise, achieve, and track your ideal body shape through personalised AI plans combining workouts, nutrition, body analysis, and styling tips.",
-    url: "https://snatched.ai",
+    url: "https://snatched-ai-ljnck.ondigitalocean.app/",
     siteName: "Snatched AI",
+  },
+  itunes: {
+    appId: "6744844397",
+    appArgument: "Snatched AI",
+  },
+  appleWebApp: {
+    title: 'Snatched AI',
+    statusBarStyle: 'black-translucent',
+    startupImage: [
+      '/assets/splash-icon.png',
+      {
+        url: '/assets/splash-icon.png',
+        media: '(device-width: 768px) and (device-height: 1024px)',
+      },
+    ],
+  },
+  appLinks: {
+    ios: {
+      url: 'https://snatched-ai-ljnck.ondigitalocean.app',
+      app_store_id: '6744844397',
+    },
+    android: {
+      package: 'com.omnicentra.snatched_ai',
+      app_name: 'Snatched AI',
+    },
+    web: {
+      url: 'https://snatched-ai-ljnck.ondigitalocean.app',
+      should_fallback: true,
+    },
   },
 };
 
@@ -50,9 +79,9 @@ export default function RootLayout(props: { children: React.ReactNode }) {
       >
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
           <TRPCReactProvider>{props.children}</TRPCReactProvider>
-          <div className="absolute bottom-4 right-4">
+          {/* <div className="absolute bottom-4 right-4">
             <ThemeToggle />
-          </div>
+          </div> */}
           <Toaster />
         </ThemeProvider>
       </body>

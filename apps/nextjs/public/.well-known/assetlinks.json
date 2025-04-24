@@ -1,0 +1,23 @@
+[
+    {
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.omnicentra.snatched_ai_dev",
+        "sha256_cert_fingerprints": [
+          "FA:C6:17:45:DC:09:03:78:6F:B9:ED:E6:2A:96:2B:39:9F:73:48:F0:BB:6F:89:9B:83:32:66:75:91:03:3B:9C"
+        ]
+      }
+    },
+    {
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.omnicentra.snatched_ai_preview",
+        "sha256_cert_fingerprints": [
+          "DA:B1:4C:2C:35:F7:3B:F7:45:CC:90:66:2F:33:3E:EB:74:FF:50:10:22:92:4E:B5:62:BE:8C:42:CD:63:63:14"
+        ]
+      }
+    }
+  ]
+  

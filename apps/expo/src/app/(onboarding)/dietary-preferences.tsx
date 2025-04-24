@@ -1,101 +1,116 @@
 import React, { useState } from 'react'
-import { View, Text, SafeAreaView, ScrollView, Pressable } from 'react-native'
+import { View, Text, SafeAreaView, Pressable } from 'react-native'
 import { useRouter } from 'expo-router'
 import Constants from 'expo-constants'
 import { OnboardingHeader, StyledButton } from '@/components/core'
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'
+import { Ionicons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
+import { onboardingStore$ } from '@/stores/onboarding.store'
+import { dietaryPreferenceEnum } from '@omc/validators/onboarding'
+import { z } from 'zod'
 
-interface DietOption {
-  id: string
-  icon: string
-  label: string
-  iconBg: string
+type DietaryPreference = z.infer<typeof dietaryPreferenceEnum>;
+
+const dietValidationSchema = z.object({
+  dietary_preference: dietaryPreferenceEnum,
+});
+
+interface DietDisplay {
+  value: DietaryPreference;
+  icon: string;
+  iconBg: string;
 }
 
-const dietOptions: DietOption[] = [
-  {
-    id: 'classic',
+const dietDisplayMap: Record<DietaryPreference, Omit<DietDisplay, 'value'>> = {
+  'Classic': {
     icon: '🍽️',
-    label: 'Classic',
     iconBg: 'bg-pink-100'
   },
-  {
-    id: 'pescatarian',
+  'Pescatarian': {
     icon: '🐟',
-    label: 'Pescatarian',
     iconBg: 'bg-blue-100'
   },
-  {
-    id: 'vegetarian',
+  'Vegetarian': {
     icon: '🥬',
-    label: 'Vegetarian',
     iconBg: 'bg-green-100'
   },
-  {
-    id: 'vegan',
+  'Vegan': {
     icon: '🌱',
-    label: 'Vegan',
     iconBg: 'bg-green-100'
   }
-]
+}
 
 const DietCard = ({
-  option,
+  preference,
   selected,
   onPress
 }: {
-  option: DietOption
+  preference: DietaryPreference
   selected: boolean
   onPress: () => void
-}) => (
-  <Pressable
-    onPress={onPress}
-    className={`mb-3 flex-row items-center rounded-xl border p-4 ${
-      selected
-        ? 'border-pink-400 bg-pink-50'
-        : 'border-gray-100 bg-gray-50'
-    }`}
-    style={{
-      shadowColor: '#000',
-      shadowOffset: {
-        width: 0,
-        height: 1,
-      },
-      shadowOpacity: 0.05,
-      shadowRadius: 2,
-      elevation: 2,
-    }}
-  >
-    <View
-      className={`${option.iconBg} h-10 w-10 items-center justify-center rounded-full`}
+}) => {
+  const display = dietDisplayMap[preference];
+  return (
+    <Pressable
+      onPress={onPress}
+      className={`mb-3 flex-row items-center rounded-xl border p-4 ${
+        selected
+          ? 'border-pink-400 bg-pink-50'
+          : 'border-gray-100 bg-gray-50'
+      }`}
+      style={{
+        shadowColor: '#000',
+        shadowOffset: {
+          width: 0,
+          height: 1,
+        },
+        shadowOpacity: 0.05,
+        shadowRadius: 2,
+        elevation: 2,
+      }}
     >
-      <Text className="text-xl">{option.icon}</Text>
-    </View>
-    <View className="ml-4 flex-1">
-      <Text
-        className={`ml-4 font-inter-medium text-lg ${selected ? 'text-pink-600' : 'text-black'}`}
+      <View
+        className={`${display.iconBg} h-10 w-10 items-center justify-center rounded-full`}
       >
-        {option.label}
-      </Text>
-    </View>
-    {selected && (
-      <View className="ml-2">
-        <View className="rounded-full bg-pink-400 p-1">
-          <Ionicons name="checkmark" size={16} color="white" />
-        </View>
+        <Text className="text-xl">{display.icon}</Text>
       </View>
-    )}
-  </Pressable>
-)
+      <View className="ml-4 flex-1">
+        <Text
+          className={`ml-4 font-inter-medium text-lg ${selected ? 'text-pink-600' : 'text-black'}`}
+        >
+          {preference}
+        </Text>
+      </View>
+      {selected && (
+        <View className="ml-2">
+          <View className="rounded-full bg-pink-400 p-1">
+            <Ionicons name="checkmark" size={16} color="white" />
+          </View>
+        </View>
+      )}
+    </Pressable>
+  )
+}
 
 export default function DietaryPreferencesScreen() {
   const router = useRouter()
-  const [selectedDiet, setSelectedDiet] = useState<string | null>(null)
+  const [selectedDiet, setSelectedDiet] = useState<DietaryPreference>()
 
   const handleContinue = () => {
-    // Store selected diet preference
-    router.push('/(onboarding)/get-snatched')
+    if (!selectedDiet) return;
+
+    const dietData = {
+      dietary_preference: selectedDiet,
+    };
+
+    const result = dietValidationSchema.safeParse(dietData);
+
+    if (result.success) {
+      onboardingStore$.onboarding.diet.set(selectedDiet);
+      router.push('/(onboarding)/get-snatched')
+    } else {
+      console.error("Diet validation failed:", result.error);
+    }
   }
 
   return (
@@ -111,14 +126,14 @@ export default function DietaryPreferencesScreen() {
         />
 
         <View className="mt-6">
-          {dietOptions.map((option) => (
+          {dietaryPreferenceEnum.options.map((preference) => (
             <DietCard
-              key={option.id}
-              option={option}
-              selected={selectedDiet === option.id}
+              key={preference}
+              preference={preference}
+              selected={selectedDiet === preference}
               onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy)
-                setSelectedDiet(option.id)
+                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy)
+                setSelectedDiet(preference)
               }}
             />
           ))}

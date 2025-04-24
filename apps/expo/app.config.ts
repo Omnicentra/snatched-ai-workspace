@@ -11,7 +11,7 @@ function getAppConfig() {
         intentFilters: [
           {
             scheme: "https",
-            host: "snatched-ai-dev.ngrok.io",
+            host: "painfully-classic-egret.ngrok-free.app",
           },
         ],
       };
@@ -24,7 +24,7 @@ function getAppConfig() {
         intentFilters: [
           {
             scheme: "https",
-            host: "dev.snatched.ai",
+            host: "snatched-ai-dev-oh2uj.ondigitalocean.app",
           },
         ],
       };
@@ -52,7 +52,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name,
   slug: "snatched-ai",
-  version: "1.0.3",
+  version: "1.0.4",
   orientation: "portrait",
   icon: "./assets/icon.png",
   scheme,
@@ -70,6 +70,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     config: {
       usesNonExemptEncryption: false,
     },
+    associatedDomains: [
+      "applinks:painfully-classic-egret.ngrok-free.app",
+      "applinks:snatched-ai-dev-oh2uj.ondigitalocean.app",
+      "applinks:snatched-ai-ljnck.ondigitalocean.app",
+    ],
   },
   android: {
     adaptiveIcon: {
@@ -83,6 +88,14 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       "android.permission.ACCESS_MEDIA_LOCATION",
       "android.permission.CAMERA",
       "android.permission.RECORD_AUDIO",
+    ],
+    intentFilters: [
+      {
+        action: "VIEW",
+        autoVerify: true,
+        data: intentFilters,
+        category: ["BROWSABLE", "DEFAULT"],
+      },
     ],
   },
   web: {
@@ -118,6 +131,19 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         imageWidth: 200,
       },
     ],
+    [
+      "expo-build-properties",
+      {
+        android: {
+          compileSdkVersion: 35,
+          targetSdkVersion: 35,
+          buildToolsVersion: "35.0.0",
+        },
+        ios: {
+          deploymentTarget: "15.1",
+        },
+      },
+    ]
   ],
   experiments: {
     typedRoutes: true,
@@ -134,7 +160,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     },
     eas: {
       projectId: "8bcf08a2-4cad-4b0d-a2c0-197528f19cc7",
-      appVariant: process.env.APP_VARIANT
+      appVariant: process.env.APP_VARIANT,
+      ngrokUrl: process.env.NGROK_URL,
     },
   },
   owner: "omnicentra",

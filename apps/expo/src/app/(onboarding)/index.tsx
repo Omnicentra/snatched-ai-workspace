@@ -6,8 +6,7 @@ import Constants from 'expo-constants'
 import * as Haptics from 'expo-haptics'
 import brandLogo from '../../assets/images/logo2.png'
 import { Image } from 'expo-image'
-
-const appVariant = String(Constants.expoConfig?.extra?.eas?.appVariant) || 'development'
+import { appVariant } from '@/lib/utils'
 
 // Basic animation placeholder (needs Reanimated for real effect)
 // Keep the className directly on Text
@@ -42,7 +41,7 @@ export default function SplashScreen() {
 
   const handleSkip = () => {
     void Haptics.selectionAsync().then(() => {
-      router.push('/(onboarding)/desired-shape')
+      router.push('/(onboarding)/name-age')
     })
   }
 
@@ -102,7 +101,7 @@ export default function SplashScreen() {
             </Text>
           </Pressable>
 
-          {appVariant === 'development' && (
+          {appVariant !== "production" && (
             <Pressable
               className="rounded-full bg-black px-16 py-4 shadow-lg active:scale-95"
               onPress={handleSkip}

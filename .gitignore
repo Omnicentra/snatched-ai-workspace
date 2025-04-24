@@ -26,6 +26,8 @@ expo-env.d.ts
 apps/expo/.gitignore
 apps/expo/ios
 apps/expo/android
+apps/expo/credentials.json
+apps/expo/credentials/*
 
 # production
 build
@@ -53,3 +55,5 @@ dist/
 
 # turbo
 .turbo
+apps/expo/build-1745434169808.ipa
+apps/expo/build-1745489868678.apk

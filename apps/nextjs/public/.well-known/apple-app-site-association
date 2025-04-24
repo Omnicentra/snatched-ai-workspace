@@ -1,0 +1,43 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "U665535C27.com.omnicentra.snatched-ai",
+        "paths": ["/api/auth/callback/*"]
+      },
+      {
+        "appID": "U665535C27.com.omnicentra.snatched-ai-dev",
+        "paths": ["/api/auth/callback/*"]
+      },
+      {
+        "appID": "U665535C27.com.omnicentra.snatched-ai-preview",
+        "paths": ["/api/auth/callback/*"]
+      },
+      {
+        "appIDs": ["U665535C27.com.omnicentra.snatched-ai", "U665535C27.com.omnicentra.snatched-ai-dev", "U665535C27.com.omnicentra.snatched-ai-preview"],
+        "components": [
+          {
+            "/": "*",
+            "comment": "Matches all routes"
+          },
+          {
+            "/api/auth/callback/*": "*",
+            "comment": "Matches all callback api routes"
+          },
+          {
+            "#": "no_universal_links",
+            "exclude": true,
+            "comment": "Matches any URL whose fragment equals no_universal_links and instructs the system not to open it as a universal link"
+          }
+        ]
+      }
+    ]
+  },
+  "activitycontinuation": {
+    "apps": ["U665535C27.com.omnicentra.snatched-ai", "U665535C27.com.omnicentra.snatched-ai-dev", "U665535C27.com.omnicentra.snatched-ai-preview"]
+  },
+  "webcredentials": {
+    "apps": ["U665535C27.com.omnicentra.snatched-ai", "U665535C27.com.omnicentra.snatched-ai-dev", "U665535C27.com.omnicentra.snatched-ai-preview"]
+  }
+}

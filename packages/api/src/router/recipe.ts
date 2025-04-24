@@ -16,7 +16,7 @@ export const recipeRouter = {
   }),
 
   byId: publicProcedure
-    .input(z.object({ id: z.string() }))
+    .input(z.object({ id: z.number() }))
     .query(({ ctx, input }) => {
       // return ctx.db
       //   .select()
@@ -46,7 +46,7 @@ export const recipeRouter = {
       });
     }),
 
-  delete: protectedProcedure.input(z.string()).mutation(({ ctx, input }) => {
+  delete: protectedProcedure.input(z.number()).mutation(({ ctx, input }) => {
     return ctx.db.delete(recipes).where(eq(recipes.id, input));
   }),
 } satisfies TRPCRouterRecord;

@@ -1,14 +1,14 @@
 import { relations } from "drizzle-orm/relations";
-import { users, bodyMeasurements, fitnessBlockers, foodCravings, previousExperiences, workoutCategories, workouts, healthConditions, bodyConsiderations, userWorkoutProgress, fitnessGoals, workoutExercises, exercises, recipes, recipeIngredients, mealPlans, mealSchedule, userMilestoneProgress, milestoneLevels, recipeInstructions, userRecipes } from "./schema";
+import { user, bodyMeasurements, fitnessBlockers, foodCravings, previousExperiences, workoutCategories, workouts, healthConditions, bodyConsiderations, userWorkoutProgress, fitnessGoals, workoutExercises, exercises, recipes, recipeIngredients, mealPlans, mealSchedule, userMilestoneProgress, milestoneLevels, recipeInstructions, userRecipes } from "./schema";
 
 export const bodyMeasurementsRelations = relations(bodyMeasurements, ({one}) => ({
-	user: one(users, {
+	user: one(user, {
 		fields: [bodyMeasurements.userId],
-		references: [users.id]
+		references: [user.id]
 	}),
 }));
 
-export const usersRelations = relations(users, ({many}) => ({
+export const userRelations = relations(user, ({many}) => ({
 	bodyMeasurements: many(bodyMeasurements),
 	fitnessBlockers: many(fitnessBlockers),
 	foodCravings: many(foodCravings),
@@ -23,23 +23,23 @@ export const usersRelations = relations(users, ({many}) => ({
 }));
 
 export const fitnessBlockersRelations = relations(fitnessBlockers, ({one}) => ({
-	user: one(users, {
+	user: one(user, {
 		fields: [fitnessBlockers.userId],
-		references: [users.id]
+		references: [user.id]
 	}),
 }));
 
 export const foodCravingsRelations = relations(foodCravings, ({one}) => ({
-	user: one(users, {
+	user: one(user, {
 		fields: [foodCravings.userId],
-		references: [users.id]
+		references: [user.id]
 	}),
 }));
 
 export const previousExperiencesRelations = relations(previousExperiences, ({one}) => ({
-	user: one(users, {
+	user: one(user, {
 		fields: [previousExperiences.userId],
-		references: [users.id]
+		references: [user.id]
 	}),
 }));
 
@@ -57,23 +57,23 @@ export const workoutCategoriesRelations = relations(workoutCategories, ({many}) 
 }));
 
 export const healthConditionsRelations = relations(healthConditions, ({one}) => ({
-	user: one(users, {
+	user: one(user, {
 		fields: [healthConditions.userId],
-		references: [users.id]
+		references: [user.id]
 	}),
 }));
 
 export const bodyConsiderationsRelations = relations(bodyConsiderations, ({one}) => ({
-	user: one(users, {
+	user: one(user, {
 		fields: [bodyConsiderations.userId],
-		references: [users.id]
+		references: [user.id]
 	}),
 }));
 
 export const userWorkoutProgressRelations = relations(userWorkoutProgress, ({one}) => ({
-	user: one(users, {
+	user: one(user, {
 		fields: [userWorkoutProgress.userId],
-		references: [users.id]
+		references: [user.id]
 	}),
 	workout: one(workouts, {
 		fields: [userWorkoutProgress.workoutId],
@@ -82,9 +82,9 @@ export const userWorkoutProgressRelations = relations(userWorkoutProgress, ({one
 }));
 
 export const fitnessGoalsRelations = relations(fitnessGoals, ({one}) => ({
-	user: one(users, {
+	user: one(user, {
 		fields: [fitnessGoals.userId],
-		references: [users.id]
+		references: [user.id]
 	}),
 }));
 
@@ -130,16 +130,16 @@ export const mealScheduleRelations = relations(mealSchedule, ({one}) => ({
 
 export const mealPlansRelations = relations(mealPlans, ({one, many}) => ({
 	mealSchedules: many(mealSchedule),
-	user: one(users, {
+	user: one(user, {
 		fields: [mealPlans.userId],
-		references: [users.id]
+		references: [user.id]
 	}),
 }));
 
 export const userMilestoneProgressRelations = relations(userMilestoneProgress, ({one}) => ({
-	user: one(users, {
+	user: one(user, {
 		fields: [userMilestoneProgress.userId],
-		references: [users.id]
+		references: [user.id]
 	}),
 	milestoneLevel: one(milestoneLevels, {
 		fields: [userMilestoneProgress.levelId],
@@ -159,9 +159,9 @@ export const recipeInstructionsRelations = relations(recipeInstructions, ({one})
 }));
 
 export const userRecipesRelations = relations(userRecipes, ({one}) => ({
-	user: one(users, {
+	user: one(user, {
 		fields: [userRecipes.userId],
-		references: [users.id]
+		references: [user.id]
 	}),
 	recipe: one(recipes, {
 		fields: [userRecipes.recipeId],

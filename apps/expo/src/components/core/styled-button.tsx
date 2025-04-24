@@ -1,5 +1,5 @@
 // components/StyledButton.tsx
-import React from 'react'
+import React, { useEffect } from 'react'
 import {
     Pressable,
     Text,
@@ -11,6 +11,8 @@ import {
 import { LinearGradient } from 'expo-linear-gradient'
 import * as Haptics from 'expo-haptics';
 import { cn } from '@/lib/utils'
+import { onboardingStore$ } from '@/stores/onboarding.store';
+import { usePathname } from 'expo-router';
 interface StyledButtonProps {
     onPress: () => void
     title: string
@@ -34,6 +36,12 @@ export const StyledButton: React.FC<StyledButtonProps> = ({
     testID,
     className = ''
 }) => {
+    const pathname = usePathname();
+
+    useEffect(() => {
+        console.log(JSON.stringify(onboardingStore$.onboarding, null, 2));
+    }, [pathname])
+
     const baseClasses =
         'w-full py-5 px-6 rounded-full shadow-md flex-row items-center justify-center'
     const baseStyles: StyleProp<ViewStyle> = {
@@ -80,7 +88,7 @@ export const StyledButton: React.FC<StyledButtonProps> = ({
         return (
             <Pressable
                 onPress={() => {
-                    Haptics.selectionAsync()
+                    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy)
                     onPress()
                 }}
                 disabled={disabled || loading}
@@ -124,7 +132,7 @@ export const StyledButton: React.FC<StyledButtonProps> = ({
             testID={testID} // Apply testID
             className={`${baseClasses} ${getVariantClasses()} ${disabled || loading ? disabledClasses : ''}`}
             onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy)
+                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy)
                 onPress()
             }}
             disabled={disabled || loading}

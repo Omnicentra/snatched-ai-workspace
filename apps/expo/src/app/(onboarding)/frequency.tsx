@@ -1,48 +1,68 @@
 // app/(onboarding)/frequency.tsx
-import React, { useState } from 'react'
-import { View, Text, SafeAreaView, ScrollView } from 'react-native'
-import { useRouter } from 'expo-router'
-import Constants from 'expo-constants'
 import {
   OnboardingHeader,
   OptionCard,
-  InfoCard,
   StyledButton
 } from '@/components/core'
-import { Ionicons } from '@expo/vector-icons'
+import { onboardingStore$ } from '@/stores/onboarding.store'
+import { use$ } from '@legendapp/state/react'
+import { activityLevelEnum } from '@omc/validators/onboarding'
+import Constants from 'expo-constants'
+import { useRouter } from 'expo-router'
+import React from 'react'
+import { SafeAreaView, ScrollView, View } from 'react-native'
 
-const frequencyOptions = [
-  { id: 'hardly_ever', emoji: '🐣', text: 'Hardly ever', iconBg: 'bg-red-100' },
-  {
-    id: '1_2_week',
+type ActivityLevel = typeof activityLevelEnum.options[number]
+
+// Map of activity levels to their display properties
+type ActivityMapType = Record<ActivityLevel, {
+  emoji: string
+  iconBg: string
+}>
+
+const activityMap: ActivityMapType = {
+  'Hardly ever': {
+    emoji: '🐣',
+    iconBg: 'bg-red-100'
+  },
+  'Once or twice a week': {
     emoji: '👟',
-    text: 'Once or twice a week',
     iconBg: 'bg-orange-100'
   },
-  {
-    id: '3_4_week',
+  '3 to 4 times a week': {
     emoji: '💪',
-    text: '3 to 4 times a week',
     iconBg: 'bg-green-100'
   },
-  {
-    id: '5_plus_week',
+  '5+ times a week': {
     emoji: '🔥',
-    text: '5+ times a week',
     iconBg: 'bg-blue-100'
   }
-]
+}
 
 export default function FrequencyScreen() {
   const router = useRouter()
-  const [selectedFrequency, setSelectedFrequency] = useState<string | null>(
-    null
-  )
+  const selectedFrequency = use$(onboardingStore$.onboarding.frequency)
+
+  const setFrequency = (level: ActivityLevel) => {
+    console.log('***********************')
+    console.log(onboardingStore$.onboarding.frequency.get())
+    console.log('***********************')
+    if (activityLevelEnum.safeParse(level).success) {
+      onboardingStore$.onboarding.frequency.set(level)
+    }
+  }
 
   const handleContinue = () => {
-    // Store selectedFrequency
-    router.push('/(onboarding)/avoid-setbacks')
+    if (selectedFrequency && activityLevelEnum.safeParse(selectedFrequency).success) {
+      router.push('/(onboarding)/avoid-setbacks')
+    }
   }
+
+  const frequencyOptions = activityLevelEnum.options.map(level => ({
+    id: level,
+    ...activityMap[level],
+    text: level
+  }))
 
   return (
     <SafeAreaView
@@ -50,7 +70,6 @@ export default function FrequencyScreen() {
       className="flex-1 bg-white"
     >
       <ScrollView contentContainerStyle={{ flexGrow: 1 }} className="p-6">
-        {/* Adjusted padding to match HTML */}
         <OnboardingHeader
           progress={3 / 20}
           title="How often do you work out?"
@@ -65,22 +84,10 @@ export default function FrequencyScreen() {
               text={option.text}
               iconBg={option.iconBg}
               selected={selectedFrequency === option.id}
-              onPress={() => setSelectedFrequency(option.id)}
+              onPress={() => setFrequency(option.id)}
             />
           ))}
         </View>
-
-        {/* <InfoCard
-          icon={
-            <Ionicons
-              name="information-circle-outline"
-              size={20}
-              color="black"
-            />
-          }
-          text="We'll start with workouts that match your current fitness level and gradually increase intensity."
-          iconBg="bg-yellow-100" // Matched HTML
-        /> */}
 
         <View className="mt-8">
           <StyledButton

@@ -3,25 +3,29 @@ import { SafeAreaView, ScrollView, View } from "react-native";
 import Constants from "expo-constants";
 import { useRouter } from "expo-router";
 import { OnboardingHeader, OptionCard, StyledButton } from "@/components/core";
+import { onboardingStore$ } from "@/stores/onboarding.store";
+import { ethnicityEnum } from "@omc/validators/onboarding";
+import { z } from "zod";
 
-const ethnicityOptions = [
-  { value: "white", label: "White / Caucasian" },
-  { value: "black", label: "Black / African American" },
-  { value: "hispanic", label: "Hispanic / Latino" },
-  { value: "asian", label: "Asian" },
-  { value: "middle_eastern", label: "Middle Eastern / Indigenous" },
-  { value: "prefer_not_to_say", label: "I don't want to answer" },
-] as const;
+type Ethnicity = z.infer<typeof ethnicityEnum>;
 
-type EthnicityOption = (typeof ethnicityOptions)[number]["value"];
+const ethnicityValidationSchema = z.object({
+  ethnicity: ethnicityEnum.optional(),
+});
 
 export default function EthnicityScreen() {
   const router = useRouter();
-  const [selectedEthnicity, setSelectedEthnicity] = useState<EthnicityOption>();
+  const [selectedEthnicity, setSelectedEthnicity] = useState<Ethnicity>();
 
   const handleContinue = () => {
-    // Store selected ethnicity
-    router.push("/(onboarding)/body-considerations");
+    const result = ethnicityValidationSchema.safeParse({ ethnicity: selectedEthnicity });
+
+    if (result.success) {
+      onboardingStore$.onboarding.ethnicity.set(selectedEthnicity ?? "");
+      router.push("/(onboarding)/body-considerations");
+    } else {
+      console.error("Ethnicity validation failed:", result.error);
+    }
   };
 
   return (
@@ -40,12 +44,12 @@ export default function EthnicityScreen() {
         />
 
         <View className="mb-8 w-full gap-y-3">
-          {ethnicityOptions.map((option) => (
+          {ethnicityEnum.options.map((option) => (
             <OptionCard
-              selected={selectedEthnicity === option.value}
-              text={option.label}
-              key={option.value}
-              onPress={() => setSelectedEthnicity(option.value)}
+              selected={selectedEthnicity === option}
+              text={option}
+              key={option}
+              onPress={() => setSelectedEthnicity(option)}
             />
           ))}
         </View>
@@ -66,7 +70,6 @@ export default function EthnicityScreen() {
         <StyledButton
           title="Continue"
           onPress={handleContinue}
-          disabled={!selectedEthnicity}
           variant="primary"
         />
       </View>

@@ -1,46 +1,67 @@
 // app/(onboarding)/blockers.tsx
-import React, { useState } from 'react'
-import { View, Text, SafeAreaView, ScrollView } from 'react-native'
+import React from 'react'
+import { View, SafeAreaView, ScrollView } from 'react-native'
 import { useRouter } from 'expo-router'
 import Constants from 'expo-constants'
-import { OnboardingHeader, OptionCard, StyledButton } from '@/components/core' // Adjust path if needed
+import { OnboardingHeader, OptionCard, StyledButton } from '@/components/core'
+import { challengeEnum } from '@omc/validators/onboarding'
+import { onboardingStore$ } from '@/stores/onboarding.store'
+import { use$ } from '@legendapp/state/react'
+import * as Haptics from 'expo-haptics'
 
-const blockers = [
-  {
-    id: 'motivation',
+type Challenge = typeof challengeEnum.options[number]
+
+// Map of challenge IDs to their display properties
+type ChallengeMapType = Record<Challenge, {
+  emoji: string
+  iconBg: string
+}>
+
+const challengeMap: ChallengeMapType = {
+  'Lack of motivation': {
     emoji: '😞',
-    text: 'Lack of motivation',
     iconBg: 'bg-red-100'
   },
-  {
-    id: 'schedule',
+  'Busy schedule': {
     emoji: '⏰',
-    text: 'Busy schedule',
     iconBg: 'bg-yellow-100'
   },
-  {
-    id: 'food',
+  'Struggle with food': {
     emoji: '🍔',
-    text: 'Struggle with food',
     iconBg: 'bg-green-100'
   },
-  { id: 'plan', emoji: '📝', text: 'No clear plan', iconBg: 'bg-purple-100' }
-]
+  'No clear plan': {
+    emoji: '📝',
+    iconBg: 'bg-purple-100'
+  }
+}
 
 export default function BlockersScreen() {
   const router = useRouter()
-  const [selectedBlockers, setSelectedBlockers] = useState<string[]>([])
+  const selectedBlockers = use$(onboardingStore$.onboarding.blockers)
 
-  const toggleBlocker = (id: string) => {
-    setSelectedBlockers((prev) =>
-      prev.includes(id) ? prev.filter((bId) => bId !== id) : [...prev, id]
-    )
+  const toggleBlocker = (id: Challenge) => {
+    // Validate that the challenge is in our enum
+    if (challengeEnum.safeParse(id).success) {
+      onboardingStore$.onboarding.blockers.set((prev: string[]) =>
+        prev.includes(id) ? prev.filter((bId) => bId !== id) : [...prev, id]
+      )
+    }
   }
 
   const handleContinue = () => {
-    // Store selectedBlockers if needed
-    router.push('/(onboarding)/frequency')
+    // Validate all selected challenges
+    const validBlockers = selectedBlockers.every(blocker => challengeEnum.safeParse(blocker).success)
+    if (selectedBlockers.length && validBlockers) {
+      router.push('/(onboarding)/frequency')
+    }
   }
+
+  const challenges = challengeEnum.options.map(challenge => ({
+    id: challenge,
+    ...challengeMap[challenge],
+    text: challenge
+  }))
 
   return (
     <SafeAreaView
@@ -55,7 +76,7 @@ export default function BlockersScreen() {
         />
 
         <View className="flex-1 gap-y-4">
-          {blockers.map((blocker) => (
+          {challenges.map((blocker) => (
             <OptionCard
               key={blocker.id}
               emoji={blocker.emoji}
