@@ -155,24 +155,30 @@ const DayPill = ({
   dayLetter,
   dayNumber,
   isActive,
+  isFutureDay,
   onPress
 }: {
   dayLetter: string
   dayNumber: string | number
   isActive: boolean
+  isFutureDay: boolean
   onPress: () => void
 }) => (
-  <Pressable className="items-center" onPress={onPress}>
+  <Pressable 
+    className={`items-center ${isFutureDay ? 'opacity-50' : ''}`} 
+    onPress={isFutureDay ? undefined : onPress}
+    disabled={isFutureDay}
+  >
     {isActive ? (
       <LinearGradient
         colors={['#f472b6', '#F6ADCE']}
         style={{
           borderRadius: 100,
-          width: 40,
-          height: 40,
+          width: 36,
+          height: 36,
           alignItems: 'center',
           justifyContent: 'center',
-          marginBottom: 4
+          marginBottom: 2.5
         }}
       >
         <Text className="font-inter-medium text-sm text-white">
@@ -181,9 +187,13 @@ const DayPill = ({
       </LinearGradient>
     ) : (
       <View className="mb-1 h-10 w-10 items-center justify-center rounded-full border border-dashed border-primary">
-        <Text className="font-inter-medium text-sm text-gray-400">
-          {dayLetter}
-        </Text>
+        {isFutureDay ? (
+          <Ionicons name="lock-closed" size={16} color="#9CA3AF" />
+        ) : (
+          <Text className="font-inter-medium text-sm text-gray-400">
+            {dayLetter}
+          </Text>
+        )}
       </View>
     )}
     <Text className={`font-inter text-xs ${isActive ? 'text-pink-500' : 'text-gray-400'}`}>
@@ -195,17 +205,34 @@ const DayPill = ({
 export default function HomeScreen() {
   const router = useRouter();
   const userName = "Suzie";
-  const [activeDayIndex, setActiveDayIndex] = useState(2); // Wednesday active
+  
+  // Get current date and calculate the Monday of current week
+  const today = new Date();
+  const currentDay = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
+  const mondayOffset = currentDay === 0 ? -6 : 1 - currentDay; // If Sunday, go back 6 days, else calculate days until Monday
+  
+  const monday = new Date(today);
+  monday.setDate(today.getDate() + mondayOffset);
+  
+  // Generate week dates starting from Monday
+  const dayLetters = ['M', 'T', 'W', 'T', 'F', 'S', 'S'] as ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+  const weekDates = Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(monday);
+    date.setDate(monday.getDate() + index);
+    return {
+      letter: dayLetters[index % 7],
+      number: date.getDate(),
+      fullDate: date
+    };
+  });
 
-  const weekDates = [
-    { letter: 'M', number: 15 },
-    { letter: 'T', number: 16 },
-    { letter: 'W', number: 17 },
-    { letter: 'T', number: 18 },
-    { letter: 'F', number: 19 },
-    { letter: 'S', number: 20 },
-    { letter: 'S', number: 21 }
-  ];
+  // Find the index of today in our week array
+  const todayIndex = weekDates.findIndex(
+    date => date.fullDate.toDateString() === today.toDateString()
+  );
+  
+  // Set active day to today's index, defaulting to 0 (Monday) if somehow not found
+  const [activeDayIndex, setActiveDayIndex] = useState(Math.max(0, todayIndex));
 
   const navigateToWorkout = () => router.push("/(modals)/workout-detail");
   const navigateToSnatchHack = () => router.push("/(modals)/snatch-hack-detail");
@@ -256,6 +283,7 @@ export default function HomeScreen() {
                 dayLetter={day.letter}
                 dayNumber={day.number}
                 isActive={index === activeDayIndex}
+                isFutureDay={day.fullDate > today}
                 onPress={() => setActiveDayIndex(index)}
               />
             ))}

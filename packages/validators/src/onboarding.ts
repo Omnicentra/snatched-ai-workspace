@@ -1,95 +1,97 @@
-import { z } from 'zod';
+import { z } from "zod";
 
+const optionalNullableString = z.string().nullable().optional();
 
-const OptionalNullableString = z.string().nullable().optional();
-
-
-const EthnicityEnum = z.enum([
+export const ethnicityEnum = z.enum([
   "White / Caucasian",
   "Black / African American",
   "Hispanic / Latino",
   "Asian",
   "Middle Eastern / Indigenous",
-  "I don't want to answer"
+  "I don't want to answer",
 ]);
 
-const HeightUnitEnum = z.enum(["ft/in", "cm"]);
-const WeightUnitEnum = z.enum(["lb", "kg"]);
+export const heightUnitEnum = z.enum(["ft/in", "cm"]);
+export const weightUnitEnum = z.enum(["lb", "kg"]);
 
-const MedicalConditionResponseEnum = z.enum(["Yes", "No", "Prefer not to say"]);
-const MenstrualCycleStatusEnum = z.enum(["Yes - Regular", "Yes - Irregular", "No", "Prefer not to say"]);
+export const medicalConditionResponseEnum = z.enum([
+  "Yes",
+  "No",
+  "Prefer not to say",
+]);
+export const menstrualCycleStatusEnum = z.enum([
+  "Yes - Regular",
+  "Yes - Irregular",
+  "No",
+  "Prefer not to say",
+]);
 
-const ActivityLevelEnum = z.enum([
+export const activityLevelEnum = z.enum([
   "Hardly ever",
   "Once or twice a week",
   "3 to 4 times a week",
-  "5+ times a week"
+  "5+ times a week",
 ]);
 
-const GoalEnum = z.enum([
+export const goalEnum = z.enum([
   "Lose weight",
   "Tone & sculpt",
   "Grow my glutes",
-  "Overall glow-up"
+  "Overall glow-up",
 ]);
 
-const TimelineEnum = z.enum([
+export const timelineEnum = z.enum([
   "As soon as possible",
   "In 1-2 months",
   "In 3-6 months",
-  "No rush, just want to feel better"
+  "No rush, just want to feel better",
 ]);
 
-const ChallengeEnum = z.enum([
+export const challengeEnum = z.enum([
   "Lack of motivation",
   "Busy schedule",
   "Struggle with food",
-  "No clear plan"
+  "No clear plan",
 ]);
 
-const PreviousMethodEnum = z.enum([
+export const previousMethodEnum = z.enum([
   "Calorie counting",
   "Gym workouts",
   "Pilates / home workouts",
-  "TikTok fitness plans"
+  "TikTok fitness plans",
 ]);
 
-const BodyConcernEnum = z.enum([
+export const bodyConcernEnum = z.enum([
   "I want to smooth my hip dips",
   "I have a wide rib cage",
   "I have scoliosis or back sensitivity",
   "I feel like I have a straight body shape",
-  "I have something else to mention"
+  "I have something else to mention",
 ]);
 
-
-const DesiredBodyShapeEnum = z.enum([
-  
+export const desiredBodyShapeEnum = z.enum([
   "Petite & toned",
   "Toned",
   "Glute Growth",
   "Toned Thighs",
-  
+
   "Normal Weight Loss",
   "Postpartum Snatched",
   "Keep Fit",
-  "Lose Weight", 
-  
+
   "Athletic",
   "Hourglass",
-  "Slim",
-  "Muscular"
+  "Slim Thick",
 ]);
 
-
-const DietaryPreferenceEnum = z.enum([
+export const dietaryPreferenceEnum = z.enum([
   "Classic",
   "Pescatarian",
   "Vegetarian",
-  "Vegan"
+  "Vegan",
 ]);
 
-const CravingEnum = z.enum([
+export const cravingEnum = z.enum([
   "Chocolate",
   "Salty Snacks",
   "Sweets",
@@ -97,53 +99,75 @@ const CravingEnum = z.enum([
   "Fast Food",
   "Ice Cream",
   "Cheese",
-  "Fried Food"
+  "Fried Food",
 ]);
 
+export const nameSchema = z.string()
+  .min(1, "Name is required")
+  .max(50, "Name is too long")
+  .transform(val => val.trim());
 
-export const OnBoardingSchema = z.object({
+export const ageSchema = z.union([z.number(), z.string()])
+  .transform(val => parseInt(val.toString()))
+  .pipe(z.number().int("Age must be a whole number")
+  .max(100, "Age must be less than 100"));
+
+export const nameAgeSchema = z.object({
+  name: nameSchema,
+  age: ageSchema,
+});
+
+export const physicalMeasurementsSchema = z.object({
+  height: z.object({
+    value: z.string().min(1, "Height value is required"),
+    unit: heightUnitEnum,
+  }),
+  weight: z.object({
+    value: z.number().positive("Weight must be positive"),
+    unit: weightUnitEnum,
+  }),
+});
+
+export const onboardingSchema = z.object({
   user_profile: z.object({
     personal_info: z.object({
-      
-      ethnicity: EthnicityEnum.optional(),
+      name: nameSchema,
+      age: ageSchema,
+      ethnicity: ethnicityEnum.optional(),
     }),
-    physical_measurements: z.object({
-      height: z.object({
-        value: z.string().min(1, "Height value is required"), 
-        unit: HeightUnitEnum,
-      }),
-      weight: z.object({
-        value: z.number().positive("Weight must be positive"), 
-        unit: WeightUnitEnum,
-      }),
-    }),
+    physical_measurements: physicalMeasurementsSchema,
     health_and_cycle: z.object({
-      has_medical_conditions: MedicalConditionResponseEnum,
-      
-      medical_conditions_details: OptionalNullableString,
-      menstrual_cycle_status: MenstrualCycleStatusEnum,
-      
-      last_period_start_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format (YYYY-MM-DD)").nullable().optional(),
+      has_medical_conditions: medicalConditionResponseEnum,
+
+      medical_conditions_details: optionalNullableString,
+      menstrual_cycle_status: menstrualCycleStatusEnum,
+
+      last_period_start_date: z
+        .string()
+        .regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format (YYYY-MM-DD)")
+        .nullable()
+        .optional(),
     }),
     fitness_details: z.object({
-      activity_level: ActivityLevelEnum,
-      primary_goals: z.array(GoalEnum).min(1, "At least one primary goal must be selected"), 
-      achievement_timeline: TimelineEnum,
-      challenges: z.array(ChallengeEnum), 
-      previous_methods_tried: z.array(PreviousMethodEnum), 
-      body_concerns: z.array(BodyConcernEnum), 
-      
-      other_body_details: OptionalNullableString,
-      desired_body_shape: DesiredBodyShapeEnum,
+      activity_level: activityLevelEnum,
+      primary_goals: z
+        .array(goalEnum)
+        .min(1, "At least one primary goal must be selected"),
+      achievement_timeline: timelineEnum,
+      challenges: z.array(challengeEnum),
+      previous_methods_tried: z.array(previousMethodEnum),
+      body_concerns: z.array(bodyConcernEnum),
+
+      other_body_details: optionalNullableString,
+      desired_body_shape: desiredBodyShapeEnum,
     }),
     nutrition_details: z.object({
-      dietary_preference: DietaryPreferenceEnum,
-      cravings: z.array(CravingEnum), 
-      
-      other_cravings: OptionalNullableString,
+      dietary_preference: dietaryPreferenceEnum,
+      cravings: z.array(cravingEnum),
+
+      other_cravings: optionalNullableString,
     }),
   }),
 });
 
-export type UserProfile = z.infer<typeof OnBoardingSchema>;
-
+export type UserProfile = z.infer<typeof onboardingSchema>;

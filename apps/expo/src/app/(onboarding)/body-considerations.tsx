@@ -13,123 +13,135 @@ import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import { OnboardingHeader, StyledButton } from "@/components/core";
 import { Ionicons } from "@expo/vector-icons";
+import { onboardingStore$ } from "@/stores/onboarding.store";
+import { bodyConcernEnum } from "@omc/validators/onboarding";
+import { z } from "zod";
 
-interface BodyConsideration {
-  id: string;
+type BodyConcern = z.infer<typeof bodyConcernEnum>;
+
+const bodyConsiderationSchema = z.object({
+  bodyDescription: z.array(bodyConcernEnum),
+  otherBodyDetails: z.string().optional(),
+});
+
+interface ConsiderationDisplay {
+  value: BodyConcern;
   icon: string;
-  title: string;
   description: string;
   iconBg: string;
 }
 
-const bodyConsiderations: BodyConsideration[] = [
-  {
-    id: "hip_dips",
+const bodyConsiderationDisplayMap: Record<BodyConcern, Omit<ConsiderationDisplay, 'value'>> = {
+  "I want to smooth my hip dips": {
     icon: "🍑",
-    title: "I want to smooth my hip dips",
     description: "Target my side booty area for more shape and roundness.",
     iconBg: "bg-red-100",
   },
-  {
-    id: "wide_ribcage",
+  "I have a wide rib cage": {
     icon: "✨",
-    title: "I have a wide rib cage",
-    description:
-      "I want styling and sculpting tricks to create more waist definitions.",
+    description: "I want styling and sculpting tricks to create more waist definitions.",
     iconBg: "bg-pink-100",
   },
-  {
-    id: "scoliosis",
+  "I have scoliosis or back sensitivity": {
     icon: "🫁",
-    title: "I have scoliosis or back sensitivity",
     description: "I want posture-friendly or lower-impact exercise plans",
     iconBg: "bg-blue-100",
   },
-  {
-    id: "straight_shape",
+  "I feel like I have a straight body shape": {
     icon: "🦴",
-    title: "I feel like I have a straight body shape",
     description: "I want to build more curves and definition",
     iconBg: "bg-purple-100",
   },
-  {
-    id: "custom",
+  "I have something else to mention": {
     icon: "✏️",
-    title: "I have something else to mention",
-    description:
-      "Tell us about any other body considerations we should know about.",
+    description: "Tell us about any other body considerations we should know about.",
     iconBg: "bg-gray-100",
   },
-];
+};
 
 const ConsiderationCard = ({
-  consideration,
+  concern,
   selected,
   onPress,
 }: {
-  consideration: BodyConsideration;
+  concern: BodyConcern;
   selected: boolean;
   onPress: () => void;
-}) => (
-  <Pressable
-    onPress={onPress}
-    className={`mb-3 flex-row items-center rounded-xl border p-4 ${
-      selected ? "border-pink-400 bg-pink-50" : "border-gray-200 bg-white"
-    }`}
-    style={{
-      shadowColor: "#000",
-      shadowOffset: {
-        width: 0,
-        height: 1,
-      },
-      shadowOpacity: 0.05,
-      shadowRadius: 2,
-      elevation: 2,
-    }}
-  >
-    <View
-      className={`${consideration.iconBg} h-10 w-10 items-center justify-center rounded-lg`}
+}) => {
+  const display = bodyConsiderationDisplayMap[concern];
+  return (
+    <Pressable
+      onPress={onPress}
+      className={`mb-3 flex-row items-center rounded-xl border p-4 ${
+        selected ? "border-pink-400 bg-pink-50" : "border-gray-200 bg-white"
+      }`}
+      style={{
+        shadowColor: "#000",
+        shadowOffset: {
+          width: 0,
+          height: 1,
+        },
+        shadowOpacity: 0.05,
+        shadowRadius: 2,
+        elevation: 2,
+      }}
     >
-      <Text className="text-xl">{consideration.icon}</Text>
-    </View>
-    <View className="ml-4 flex-1">
-      <Text className="font-inter-semibold text-base text-black">
-        {consideration.title}
-      </Text>
-    </View>
-    {selected && (
-      <View className="ml-2">
-        <View className="rounded-full bg-pink-400 p-1">
-          <Ionicons name="checkmark" size={16} color="white" />
-        </View>
+      <View
+        className={`${display.iconBg} h-10 w-10 items-center justify-center rounded-lg`}
+      >
+        <Text className="text-xl">{display.icon}</Text>
       </View>
-    )}
-  </Pressable>
-);
+      <View className="ml-4 flex-1">
+        <Text className="font-inter-semibold text-base text-black">
+          {concern}
+        </Text>
+      </View>
+      {selected && (
+        <View className="ml-2">
+          <View className="rounded-full bg-pink-400 p-1">
+            <Ionicons name="checkmark" size={16} color="white" />
+          </View>
+        </View>
+      )}
+    </Pressable>
+  );
+};
 
 export default function BodyConsiderationsScreen() {
   const router = useRouter();
-  const [selectedConsiderations, setSelectedConsiderations] = useState<
-    Set<string>
-  >(new Set());
+  const [selectedConcerns, setSelectedConcerns] = useState<Set<BodyConcern>>(new Set());
   const [customConsideration, setCustomConsideration] = useState("");
 
-  const toggleConsideration = (id: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    setSelectedConsiderations((prev) => {
+  const toggleConcern = (concern: BodyConcern) => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    setSelectedConcerns((prev) => {
       const newSet = new Set(prev);
-      if (newSet.has(id)) {
-        newSet.delete(id);
+      if (newSet.has(concern)) {
+        newSet.delete(concern);
       } else {
-        newSet.add(id);
+        newSet.add(concern);
       }
       return newSet;
     });
   };
 
   const handleContinue = () => {
-    // Store selected considerations and custom text if needed
-    router.push("/(onboarding)/transformation-intro");
+    const concerns = Array.from(selectedConcerns);
+    const result = bodyConsiderationSchema.safeParse({
+      bodyDescription: concerns,
+      otherBodyDetails: selectedConcerns.has("I have something else to mention") ? customConsideration : undefined,
+    });
+
+    if (result.success) {
+      onboardingStore$.onboarding.bodyDescription.set(concerns);
+      if (customConsideration) {
+        // Only set other details if custom concern is selected and there's text
+        onboardingStore$.onboarding.otherBodyDetails.set(customConsideration);
+      }
+      router.push("/(onboarding)/transformation-intro");
+    } else {
+      console.error("Body concerns validation failed:", result.error);
+    }
   };
 
   return (
@@ -145,17 +157,17 @@ export default function BodyConsiderationsScreen() {
           />
 
           <View>
-            {bodyConsiderations.map((consideration) => (
+            {bodyConcernEnum.options.map((concern) => (
               <ConsiderationCard
-                key={consideration.id}
-                consideration={consideration}
-                selected={selectedConsiderations.has(consideration.id)}
-                onPress={() => toggleConsideration(consideration.id)}
+                key={concern}
+                concern={concern}
+                selected={selectedConcerns.has(concern)}
+                onPress={() => toggleConcern(concern)}
               />
             ))}
 
             {/* Custom consideration text input */}
-            {selectedConsiderations.has("custom") && (
+            {selectedConcerns.has("I have something else to mention") && (
               <View className="mb-6 mt-2">
                 <Text className="font-inter-medium mb-2 text-sm text-gray-600">
                   Please tell us more:
@@ -178,7 +190,7 @@ export default function BodyConsiderationsScreen() {
             title="Continue"
             onPress={handleContinue}
             variant="primary"
-            disabled={selectedConsiderations.size === 0}
+            disabled={selectedConcerns.size === 0}
           />
         </View>
       </KeyboardAvoidingView>

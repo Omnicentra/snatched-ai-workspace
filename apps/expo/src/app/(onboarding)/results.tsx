@@ -77,7 +77,7 @@ export default function ResultsScreen() {
   ]
 
   const handleViewDetails = () => {
-    router.push('/(onboarding)/signup') // Or your target route
+    router.push('/(onboarding)/paywall') // Or your target route
   }
 
   // Trigger confetti shortly after the component mounts

@@ -1,4 +1,7 @@
 import React, { useState, useRef } from 'react'
+import type {
+  NativeSyntheticEvent,
+  NativeScrollEvent} from 'react-native';
 import {
   View,
   Text,
@@ -6,7 +9,7 @@ import {
   FlatList,
   Dimensions,
   Pressable,
-  ScrollView // Fallback if FlatList carousel is tricky
+  ScrollView,
 } from 'react-native'
 import { useRouter } from 'expo-router'
 import Constants from 'expo-constants'
@@ -15,22 +18,23 @@ import {
   StyledButton,
   CarouselIndicator,
   InfoCard
-} from '@/components/core' // Assuming ProgressBar is separate
+} from '@/components/core'
 import { Ionicons } from '@expo/vector-icons'
 import { Image } from 'expo-image'
+import { onboardingStore$ } from '@/stores/onboarding.store'
+import { desiredBodyShapeEnum } from '@omc/validators/onboarding'
+import type { z } from 'zod'
 
 import athletic from '@/assets/images/body-shapes/athletic.png'
 import hourglass from '@/assets/images/body-shapes/hourglass.png'
 import slimThick from '@/assets/images/body-shapes/slim-thick.png'
 import petiteToned from '@/assets/images/body-shapes/petite-toned.png'
-import muscular from '@/assets/images/body-shapes/build-muscle.png'
-import loseWeight from '@/assets/images/body-shapes/lose-weight.png'
-import keepFit from '@/assets/images/body-shapes/keep-fit.png'
-import normalWeightLoss from '@/assets/images/body-shapes/normal-weight-loss.png'
-import postpartum from '@/assets/images/body-shapes/postpartum-snatched.png'
 import toned from '@/assets/images/body-shapes/toned.png'
 import gluteGrowth from '@/assets/images/body-shapes/glute-growth.png'
 import tonedThighs from '@/assets/images/body-shapes/toned-thighs.png'
+import normalWeightLoss from '@/assets/images/body-shapes/normal-weight-loss.png'
+import postpartum from '@/assets/images/body-shapes/postpartum-snatched.png'
+import keepFit from '@/assets/images/body-shapes/keep-fit.png'
 
 const { width: screenWidth } = Dimensions.get('window')
 const CARD_MARGIN = 12 // Corresponds to gap-4 / 2
@@ -40,87 +44,74 @@ const cardWidth =
   (screenWidth - PADDING_HORIZONTAL * 2 - CARD_MARGIN * (NUM_COLUMNS - 1)) /
   NUM_COLUMNS
 
-// Add interface for body shape
 interface BodyShape {
-  id: string
-  name: string
+  id: z.infer<typeof desiredBodyShapeEnum>
+  title: string
   description: string
   image: string
 }
 
 const bodyShapes: BodyShape[] = [
   {
-    id: 'athletic',
-    name: 'Athletic',
+    id: 'Athletic',
+    title: 'Athletic',
     description: 'Toned muscles, moderate curves',
     image: athletic
   },
   {
-    id: 'hourglass',
-    name: 'Hourglass',
+    id: 'Hourglass',
+    title: 'Hourglass',
     description: 'Balanced curves, defined waist',
     image: hourglass
   },
   {
-    id: 'slim',
-    name: 'Slim',
+    id: 'Slim',
+    title: 'Slim',
     description: 'Lean with subtle definition',
     image: slimThick
   },
-  // {
-  //   id: 'muscular',
-  //   name: 'Muscular',
-  //   description: 'Well-defined muscles with strength',
-  //   image: muscular
-  // },
   {
-    id: 'petite',
-    name: 'Petite & toned',
+    id: 'Petite & toned',
+    title: 'Petite & Toned',
     description: 'Small frame with proportional toned features',
     image: petiteToned
   },
   {
-    id: 'toned',
-    name: 'Toned',
+    id: 'Toned',
+    title: 'Toned',
     description: 'Lean and defined with a healthy body fat percentage',
     image: toned
   },
   {
-    id: 'gluteGrowth',
-    name: 'Glute Growth',
+    id: 'Glute Growth',
+    title: 'Glute Growth',
     description: 'Enhanced gluteal muscles',
     image: gluteGrowth
   },
   {
-    id: 'tonedThighs',
-    name: 'Toned Thighs',
+    id: 'Toned Thighs',
+    title: 'Toned Thighs',
     description: 'Lean and defined with a healthy body fat percentage',
     image: tonedThighs
   },
   {
-    id: 'normalWeightLoss',
-    name: 'Normal Weight Loss',
+    id: 'Normal Weight Loss',
+    title: 'Normal Weight Loss',
     description: 'Gradual and sustainable weight loss',
     image: normalWeightLoss
   },
   {
-    id: 'postpartum',
-    name: 'Postpartum Snatched',
+    id: 'Postpartum Snatched',
+    title: 'Postpartum Snatched',
     description: 'Recovering from pregnancy',
     image: postpartum
   },
   {
-    id: 'keepFit',
-    name: 'Keep Fit',
+    id: 'Keep Fit',
+    title: 'Keep Fit',
     description: 'Maintaining a healthy lifestyle',
     image: keepFit
-  },
-  // {
-  //   id: 'loseWeight',
-  //   name: 'Lose Weight',
-  //   description: 'Achieving a lower body fat percentage',
-  //   image: loseWeight
-  // }
+  }
 ]
 
 // Group shapes into pages for the carousel (4 per page)
@@ -162,7 +153,7 @@ const BodyShapeCard = ({
     </View>
     <View className="p-3">
       <Text className="mb-1 font-inter-semibold text-sm text-black">
-        {item.name}
+        {item.title}
       </Text>
       <Text className="font-inter text-xs text-black opacity-70">
         {item.description}
@@ -177,18 +168,26 @@ const BodyShapeCard = ({
   </Pressable>
 )
 
-export default function DesiredShapeScreen() {
+const DesiredShape = () => {
   const router = useRouter()
-  const [selectedShapeId, setSelectedShapeId] = useState<string>('hourglass') // Default selection
   const [currentPageIndex, setCurrentPageIndex] = useState(0)
+  const [selectedShapeId, setSelectedShapeId] = useState<z.infer<typeof desiredBodyShapeEnum> | null>(null)
   const flatListRef = useRef<FlatList>(null)
 
   const handleContinue = () => {
-    // Store selectedShapeId
-    router.push('/(onboarding)/timeline-goal')
+    try {
+      // Validate and store the selected shape
+      const validatedShape = desiredBodyShapeEnum.parse(selectedShapeId)
+      onboardingStore$.onboarding.desiredShape.set(validatedShape)
+      router.push('/(onboarding)/timeline-goal')
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error('Invalid body shape selected:', error.message)
+      }
+    }
   }
 
-  const handleScroll = (event: any) => {
+  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const contentOffsetX = event.nativeEvent.contentOffset.x
     const index = Math.round(contentOffsetX / screenWidth)
     setCurrentPageIndex(index)
@@ -307,3 +306,5 @@ export default function DesiredShapeScreen() {
     </SafeAreaView>
   )
 }
+
+export default DesiredShape

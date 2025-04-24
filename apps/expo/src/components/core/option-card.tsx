@@ -45,7 +45,7 @@ export const OptionCard: React.FC<OptionCardProps> = ({
       }}
 
       onPress={() => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy)
+        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy)
         onPress()
       }}
     >

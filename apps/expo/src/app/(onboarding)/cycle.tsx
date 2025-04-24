@@ -1,43 +1,47 @@
 // app/(onboarding)/cycle.tsx
 import React, { useState } from 'react'
-import { View, Text, SafeAreaView, ScrollView } from 'react-native'
+import { View, SafeAreaView } from 'react-native'
 import { useRouter } from 'expo-router'
 import Constants from 'expo-constants'
 import {
   OnboardingHeader,
   OptionCard,
-  InfoCard,
   StyledButton
 } from '@/components/core'
-import { Ionicons } from '@expo/vector-icons'
+import { onboardingStore$ } from '@/stores/onboarding.store'
+import { menstrualCycleStatusEnum } from '@omc/validators/onboarding'
+import { z } from 'zod'
 
-const cycleOptions = [
-  { id: 'yes_regular', text: 'Yes - Regular' },
-  { id: 'yes_irregular', text: 'Yes - Irregular' },
-  { id: 'no', text: 'No' },
-  { id: 'prefer_not_to_say', text: 'Prefer not to say' }
-]
+type MenstrualCycleStatus = z.infer<typeof menstrualCycleStatusEnum>;
 
-// Reusing RadioIcon from health.tsx or define locally
-const RadioIcon = ({ selected }: { selected: boolean }) => (
-  <View
-    className={`h-6 w-6 rounded-full border-2 ${selected ? 'border-black' : 'border-gray-400'} mr-4 items-center justify-center`}
-  >
-    {selected && <View className="h-3 w-3 rounded-full bg-black" />}
-  </View>
-)
+const cycleValidationSchema = z.object({
+  menstrual_cycle_status: menstrualCycleStatusEnum,
+});
 
 export default function CycleScreen() {
   const router = useRouter()
-  const [selectedCycle, setSelectedCycle] = useState<string | null>(null)
+  const [selectedCycle, setSelectedCycle] = useState<MenstrualCycleStatus>()
 
   const handleContinue = () => {
-    // Store selectedCycle
-    if (selectedCycle === 'yes_regular' || selectedCycle === 'yes_irregular') {
-      router.push('/(onboarding)/period-date')
+    if (!selectedCycle) return;
+
+    const cycleData = {
+      menstrual_cycle_status: selectedCycle,
+    };
+
+    const result = cycleValidationSchema.safeParse(cycleData);
+
+    if (result.success) {
+      onboardingStore$.onboarding.menstruralCycle.set(selectedCycle);
+      
+      if (selectedCycle === "Yes - Regular" || selectedCycle === "Yes - Irregular") {
+        router.push('/(onboarding)/period-date')
+      } else {
+        // Skip period date and cravings if 'No' or 'Prefer not to say'
+        router.push('/(onboarding)/dietary-preferences')
+      }
     } else {
-      // Skip period date and cravings if 'no' or 'prefer not to say'
-      router.push('/(onboarding)/dietary-preferences') // Adjust skip logic as needed
+      console.error("Cycle validation failed:", result.error);
     }
   }
 
@@ -55,21 +59,15 @@ export default function CycleScreen() {
         />
 
         <View className="mb-8 flex-1 gap-y-4">
-          {cycleOptions.map((option) => (
+          {menstrualCycleStatusEnum.options.map((option) => (
             <OptionCard
-              key={option.id}
-              // icon={<RadioIcon selected={selectedCycle === option.id} />}
-              text={option.text}
-              selected={selectedCycle === option.id}
-              onPress={() => setSelectedCycle(option.id)}
+              key={option}
+              text={option}
+              selected={selectedCycle === option}
+              onPress={() => setSelectedCycle(option)}
             />
           ))}
         </View>
-
-        {/* <InfoCard
-          icon={<Ionicons name="calendar-outline" size={20} color="black" />}
-          text="Your hormonal cycle affects energy levels, cravings, and recovery. We'll adjust your plan accordingly."
-        /> */}
       </View>
 
       <View className="mt-auto p-8">
@@ -80,7 +78,6 @@ export default function CycleScreen() {
           variant="primary"
         />
       </View>
-
     </SafeAreaView>
   )
 }

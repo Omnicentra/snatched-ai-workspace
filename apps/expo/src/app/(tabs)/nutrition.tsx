@@ -1,5 +1,5 @@
 // app/(modals)/nutrition-plan.tsx OR app/(details)/nutrition-plan.tsx
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import type {
   GestureResponderEvent} from "react-native";
 import {
@@ -7,6 +7,8 @@ import {
   ScrollView,
   Text,
   View,
+  Animated,
+  Easing,
 } from "react-native";
 import { MilestoneModal } from "@/components/MilestoneModal";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -61,17 +63,59 @@ const MealCard = observer(({
 }) => {
   const loggedMeal = nutritionStore$.loggedMeals[id]?.get();
   const isLogged = !!loggedMeal?.loggedAt;
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const rotateAnim = useRef(new Animated.Value(0)).current;
+  const opacityAnim = useRef(new Animated.Value(1)).current;
   
   const handleLogMeal = (e: GestureResponderEvent) => {
     e.stopPropagation();
-    nutritionStore$.loggedMeals.set({
-      ...nutritionStore$.loggedMeals.get(),
-      [id]: {
-        loggedAt: new Date().toISOString(),
-        mealId: id,
-      }
+    
+    // Start animation sequence
+    Animated.sequence([
+      Animated.parallel([
+        Animated.timing(scaleAnim, {
+          toValue: 0.95,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+        Animated.timing(rotateAnim, {
+          toValue: 2,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]),
+      Animated.parallel([
+        Animated.timing(scaleAnim, {
+          toValue: 1,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacityAnim, {
+          toValue: 0,
+          duration: 100,
+          useNativeDriver: true,
+          easing: Easing.linear,
+        }),
+      ]),
+    ]).start(() => {
+      // Update the store after animation
+      nutritionStore$.loggedMeals.set({
+        ...nutritionStore$.loggedMeals.get(),
+        [id]: {
+          loggedAt: new Date().toISOString(),
+          mealId: id,
+        }
+      });
+      
+      // Reset opacity for next animation
+      opacityAnim.setValue(1);
     });
   };
+
+  const spin = rotateAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '180deg'],
+  });
 
   return (
     <Pressable
@@ -96,20 +140,35 @@ const MealCard = observer(({
                 {calories} cal
               </Text>
               {isLogged ? (
-                <View className="rounded-full bg-green-100 p-1">
-                  <Ionicons name="checkmark-circle" size={20} color="#22C55E" />
-                </View>
-              ) : (
-                <Pressable
-                  onPress={handleLogMeal}
-                  className="rounded-full bg-pink-50 p-1"
+                <Animated.View 
+                  className="rounded-full bg-green-100 p-1"
+                  style={{
+                    transform: [{ scale: scaleAnim }],
+                  }}
                 >
-                  <MaterialCommunityIcons
-                    name="plus-circle"
-                    size={20}
-                    color="#F472B6"
-                  />
-                </Pressable>
+                  <Ionicons name="checkmark-circle" size={20} color="#22C55E" />
+                </Animated.View>
+              ) : (
+                <Animated.View
+                  style={{
+                    opacity: opacityAnim,
+                    transform: [
+                      { scale: scaleAnim },
+                      { rotate: spin }
+                    ],
+                  }}
+                >
+                  <Pressable
+                    onPress={handleLogMeal}
+                    className="rounded-full bg-pink-50 p-1"
+                  >
+                    <MaterialCommunityIcons
+                      name="plus-circle"
+                      size={20}
+                      color="#F472B6"
+                    />
+                  </Pressable>
+                </Animated.View>
               )}
             </View>
           </View>

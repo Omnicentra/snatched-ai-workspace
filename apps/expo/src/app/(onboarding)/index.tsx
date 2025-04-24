@@ -41,7 +41,7 @@ export default function SplashScreen() {
 
   const handleSkip = () => {
     void Haptics.selectionAsync().then(() => {
-      router.push('/(tabs)/home')
+      router.push('/(onboarding)/name-age')
     })
   }
 

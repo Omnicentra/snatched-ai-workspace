@@ -9,6 +9,12 @@
       "dependsOn": ["^build"],
       "outputs": [".cache/tsbuildinfo.json", "dist/**"]
     },
+    "expo": {
+      "dependsOn": ["^dev"],
+      "cache": false,
+      "persistent": true,
+      "interactive": true
+    },
     "dev": {
       "dependsOn": ["^dev"],
       "cache": false,

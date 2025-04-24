@@ -13,24 +13,23 @@ import {
   View
 } from 'react-native'
 import * as Haptics from 'expo-haptics'
+import { onboardingStore$ } from '@/stores/onboarding.store'
+import { cravingEnum } from '@omc/validators/onboarding'
+import { z } from 'zod'
 
-const cravingsList = [
-  'Chocolate',
-  'Salty Snacks',
-  'Sweets',
-  'Carbs',
-  'Fast Food',
-  'Ice Cream',
-  'Cheese',
-  'Fried Food'
-]
+type Craving = z.infer<typeof cravingEnum>;
+
+const cravingValidationSchema = z.object({
+  cravings: z.array(cravingEnum),
+  other_cravings: z.string().optional(),
+});
 
 const CravingTag = ({
   text,
   selected,
   onPress
 }: {
-  text: string
+  text: Craving
   selected: boolean
   onPress: () => void
 }) => (
@@ -48,12 +47,11 @@ const CravingTag = ({
 
 export default function CravingsScreen() {
   const router = useRouter()
-  const [selectedCravings, setSelectedCravings] = useState<string[]>([
-    'Chocolate'
-  ]) // Default selected
+  const [selectedCravings, setSelectedCravings] = useState<Craving[]>([])
   const [otherCravings, setOtherCravings] = useState('')
 
-  const toggleCraving = (craving: string) => {
+  const toggleCraving = (craving: Craving) => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy)
     setSelectedCravings((prev) =>
       prev.includes(craving)
         ? prev.filter((c) => c !== craving)
@@ -62,8 +60,22 @@ export default function CravingsScreen() {
   }
 
   const handleContinue = () => {
-    // Store selected cravings
-    router.push('/(onboarding)/dietary-preferences')
+    const cravingsData = {
+      cravings: selectedCravings,
+      other_cravings: otherCravings || undefined,
+    };
+
+    const result = cravingValidationSchema.safeParse(cravingsData);
+
+    if (result.success) {
+      onboardingStore$.onboarding.cravings.set(selectedCravings);
+      if (otherCravings) {
+        onboardingStore$.onboarding.otherCravings.set(otherCravings);
+      }
+      router.push('/(onboarding)/dietary-preferences')
+    } else {
+      console.error("Cravings validation failed:", result.error);
+    }
   }
 
   return (
@@ -77,21 +89,18 @@ export default function CravingsScreen() {
           contentContainerClassName="p-8"
         >
           <OnboardingHeader
-            progress={13 / 20} // Might need adjustment based on cycle skip logic
+            progress={13 / 20}
             title="What are your cravings during this time?"
             subtitle="We'll help you manage cravings with healthy alternatives. Select all that apply."
           />
 
           <View className="mb-6 flex-row flex-wrap gap-2">
-            {cravingsList.map((craving) => (
+            {cravingEnum.options.map((craving) => (
               <CravingTag
                 key={craving}
                 text={craving}
                 selected={selectedCravings.includes(craving)}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy)
-                  toggleCraving(craving)
-                }}
+                onPress={() => toggleCraving(craving)}
               />
             ))}
           </View>

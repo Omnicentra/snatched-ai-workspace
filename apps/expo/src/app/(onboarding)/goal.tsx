@@ -2,12 +2,13 @@ import React from 'react'
 import { Pressable, SafeAreaView, ScrollView, Text, View } from 'react-native'
 // No 'styled' import
 import { OnboardingHeader, StyledButton } from '@/components/core'
-import { store$ } from '@/stores/onboarding.store'
+import { onboardingStore$ } from '@/stores/onboarding.store'
 import { Ionicons } from '@expo/vector-icons'; // Assuming you need checkmark
 import { use$ } from '@legendapp/state/react'
 import Constants from 'expo-constants'
 import * as Haptics from 'expo-haptics'
 import { useRouter } from 'expo-router'
+import { goalEnum } from "@omc/validators/onboarding"
 // Reusable Goal Card Component (put in components/GoalCard.tsx)
 // Use standard components with className
 const GoalCard = ({
@@ -62,46 +63,59 @@ const GoalCard = ({
   )
 }
 
+// Map of goal IDs to their display properties
+type GoalMapType = Record<typeof goalEnum.options[number], {
+  emoji: string
+  iconBg: string
+}>
+
+const goalMap: GoalMapType = {
+  'Lose weight': {
+    emoji: '⚖️',
+    iconBg: 'bg-pink-100'
+  },
+  'Tone & sculpt': {
+    emoji: '💪',
+    iconBg: 'bg-blue-100'
+  },
+  'Grow my glutes': {
+    emoji: '🍑',
+    iconBg: 'bg-purple-100'
+  },
+  'Overall glow-up': {
+    emoji: '✨',
+    iconBg: 'bg-yellow-100'
+  }
+}
+
 export default function GoalScreen() {
   const router = useRouter()
-  const selectedGoals = use$(store$.onboarding.goals)
+  const selectedGoals = use$(onboardingStore$.onboarding.goals)
   // const [selectedGoals, setSelectedGoals] = useState<string[]>([])
 
-  const goals = [
-    {
-      id: 'lose_weight',
-      emoji: '⚖️',
-      text: 'Lose weight',
-      iconBg: 'bg-pink-100'
-    },
-    {
-      id: 'tone_sculpt',
-      emoji: '💪',
-      text: 'Tone & sculpt',
-      iconBg: 'bg-blue-100'
-    },
-    {
-      id: 'grow_glutes',
-      emoji: '🍑',
-      text: 'Grow my glutes',
-      iconBg: 'bg-purple-100'
-    },
-    {
-      id: 'glow_up',
-      emoji: '✨',
-      text: 'Overall glow-up',
-      iconBg: 'bg-yellow-100'
-    }
-  ]
+  console.log(selectedGoals);
+  console.log(JSON.stringify(onboardingStore$.onboarding, null, 2));
+
+  const goals = goalEnum.options.map(goal => ({
+    id: goal,
+    ...goalMap[goal],
+    text: goal
+  }))
 
   const toggleGoal = (id: string) => {
-    store$.onboarding.goals.set((prev) =>
-      prev.includes(id) ? prev.filter((bId) => bId !== id) : [...prev, id]
-    )
+    // Validate that the goal is in our enum
+    if (goalEnum.safeParse(id).success) {
+      onboardingStore$.onboarding.goals.set((prev) => 
+        prev.includes(id) ? prev.filter((bId) => bId !== id) : [...prev, id]
+      )
+    }
   }
 
   const handleContinue = () => {
-    if (selectedGoals.length) {
+    // Validate all selected goals
+    console.log(selectedGoals);
+    const validGoals = selectedGoals.every(goal => goalEnum.safeParse(goal).success)
+    if (selectedGoals.length && validGoals) {
       router.push('/(onboarding)/blockers')
     }
   }

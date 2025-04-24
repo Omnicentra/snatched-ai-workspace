@@ -3,7 +3,7 @@ import { InfoCard, OnboardingHeader, StyledButton } from '@/components/core'
 import { Ionicons } from '@expo/vector-icons'
 import Constants from 'expo-constants'
 import { useRouter } from 'expo-router'
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import {
   SafeAreaView,
   ScrollView,
@@ -11,18 +11,40 @@ import {
   TextInput,
   View
 } from 'react-native'
+import { onboardingStore$ } from '@/stores/onboarding.store'
+import { nameAgeSchema } from '@omc/validators/onboarding'
 
 export default function NameAgeScreen() {
   const router = useRouter()
   const [name, setName] = useState('')
   const [age, setAge] = useState('')
-
-  const canContinue = name.trim().length > 0 && parseInt(age) > 0 // Basic validation
+  const [validationError, setValidationError] = useState<string>()
 
   const handleStartScanning = () => {
-    // Store name and age
-    router.push('/(onboarding)/prepare-scan')
+    try {
+      const result = nameAgeSchema.safeParse({ name, age });
+
+      if (!result.success) {
+        throw new Error(result.error.message);
+      }
+
+      onboardingStore$.onboarding.name.set(result.data.name);
+      onboardingStore$.onboarding.age.set(result.data.age);
+      router.push('/(onboarding)/prepare-scan');
+    } catch (error) {
+      if (error instanceof Error) {
+        setValidationError(error.message);
+      } else {
+        setValidationError('Invalid input');
+      }
+    }
   }
+
+  // Validate as user types to enable/disable continue button
+  const isValid = useMemo(() => {
+    console.log(nameAgeSchema.safeParse({ name, age }).success)
+    return nameAgeSchema.safeParse({ name, age }).success;
+  }, [name, age]);
 
   return (
     <SafeAreaView
@@ -31,7 +53,7 @@ export default function NameAgeScreen() {
     >
       <ScrollView contentContainerStyle={{ flexGrow: 1 }} className="p-8">
         <OnboardingHeader
-          progress={16 / 20} // Adjust progress
+          progress={16 / 20}
           title="Almost there"
           subtitle="Let's personalize your experience."
         />
@@ -44,7 +66,10 @@ export default function NameAgeScreen() {
             className="w-full rounded-xl border border-gray-200 p-4 font-inter-medium text-xl text-black"
             placeholder="Enter your name"
             value={name}
-            onChangeText={setName}
+            onChangeText={(text) => {
+              setName(text);
+              setValidationError(undefined);
+            }}
             autoCapitalize="words"
           />
         </View>
@@ -58,17 +83,26 @@ export default function NameAgeScreen() {
             placeholder="Enter your age"
             keyboardType="number-pad"
             value={age}
-            onChangeText={setAge}
+            onChangeText={(text) => {
+              setAge(text);
+              setValidationError(undefined);
+            }}
             maxLength={3}
           />
         </View>
+
+        {validationError && (
+          <Text className="mb-4 font-inter-medium text-sm text-red-500">
+            {validationError}
+          </Text>
+        )}
 
         <InfoCard
           icon={
             <Ionicons name="shield-checkmark-outline" size={20} color="black" />
           }
           text="Your information is secure and will only be used to personalize your experience."
-          iconBg="bg-green-100" // Example color
+          iconBg="bg-green-100"
         />
 
         <View className="mt-auto pt-8">
@@ -76,8 +110,8 @@ export default function NameAgeScreen() {
             title="Continue"
             onPress={handleStartScanning}
             className="flex flex-row gap-x-3 rounded-full"
-            variant="primary" // Use gradient from HTML
-            disabled={!canContinue}
+            variant="primary"
+            disabled={!isValid}
           />
         </View>
       </ScrollView>

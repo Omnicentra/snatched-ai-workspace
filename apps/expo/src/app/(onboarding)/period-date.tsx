@@ -5,15 +5,17 @@ import {
   Text,
   SafeAreaView,
   ScrollView,
-  TextInput,
   Pressable
 } from 'react-native'
 import { useRouter } from 'expo-router'
 import Constants from 'expo-constants'
 import { OnboardingHeader, InfoCard, StyledButton } from '@/components/core'
 import { Ionicons } from '@expo/vector-icons'
-import { Calendar, DateData } from 'react-native-calendars' // Import calendar
+import { Calendar, DateData } from 'react-native-calendars'
 import * as Haptics from 'expo-haptics'
+import { onboardingStore$ } from '@/stores/onboarding.store'
+import { z } from 'zod'
+
 // Function to get today's date in YYYY-MM-DD format
 const getTodayDateString = () => {
   const today = new Date()
@@ -22,6 +24,12 @@ const getTodayDateString = () => {
   const day = String(today.getDate()).padStart(2, '0')
   return `${year}-${month}-${day}`
 }
+
+const periodDateValidationSchema = z.object({
+  last_period_start_date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format (YYYY-MM-DD)")
+});
 
 export default function PeriodDateScreen() {
   const router = useRouter()
@@ -33,8 +41,18 @@ export default function PeriodDateScreen() {
   }
 
   const handleContinue = () => {
-    // Store selectedDate
-    router.push('/(onboarding)/cravings')
+    const periodData = {
+      last_period_start_date: selectedDate,
+    };
+
+    const result = periodDateValidationSchema.safeParse(periodData);
+
+    if (result.success) {
+      onboardingStore$.onboarding.lastPeriodDate.set(selectedDate);
+      router.push('/(onboarding)/cravings')
+    } else {
+      console.error("Period date validation failed:", result.error);
+    }
   }
 
   return (
@@ -53,12 +71,7 @@ export default function PeriodDateScreen() {
           <Text className="mb-2 block font-inter-medium text-sm text-black">
             Start date of your last period
           </Text>
-          {/* Consider using a dedicated Date Picker component instead of TextInput for better UX */}
-          <Pressable
-            onPress={() => {
-              /* Open date picker? */
-            }}
-          >
+          <Pressable>
             <View className="w-full flex-row items-center justify-between rounded-xl border border-gray-200 p-4">
               <Text className="font-inter-medium text-xl text-black">
                 {selectedDate || 'Select Date'}
@@ -68,35 +81,33 @@ export default function PeriodDateScreen() {
                 size={20}
                 color="rgb(156 163 175)"
               />
-              {/* gray-400 */}
             </View>
           </Pressable>
         </View>
 
-        {/* Calendar Component */}
         <View className="mb-6 rounded-2xl border border-gray-100 bg-gray-50 p-5">
           <Calendar
-            current={selectedDate} // Control the visible month
+            current={selectedDate}
             onDayPress={(day: DateData) => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy)
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy)
               handleDayPress(day)
             }}
             markedDates={{
               [selectedDate]: {
                 selected: true,
-                selectedColor: '#FECDD3' /* pink-200 */,
+                selectedColor: '#FECDD3',
                 selectedTextColor: 'black'
               }
             }}
             theme={{
-              backgroundColor: '#F9FAFB', // bg-gray-50
+              backgroundColor: '#F9FAFB',
               calendarBackground: '#F9FAFB',
-              textSectionTitleColor: '#6B7280', // text-gray-500
+              textSectionTitleColor: '#6B7280',
               selectedDayBackgroundColor: '#FECDD3',
               selectedDayTextColor: '#000000',
-              todayTextColor: '#FF9A9E', // Highlight today's date
-              dayTextColor: '#1F2937', // text-gray-800
-              textDisabledColor: '#D1D5DB', // text-gray-300
+              todayTextColor: '#FF9A9E',
+              dayTextColor: '#1F2937',
+              textDisabledColor: '#D1D5DB',
               arrowColor: '#FF9A9E',
               monthTextColor: '#1F2937',
               indicatorColor: '#FF9A9E',
@@ -107,7 +118,6 @@ export default function PeriodDateScreen() {
               textMonthFontSize: 16,
               textDayHeaderFontSize: 12,
               'stylesheet.calendar.header': {
-                // Example of deeper theme customization
                 week: {
                   marginTop: 5,
                   flexDirection: 'row',
@@ -115,14 +125,13 @@ export default function PeriodDateScreen() {
                 }
               }
             }}
-            // Add other props as needed (minDate, maxDate, etc.)
           />
         </View>
 
         <InfoCard
           icon={<Ionicons name="lock-closed-outline" size={20} color="black" />}
           text="This information is private and helps us optimize your workouts and nutrition around your cycle."
-          iconBg="bg-yellow-100" // Match HTML
+          iconBg="bg-yellow-100"
         />
       </ScrollView>
       <View className="mt-auto p-8">

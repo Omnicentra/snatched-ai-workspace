@@ -2,13 +2,14 @@ import { nutritionStore$ } from "@/stores/nutrition.store"
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'
 import { use$ } from "@legendapp/state/react"
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import React from 'react'
+import React, { useRef } from 'react'
 import {
     Image,
     Pressable,
     ScrollView,
     Text,
-    View
+    View,
+    Animated,
 } from 'react-native'
 
 const RecipeDetailScreen = () => {
@@ -17,34 +18,67 @@ const RecipeDetailScreen = () => {
     const mealId = params.mealId as string
     const nutrition = use$(nutritionStore$)
     const meal = nutrition.meals[mealId];
-
     const loggedMeal = nutrition.loggedMeals[mealId];
+    const isLogged = !!loggedMeal?.loggedAt;
 
-    const isLogged = !!loggedMeal?.loggedAt
+    // Animation values
+    const scaleAnim = useRef(new Animated.Value(1)).current;
+    const rotateAnim = useRef(new Animated.Value(0)).current;
 
     const handleLogMeal = () => {
         if (!meal) return;
         
-        // Initialize or update the logged meal
-        nutritionStore$.loggedMeals.set({
-            ...nutritionStore$.loggedMeals.get(),
-            [mealId]: {
-                loggedAt: new Date().toISOString(),
-                mealId: mealId,
-            }
+        // Start animation sequence
+        Animated.parallel([
+            Animated.sequence([
+                Animated.timing(scaleAnim, {
+                    toValue: 0.8,
+                    duration: 100,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(scaleAnim, {
+                    toValue: 1.1,
+                    duration: 100,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(scaleAnim, {
+                    toValue: 1,
+                    duration: 100,
+                    useNativeDriver: true,
+                }),
+            ]),
+            Animated.timing(rotateAnim, {
+                toValue: 1,
+                duration: 300,
+                useNativeDriver: true,
+            }),
+        ]).start(() => {
+            // Update the store after animation
+            nutritionStore$.loggedMeals.set({
+                ...nutritionStore$.loggedMeals.get(),
+                [mealId]: {
+                    loggedAt: new Date().toISOString(),
+                    mealId: mealId,
+                }
+            });
         });
     };
 
+    const spin = rotateAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: ['0deg', '360deg'],
+    });
+
     if (!meal) {
         return (
-            <View className="flex-1 items-center justify-center bg-white">
+            <View className="flex-1 items-center justify-center bg-background">
                 <Text className="font-inter-medium text-gray-500">Meal not found</Text>
             </View>
         );
     }
 
     return (
-        <View className="flex-1 bg-white">
+        <ScrollView className="flex-1 bg-background">
             {/* Header Image */}
             <View className="relative h-[200px]">
                 <Image
@@ -59,18 +93,28 @@ const RecipeDetailScreen = () => {
                     >
                         <Ionicons name="arrow-back" size={24} color="white" />
                     </Pressable>
-                    {isLogged ? (
-                        <View className="h-10 w-10 items-center justify-center rounded-full bg-green-500">
-                            <Ionicons name="checkmark" size={24} color="white" />
-                        </View>
-                    ) : (
-                        <Pressable
-                            onPress={handleLogMeal}
-                            className="h-10 w-10 items-center justify-center rounded-full bg-pink-500"
-                        >
-                            <MaterialCommunityIcons name="plus" size={24} color="white" />
-                        </Pressable>
-                    )}
+                    <Animated.View
+                        style={{
+                            transform: [
+                                { scale: scaleAnim },
+                                { rotate: isLogged ? '0deg' : spin }
+                            ],
+                        }}
+                    >
+                        {isLogged ? (
+                            <View className="h-10 w-10 items-center justify-center rounded-full bg-green-500">
+                                <Ionicons name="checkmark" size={24} color="white" />
+                            </View>
+                        ) : (
+                            <Pressable
+                                onPress={handleLogMeal}
+                                className="h-10 w-10 items-center justify-center rounded-full"
+                                style={{ backgroundColor: '#EC4899' }}
+                            >
+                                <MaterialCommunityIcons name="plus" size={24} color="white" />
+                            </Pressable>
+                        )}
+                    </Animated.View>
                 </View>
             </View>
 
@@ -171,7 +215,7 @@ const RecipeDetailScreen = () => {
                 {/* Bottom Padding */}
                 <View className="h-8" />
             </ScrollView>
-        </View>
+        </ScrollView>
     )
 };
 
