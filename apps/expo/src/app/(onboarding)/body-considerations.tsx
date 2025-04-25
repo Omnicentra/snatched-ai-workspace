@@ -16,6 +16,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { onboardingStore$ } from "@/stores/onboarding.store";
 import { bodyConcernEnum } from "@omc/validators/onboarding";
 import { z } from "zod";
+import { use$ } from "@legendapp/state/react";
 
 type BodyConcern = z.infer<typeof bodyConcernEnum>;
 
@@ -70,66 +71,60 @@ const ConsiderationCard = ({
 }) => {
   const display = bodyConsiderationDisplayMap[concern];
   return (
-    <Pressable
-      onPress={onPress}
-      className={`mb-3 flex-row items-center rounded-xl border p-4 ${
-        selected ? "border-pink-400 bg-pink-50" : "border-gray-200 bg-white"
-      }`}
-      style={{
-        shadowColor: "#000",
-        shadowOffset: {
-          width: 0,
-          height: 1,
-        },
-        shadowOpacity: 0.05,
-        shadowRadius: 2,
-        elevation: 2,
-      }}
-    >
-      <View
+  <Pressable
+    onPress={onPress}
+    className={`mb-3 flex-row items-center rounded-xl border p-4 ${
+      selected ? "border-pink-400 bg-pink-50" : "border-gray-200 bg-white"
+    }`}
+    style={{
+      shadowColor: "#000",
+      shadowOffset: {
+        width: 0,
+        height: 1,
+      },
+      shadowOpacity: 0.05,
+      shadowRadius: 2,
+      elevation: 2,
+    }}
+  >
+    <View
         className={`${display.iconBg} h-10 w-10 items-center justify-center rounded-lg`}
-      >
+    >
         <Text className="text-xl">{display.icon}</Text>
-      </View>
-      <View className="ml-4 flex-1">
-        <Text className="font-inter-semibold text-base text-black">
+    </View>
+    <View className="ml-4 flex-1">
+      <Text className="font-inter-semibold text-base text-black">
           {concern}
-        </Text>
-      </View>
-      {selected && (
-        <View className="ml-2">
-          <View className="rounded-full bg-pink-400 p-1">
-            <Ionicons name="checkmark" size={16} color="white" />
-          </View>
+      </Text>
+    </View>
+    {selected && (
+      <View className="ml-2">
+        <View className="rounded-full bg-pink-400 p-1">
+          <Ionicons name="checkmark" size={16} color="white" />
         </View>
-      )}
-    </Pressable>
-  );
+      </View>
+    )}
+  </Pressable>
+);
 };
 
 export default function BodyConsiderationsScreen() {
   const router = useRouter();
-  const [selectedConcerns, setSelectedConcerns] = useState<Set<BodyConcern>>(new Set());
   const [customConsideration, setCustomConsideration] = useState("");
+  const selectedConcerns = use$(onboardingStore$.onboarding.bodyDescription);
 
   const toggleConcern = (concern: BodyConcern) => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    setSelectedConcerns((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(concern)) {
-        newSet.delete(concern);
-      } else {
-        newSet.add(concern);
-      }
-      return newSet;
-    });
+    onboardingStore$.onboarding.bodyDescription.set((prev) => 
+      prev.includes(concern) ? prev.filter((bId) => bId !== concern) : [...prev, concern]
+    );
   };
 
   const handleContinue = () => {
     const concerns = Array.from(selectedConcerns);
     const result = bodyConsiderationSchema.safeParse({
       bodyDescription: concerns,
-      otherBodyDetails: selectedConcerns.has("I have something else to mention") ? customConsideration : undefined,
+      otherBodyDetails: concerns.includes("I have something else to mention") ? customConsideration : undefined,
     });
 
     if (result.success) {
@@ -138,7 +133,7 @@ export default function BodyConsiderationsScreen() {
         // Only set other details if custom concern is selected and there's text
         onboardingStore$.onboarding.otherBodyDetails.set(customConsideration);
       }
-      router.push("/(onboarding)/transformation-intro");
+    router.push("/(onboarding)/transformation-intro");
     } else {
       console.error("Body concerns validation failed:", result.error);
     }
@@ -161,13 +156,13 @@ export default function BodyConsiderationsScreen() {
               <ConsiderationCard
                 key={concern}
                 concern={concern}
-                selected={selectedConcerns.has(concern)}
+                selected={selectedConcerns.includes(concern)}
                 onPress={() => toggleConcern(concern)}
               />
             ))}
 
             {/* Custom consideration text input */}
-            {selectedConcerns.has("I have something else to mention") && (
+            {selectedConcerns.includes("I have something else to mention") && (
               <View className="mb-6 mt-2">
                 <Text className="font-inter-medium mb-2 text-sm text-gray-600">
                   Please tell us more:
@@ -190,7 +185,7 @@ export default function BodyConsiderationsScreen() {
             title="Continue"
             onPress={handleContinue}
             variant="primary"
-            disabled={selectedConcerns.size === 0}
+            disabled={selectedConcerns.length === 0}
           />
         </View>
       </KeyboardAvoidingView>

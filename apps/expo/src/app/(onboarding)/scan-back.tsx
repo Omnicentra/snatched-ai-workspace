@@ -21,6 +21,8 @@ import { BlurView } from 'expo-blur'
 import { usePermissions } from 'expo-media-library'
 import sillhouetteBack from '@/assets/images/silhouette-back.png'
 import * as ImagePicker from 'expo-image-picker'
+import { getBaseUrl } from '@/utils/base-url'
+import { getOrCreateDeviceId } from '@/utils/device-id'
 
 // Import or define ProgressBar, Silhouette, CameraButton components
 
@@ -150,8 +152,42 @@ export default function ScanBackScreen() {
       const uri = result.assets?.[0]?.uri
       if (!result.canceled && uri) {
         setCapturedImage(uri)
+        
+        // Get or create device ID
+        const deviceId = await getOrCreateDeviceId()
+        
+        // Create form data
+        const formData = new FormData()
+        formData.append('deviceId', deviceId)
+        formData.append('photoType', 'back')
+        
+        // Append the photo
+        const asset = result.assets[0]
+        // @ts-expect-error: special react native format for form data
+        formData.append('photo.0', {
+          uri: asset.uri,
+          name: asset.fileName ?? asset.uri.split("/").pop(),
+          type: asset.mimeType,
+        })
+
+        if (asset.exif) {
+          formData.append('exif.0', JSON.stringify(asset.exif))
+        }
+        
+        // Upload image to backend
+        const response = await fetch(`${getBaseUrl()}/api/scan-upload`, {
+          method: "POST",
+          body: formData,
+          headers: {
+            Accept: "application/json",
+          },
+        })
+        
+        const data = await response.json()
+        console.log('Upload response:', data)
       }
     } catch (error) {
+      console.error('Failed to select image from gallery:', error)
       Alert.alert('Error', 'Failed to select image from gallery.')
     }
   }

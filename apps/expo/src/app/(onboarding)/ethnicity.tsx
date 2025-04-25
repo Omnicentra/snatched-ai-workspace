@@ -1,13 +1,12 @@
-import React, { useState } from "react";
-import { SafeAreaView, ScrollView, View } from "react-native";
-import Constants from "expo-constants";
-import { useRouter } from "expo-router";
 import { OnboardingHeader, OptionCard, StyledButton } from "@/components/core";
 import { onboardingStore$ } from "@/stores/onboarding.store";
+import { use$ } from "@legendapp/state/react";
 import { ethnicityEnum } from "@omc/validators/onboarding";
+import Constants from "expo-constants";
+import { useRouter } from "expo-router";
+import React from "react";
+import { SafeAreaView, ScrollView, View } from "react-native";
 import { z } from "zod";
-
-type Ethnicity = z.infer<typeof ethnicityEnum>;
 
 const ethnicityValidationSchema = z.object({
   ethnicity: ethnicityEnum.optional(),
@@ -15,13 +14,12 @@ const ethnicityValidationSchema = z.object({
 
 export default function EthnicityScreen() {
   const router = useRouter();
-  const [selectedEthnicity, setSelectedEthnicity] = useState<Ethnicity>();
+  const selectedEthnicity = use$(onboardingStore$.onboarding.ethnicity);
 
   const handleContinue = () => {
     const result = ethnicityValidationSchema.safeParse({ ethnicity: selectedEthnicity });
 
     if (result.success) {
-      onboardingStore$.onboarding.ethnicity.set(selectedEthnicity ?? "");
       router.push("/(onboarding)/body-considerations");
     } else {
       console.error("Ethnicity validation failed:", result.error);
@@ -49,7 +47,7 @@ export default function EthnicityScreen() {
               selected={selectedEthnicity === option}
               text={option}
               key={option}
-              onPress={() => setSelectedEthnicity(option)}
+              onPress={() => onboardingStore$.onboarding.ethnicity.set(option)}
             />
           ))}
         </View>

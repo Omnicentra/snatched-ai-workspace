@@ -18,6 +18,8 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import sillhouetteFront from '@/assets/images/silhouette-front.png';
 import * as ImagePicker from 'expo-image-picker';
+import { getBaseUrl } from '@/utils/base-url';
+import { getOrCreateDeviceId } from '@/utils/device-id';
 
 // Reusable Progress Bar (Import or define as before using View)
 const ProgressBar = ({ progress }: { progress: number }) => (
@@ -81,8 +83,8 @@ export default function ScanFrontScreen() {
 
   useEffect(() => {
     // Request permissions on mount
-    requestCameraPermission()
-    requestMediaPermission()
+    void requestCameraPermission()
+    void requestMediaPermission()
     return () => {
       if (countdownRef.current) {
         clearInterval(countdownRef.current)
@@ -96,12 +98,36 @@ export default function ScanFrontScreen() {
       setCountdown((prev) => {
         if (prev === 1) {
           clearInterval(countdownRef.current)
-          takePicture()
+          void takePicture()
           return null
         }
         return prev ? prev - 1 : null
       })
     }, 1000)
+  }
+
+  function formDataFromImagePicker(result: ImagePicker.ImagePickerSuccessResult, deviceId: string, photoType: string) {
+    const formData = new FormData();
+    
+    formData.append('deviceId', deviceId);
+    formData.append('photoType', photoType);
+  
+    for (const index in result.assets) {
+      const asset = result.assets[index];
+  
+      // @ts-expect-error: special react native format for form data
+      formData.append(`photo.${index}`, {
+        uri: asset.uri,
+        name: asset.fileName ?? asset.uri.split("/").pop(),
+        type: asset.mimeType,
+      });
+  
+      if (asset.exif) {
+        formData.append(`exif.${index}`, JSON.stringify(asset.exif));
+      }
+    }
+  
+    return formData;
   }
 
   const takePicture = async () => {
@@ -115,7 +141,7 @@ export default function ScanFrontScreen() {
         'Please grant media library permission to save photos.',
         [
           { text: 'Cancel', style: 'cancel' },
-          { text: 'Grant Permission', onPress: requestMediaPermission }
+          { text: 'Grant Permission', onPress: () => void requestMediaPermission() }
         ]
       )
       return
@@ -149,20 +175,36 @@ export default function ScanFrontScreen() {
   const handleGalleryUpload = async () => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images'],
         allowsEditing: true,
         aspect: [3, 4],
         quality: 0.7,
-      })
+      });
 
-      const uri = result.assets?.[0]?.uri
+      const uri = result.assets?.[0]?.uri;
       if (!result.canceled && uri) {
-        setCapturedImage(uri)
+        setCapturedImage(uri);
+        
+        // Get or create device ID
+        const deviceId = await getOrCreateDeviceId();
+        
+        // Upload image to backend
+        const response = await fetch(`${getBaseUrl()}/api/scan-upload`, {
+          method: "POST",
+          body: formDataFromImagePicker(result, deviceId, 'front'),
+          headers: {
+            Accept: "application/json",
+          },
+        });
+        
+        const data = await response.json();
+        console.log('Upload response:', data);
       }
     } catch (error) {
-      Alert.alert('Error', 'Failed to select image from gallery.')
+      console.error('Failed to select image from gallery:', error);
+      Alert.alert('Error', 'Failed to select image from gallery.');
     }
-  }
+  };
 
   if (!cameraPermission) {
     return <View className="flex-1 bg-black" /> // Loading state

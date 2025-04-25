@@ -112,25 +112,25 @@ export default function WeightScreen() {
               key={index}
               className={`flex-1 rounded-full px-4 py-2 ${
                 unit === option.value ? "bg-white" : ""
-              }`}
+                }`}
               onPress={() => setUnit(option.value)}
               style={
                 unit === option.value && {
                   shadowColor: "#000",
-                  shadowOffset: {
-                    width: 0,
-                    height: 4,
-                  },
-                  shadowOpacity: 0.05,
-                  shadowRadius: 4,
-                  elevation: 2,
+                shadowOffset: {
+                  width: 0,
+                  height: 4,
+                },
+                shadowOpacity: 0.05,
+                shadowRadius: 4,
+                elevation: 2,
                 }
               }
             >
               <Text
                 className={`font-inter-medium text-center text-sm ${
                   unit === option.value ? "text-black" : "text-gray-600"
-                }`}
+                  }`}
               >
                 {option.label}
               </Text>
@@ -140,7 +140,7 @@ export default function WeightScreen() {
 
         <View className="my-8 items-center justify-center">
           <Text className="font-inter-bold mb-2 text-4xl">{displayWeight}</Text>
-
+          
           <View className="w-full" style={{ height: RULER_HEIGHT }}>
             <RulerPicker
               {...getRulerConfig()}
