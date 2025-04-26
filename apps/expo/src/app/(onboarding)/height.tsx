@@ -35,8 +35,8 @@ export default function HeightScreen() {
   const router = useRouter();
   const { height: HEIGHT } = useWindowDimensions();
   const [unit, setUnit] = useState<HeightUnit>("ft/in");
-  const [heightInFeet, setHeightInFeet] = useState(4);
-  const [heightInInches, setHeightInInches] = useState(4);
+  const [heightInFeet, setHeightInFeet] = useState(5);
+  const [heightInInches, setHeightInInches] = useState(5);
   const [heightInCm, setHeightInCm] = useState(132); // Default 4'4" in cm
 
   // Convert between units when toggling

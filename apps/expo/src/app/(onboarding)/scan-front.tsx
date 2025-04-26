@@ -148,9 +148,45 @@ export default function ScanFrontScreen() {
     }
 
     try {
-      const photo = await cameraRef.current.takePictureAsync({ quality: 0.7 })
+      const photo = await cameraRef.current.takePictureAsync({ 
+        quality: 0.7,
+        exif: true
+      });
+
       if (photo?.uri) {
-        setCapturedImage(photo.uri)
+        setCapturedImage(photo.uri);
+        
+        // Get or create device ID
+        const deviceId = await getOrCreateDeviceId();
+        
+        // Create form data
+        const formData = new FormData();
+        formData.append('deviceId', deviceId);
+        formData.append('photoType', 'front');
+        
+        // Append the photo
+        // @ts-expect-error: special react native format for form data
+        formData.append('photo.0', {
+          uri: photo.uri,
+          name: photo.uri.split("/").pop(),
+          type: 'image/jpeg',
+        });
+
+        if (photo.exif) {
+          formData.append('exif.0', JSON.stringify(photo.exif));
+        }
+        
+        // Upload image to backend
+        const response = await fetch(`${getBaseUrl()}/api/scan-upload`, {
+          method: "POST",
+          body: formData,
+          headers: {
+            Accept: "application/json",
+          },
+        });
+        
+        const data = await response.json();
+        console.log('Upload response:', data);
       }
     } catch (error) {
       console.error('Failed to take picture:', error)

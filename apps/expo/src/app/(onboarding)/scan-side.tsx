@@ -1,31 +1,30 @@
 // app/(onboarding)/scan-side.tsx
 // Similar structure to scan-front.tsx, just change titles, progress, tips, and navigation target.
-import React, { useState, useRef, useEffect } from 'react'
-import {
-  Text,
-  View,
-  Pressable,
-  SafeAreaView,
-  Alert,
-  StyleSheet,
-  useWindowDimensions
-} from 'react-native'
-import { CameraType, CameraView } from 'expo-camera'
-import {
-  PermissionStatus,
-  usePermissions,
-  getPermissionsAsync
-} from 'expo-media-library'
-import { useRouter } from 'expo-router'
-import Constants from 'expo-constants'
-import { Image } from 'expo-image'
-import Svg, { Path } from 'react-native-svg'
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'
-import { BlurView } from 'expo-blur'
 import sillhouetteSide from '@/assets/images/silhouette-side.png'
-import * as ImagePicker from 'expo-image-picker'
 import { getBaseUrl } from '@/utils/base-url'
 import { getOrCreateDeviceId } from '@/utils/device-id'
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'
+import { BlurView } from 'expo-blur'
+import { CameraType, CameraView } from 'expo-camera'
+import Constants from 'expo-constants'
+import { Image } from 'expo-image'
+import * as ImagePicker from 'expo-image-picker'
+import {
+  getPermissionsAsync,
+  PermissionStatus,
+  usePermissions
+} from 'expo-media-library'
+import { useRouter } from 'expo-router'
+import React, { useEffect, useRef, useState } from 'react'
+import {
+  Alert,
+  Pressable,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View
+} from 'react-native'
 
 // Import or define ProgressBar, Silhouette, CameraButton components as in scan-front.tsx
 
@@ -128,9 +127,45 @@ export default function ScanSideScreen() {
       return
     }
     try {
-      const photo = await cameraRef.current.takePictureAsync({ quality: 0.7 })
+      const photo = await cameraRef.current.takePictureAsync({ 
+        quality: 0.7,
+        exif: true
+      });
+
       if (photo?.uri) {
-        setCapturedImage(photo.uri)
+        setCapturedImage(photo.uri);
+        
+        // Get or create device ID
+        const deviceId = await getOrCreateDeviceId();
+        
+        // Create form data
+        const formData = new FormData();
+        formData.append('deviceId', deviceId);
+        formData.append('photoType', 'side');
+        
+        // Append the photo
+        // @ts-expect-error: special react native format for form data
+        formData.append('photo.0', {
+          uri: photo.uri,
+          name: photo.uri.split("/").pop(),
+          type: 'image/jpeg',
+        });
+
+        if (photo.exif) {
+          formData.append('exif.0', JSON.stringify(photo.exif));
+        }
+        
+        // Upload image to backend
+        const response = await fetch(`${getBaseUrl()}/api/scan-upload`, {
+          method: "POST",
+          body: formData,
+          headers: {
+            Accept: "application/json",
+          },
+        });
+        
+        const data = await response.json();
+        console.log('Upload response:', data);
       }
     } catch (error) {
       console.error('Failed to take picture:', error)

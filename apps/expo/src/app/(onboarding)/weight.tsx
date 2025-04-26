@@ -27,8 +27,8 @@ const weightValidationSchema = z.object({
 export default function WeightScreen() {
   const router = useRouter();
   const [unit, setUnit] = useState<WeightUnit>("lb");
-  const [weightInLbs, setWeightInLbs] = useState(135);
-  const [weightInKg, setWeightInKg] = useState(61); // Default 135 lbs in kg
+  const [weightInLbs, setWeightInLbs] = useState(155);
+  const [weightInKg, setWeightInKg] = useState(65); // Default 135 lbs in kg
 
   // Convert between units when toggling
   useEffect(() => {
