@@ -38,7 +38,7 @@ function getAppConfig() {
         intentFilters: [
           {
             scheme: "https",
-            host: "snatched.ai",
+            host: "snatchedai.com",
           },
         ],
       };
@@ -67,13 +67,14 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ios: {
     supportsTablet: true,
     bundleIdentifier: iosBundleIdentifier,
+    buildNumber: "2",
     config: {
       usesNonExemptEncryption: false,
     },
     associatedDomains: [
       "applinks:painfully-classic-egret.ngrok-free.app",
       "applinks:snatched-ai-dev-oh2uj.ondigitalocean.app",
-      "applinks:snatched-ai-ljnck.ondigitalocean.app",
+      "applinks:snatchedai.com",
     ],
   },
   android: {
@@ -81,6 +82,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       foregroundImage: "./assets/adaptive-icon.png",
       backgroundColor: "#ffffff",
     },
+    versionCode: 2,
     package: androidPackage,
     permissions: [
       "android.permission.READ_EXTERNAL_STORAGE",

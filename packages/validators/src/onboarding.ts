@@ -101,16 +101,22 @@ export const cravingEnum = z.enum([
   "Cheese",
   "Fried Food",
 ]);
-
-export const nameSchema = z.string()
+ 
+export const nameSchema = z
+  .string()
   .min(1, "Name is required")
   .max(50, "Name is too long")
-  .transform(val => val.trim());
+  .transform((val) => val.trim());
 
-export const ageSchema = z.union([z.number(), z.string()])
-  .transform(val => parseInt(val.toString()))
-  .pipe(z.number().int("Age must be a whole number")
-  .max(100, "Age must be less than 100"));
+export const ageSchema = z
+  .union([z.number(), z.string()])
+  .transform((val) => parseInt(val.toString()))
+  .pipe(
+    z
+      .number()
+      .int("Age must be a whole number")
+      .max(100, "Age must be less than 100"),
+  );
 
 export const nameAgeSchema = z.object({
   name: nameSchema,

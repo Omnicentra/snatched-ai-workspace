@@ -27,10 +27,12 @@
     "lint": "eslint",
     "generate": "pnpm with-env drizzle-kit generate",
     "migrate": "pnpm with-env drizzle-kit migrate",
+    "migrate:prod": "doppler run -p snatched-ai-backend -c prd -- drizzle-kit migrate",
     "push": "pnpm with-env drizzle-kit push",
     "pull": "pnpm with-env drizzle-kit pull",
     "drop": "pnpm with-env drizzle-kit drop",
     "studio": "pnpm with-env drizzle-kit studio",
+    "studio:prod": "doppler run -p snatched-ai-backend -c prd -- drizzle-kit studio",
     "typecheck": "tsc --noEmit --emitDeclarationOnly false",
     "with-env": "dotenv -e ../../.env --"
   },

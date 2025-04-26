@@ -27,7 +27,7 @@ export const getBaseUrl = () => {
   } else if (appVariant !== "production") {
     return "https://snatched-ai-dev-oh2uj.ondigitalocean.app";
   } else {
-    return "https://snatched-ai-ljnck.ondigitalocean.app/";
+    return "https://snatchedai.com";
   }
 };
 

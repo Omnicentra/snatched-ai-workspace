@@ -1,26 +1,26 @@
 // app/(onboarding)/scan-back.tsx
 // Similar to scan-front/side, adjust titles, progress, tips, and navigation target.
-import React, { useState, useRef, useEffect } from 'react'
-import {
-  Text,
-  View,
-  Pressable,
-  SafeAreaView,
-  Alert,
-  StyleSheet,
-  useWindowDimensions
-} from 'react-native'
+import sillhouetteBack from '@/assets/images/silhouette-back.png'
+import { getBaseUrl } from '@/utils/base-url'
+import { getOrCreateDeviceId } from '@/utils/device-id'
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'
+import { BlurView } from 'expo-blur'
 import { CameraType, CameraView, useCameraPermissions } from 'expo-camera'
+import Constants from 'expo-constants'
+import { Image } from 'expo-image'
+import * as ImagePicker from 'expo-image-picker'
 import * as MediaLibrary from 'expo-media-library'
 import { useRouter } from 'expo-router'
-import Constants from 'expo-constants'
-import Svg, { Path } from 'react-native-svg'
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'
-import { Image } from 'expo-image'
-import { BlurView } from 'expo-blur'
-import { usePermissions } from 'expo-media-library'
-import sillhouetteBack from '@/assets/images/silhouette-back.png'
-import * as ImagePicker from 'expo-image-picker'
+import React, { useEffect, useRef, useState } from 'react'
+import {
+  Alert,
+  Pressable,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View
+} from 'react-native'
 
 // Import or define ProgressBar, Silhouette, CameraButton components
 
@@ -114,9 +114,45 @@ export default function ScanBackScreen() {
       return
     }
     try {
-      const photo = await cameraRef.current.takePictureAsync({ quality: 0.7 })
+      const photo = await cameraRef.current.takePictureAsync({ 
+        quality: 0.7,
+        exif: true
+      });
+
       if (photo?.uri) {
-        setCapturedImage(photo.uri)
+        setCapturedImage(photo.uri);
+        
+        // Get or create device ID
+        const deviceId = await getOrCreateDeviceId();
+        
+        // Create form data
+        const formData = new FormData();
+        formData.append('deviceId', deviceId);
+        formData.append('photoType', 'back');
+        
+        // Append the photo
+        // @ts-expect-error: special react native format for form data
+        formData.append('photo.0', {
+          uri: photo.uri,
+          name: photo.uri.split("/").pop(),
+          type: 'image/jpeg',
+        });
+
+        if (photo.exif) {
+          formData.append('exif.0', JSON.stringify(photo.exif));
+        }
+        
+        // Upload image to backend
+        const response = await fetch(`${getBaseUrl()}/api/scan-upload`, {
+          method: "POST",
+          body: formData,
+          headers: {
+            Accept: "application/json",
+          },
+        });
+        
+        const data = await response.json();
+        console.log('Upload response:', data);
       }
     } catch (error) {
       console.error('Failed to take picture:', error)
@@ -150,8 +186,42 @@ export default function ScanBackScreen() {
       const uri = result.assets?.[0]?.uri
       if (!result.canceled && uri) {
         setCapturedImage(uri)
+        
+        // Get or create device ID
+        const deviceId = await getOrCreateDeviceId()
+        
+        // Create form data
+        const formData = new FormData()
+        formData.append('deviceId', deviceId)
+        formData.append('photoType', 'back')
+        
+        // Append the photo
+        const asset = result.assets[0]
+        // @ts-expect-error: special react native format for form data
+        formData.append('photo.0', {
+          uri: asset.uri,
+          name: asset.fileName ?? asset.uri.split("/").pop(),
+          type: asset.mimeType,
+        })
+
+        if (asset.exif) {
+          formData.append('exif.0', JSON.stringify(asset.exif))
+        }
+        
+        // Upload image to backend
+        const response = await fetch(`${getBaseUrl()}/api/scan-upload`, {
+          method: "POST",
+          body: formData,
+          headers: {
+            Accept: "application/json",
+          },
+        })
+        
+        const data = await response.json()
+        console.log('Upload response:', data)
       }
     } catch (error) {
+      console.error('Failed to select image from gallery:', error)
       Alert.alert('Error', 'Failed to select image from gallery.')
     }
   }

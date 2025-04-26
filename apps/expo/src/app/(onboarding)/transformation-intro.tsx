@@ -1,20 +1,20 @@
 // app/(onboarding)/transformation-intro.tsx // <-- Assuming file name might be this based on component name
-import React, { useEffect } from 'react'
-import { View, Text, SafeAreaView, ScrollView, Dimensions } from 'react-native'
-import { useRouter } from 'expo-router'
+import { OnboardingHeader, StyledButton } from '@/components/core'; // Assuming core components path
 import Constants from 'expo-constants'
-import { OnboardingHeader, StyledButton } from '@/components/core' // Assuming core components path
-import Svg, { Path, Circle } from 'react-native-svg'
+import { useRouter } from 'expo-router'
+import React, { useEffect } from 'react'
+import { Dimensions, SafeAreaView, Text, View } from 'react-native'
 import Animated, {
-  useAnimatedProps,
-  useSharedValue,
-  withTiming,
   Easing,
+  FadeIn, // Import useAnimatedStyle for the circle
+  interpolate,
+  useAnimatedProps, // Import FadeIn
+  useAnimatedStyle,
+  useSharedValue,
   withDelay,
-  FadeIn, // Import FadeIn
-  useAnimatedStyle, // Import useAnimatedStyle for the circle
-  interpolate, // Import interpolate
+  withTiming,
 } from 'react-native-reanimated'
+import Svg, { Circle, Path } from 'react-native-svg'
 
 const AnimatedPath = Animated.createAnimatedComponent(Path)
 // const AnimatedCircle = Animated.createAnimatedComponent(Circle); // Option 1: Animate Circle directly
@@ -143,7 +143,7 @@ export default function TransformationIntroScreen() {
               <AnimatedPath
                 animatedProps={animatedPathProps}
                 d={optimizedHabitsPath}
-                stroke="#fb7185" // Rose color
+                stroke="#6366f1" // Changed to indigo-500 for better contrast
                 strokeWidth={3}
                 fill="none"
                 strokeLinecap="round"
@@ -221,7 +221,7 @@ export default function TransformationIntroScreen() {
               <Text className="ml-1.5 text-xs text-gray-700">Visible Waistline</Text>
             </View>
             <View className="flex-row items-center">
-              <View className="h-2.5 w-2.5 rounded-full bg-[#fb7185]" />
+              <View className="h-2.5 w-2.5 rounded-full bg-[#6366f1]" />
               <Text className="ml-1.5 text-xs text-gray-700">Optimized Habits</Text>
             </View>
           </Animated.View>
