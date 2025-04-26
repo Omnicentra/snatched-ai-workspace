@@ -101,7 +101,7 @@ export const cravingEnum = z.enum([
   "Cheese",
   "Fried Food",
 ]);
-
+ 
 export const nameSchema = z
   .string()
   .min(1, "Name is required")

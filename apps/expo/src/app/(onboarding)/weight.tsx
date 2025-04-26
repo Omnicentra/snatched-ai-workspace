@@ -117,15 +117,15 @@ export default function WeightScreen() {
               style={
                 unit === option.value && {
                   shadowColor: "#000",
-                shadowOffset: {
-                  width: 0,
-                  height: 4,
-                },
-                shadowOpacity: 0.05,
-                shadowRadius: 4,
-                elevation: 2,
+                  shadowOffset: {
+                    width: 0,
+                    height: 4,
+                  },
+                  shadowOpacity: 0.05,
+                  shadowRadius: 4,
+                  elevation: 2,
+                  }
                 }
-              }
             >
               <Text
                 className={`font-inter-medium text-center text-sm ${
@@ -140,7 +140,6 @@ export default function WeightScreen() {
 
         <View className="my-8 items-center justify-center">
           <Text className="font-inter-bold mb-2 text-4xl">{displayWeight}</Text>
-          
           <View className="w-full" style={{ height: RULER_HEIGHT }}>
             <RulerPicker
               {...getRulerConfig()}

@@ -71,41 +71,41 @@ const ConsiderationCard = ({
 }) => {
   const display = bodyConsiderationDisplayMap[concern];
   return (
-  <Pressable
-    onPress={onPress}
-    className={`mb-3 flex-row items-center rounded-xl border p-4 ${
-      selected ? "border-pink-400 bg-pink-50" : "border-gray-200 bg-white"
-    }`}
-    style={{
-      shadowColor: "#000",
-      shadowOffset: {
-        width: 0,
-        height: 1,
-      },
-      shadowOpacity: 0.05,
-      shadowRadius: 2,
-      elevation: 2,
-    }}
-  >
-    <View
-        className={`${display.iconBg} h-10 w-10 items-center justify-center rounded-lg`}
+    <Pressable
+      onPress={onPress}
+      className={`mb-3 flex-row items-center rounded-xl border p-4 ${
+        selected ? "border-pink-400 bg-pink-50" : "border-gray-200 bg-white"
+      }`}
+      style={{
+        shadowColor: "#000",
+        shadowOffset: {
+          width: 0,
+          height: 1,
+        },
+        shadowOpacity: 0.05,
+        shadowRadius: 2,
+        elevation: 2,
+      }}
     >
-        <Text className="text-xl">{display.icon}</Text>
-    </View>
-    <View className="ml-4 flex-1">
-      <Text className="font-inter-semibold text-base text-black">
-          {concern}
-      </Text>
-    </View>
-    {selected && (
-      <View className="ml-2">
-        <View className="rounded-full bg-pink-400 p-1">
-          <Ionicons name="checkmark" size={16} color="white" />
-        </View>
+      <View
+          className={`${display.iconBg} h-10 w-10 items-center justify-center rounded-lg`}
+      >
+          <Text className="text-xl">{display.icon}</Text>
       </View>
-    )}
-  </Pressable>
-);
+      <View className="ml-4 flex-1">
+        <Text className="font-inter-semibold text-base text-black">
+            {concern}
+        </Text>
+      </View>
+      {selected && (
+        <View className="ml-2">
+          <View className="rounded-full bg-pink-400 p-1">
+            <Ionicons name="checkmark" size={16} color="white" />
+          </View>
+        </View>
+      )}
+    </Pressable>
+  );
 };
 
 export default function BodyConsiderationsScreen() {
