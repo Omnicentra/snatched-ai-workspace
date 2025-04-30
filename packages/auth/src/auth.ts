@@ -12,10 +12,10 @@ import { env } from "../env";
 const redirectURI = env.BETTER_AUTH_URL + "/api/auth/callback";
 
 const makeAppleClientSecret = () => {
-  const teamId = env.AUTH_APPLE_TEAM_ID;
-  const keyId = env.AUTH_APPLE_KEY_ID;
-  const clientId = env.AUTH_APPLE_ID;
-  const privateKey = env.AUTH_APPLE_PRIVATE_KEY;
+  const teamId = env.APPLE_AUTH_TEAM_ID;
+  const keyId = env.APPLE_AUTH_KEY_ID;
+  const clientId = env.APPLE_AUTH_CLIENT_ID;
+  const privateKey = env.APPLE_AUTH_PRIVATE_KEY;
 
 
   const headers = {
@@ -54,7 +54,7 @@ export const config = {
       redirectURI: redirectURI + "/discord",
     },
     apple: {
-      clientId: env.AUTH_APPLE_ID,
+      clientId: env.APPLE_AUTH_CLIENT_ID,
       clientSecret: makeAppleClientSecret(),
       redirectURI: redirectURI + "/apple",
     },

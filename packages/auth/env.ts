@@ -9,11 +9,11 @@ export const env = createEnv({
     GOOGLE_API_KEY: z.string().min(1),
     AUTH_GOOGLE_ID: z.string().min(1),
     AUTH_GOOGLE_SECRET: z.string().min(1),
-    AUTH_APPLE_ID: z.string().min(1),
+    APPLE_AUTH_CLIENT_ID: z.string().min(1),
     // AUTH_APPLE_SECRET: z.string().min(1).optional(),
-    AUTH_APPLE_PRIVATE_KEY: z.string().min(1),
-    AUTH_APPLE_TEAM_ID: z.string().min(1).default('U665535C27'),
-    AUTH_APPLE_KEY_ID: z.string().min(1).default('3F3824Q47C'),
+    APPLE_AUTH_PRIVATE_KEY: z.string().min(1),
+    APPLE_AUTH_TEAM_ID: z.string().min(1).default('U665535C27'),
+    APPLE_AUTH_KEY_ID: z.string().min(1).default('3F3824Q47C'),
     AUTH_SECRET:
       process.env.NODE_ENV === "production"
         ? z.string().min(1)
