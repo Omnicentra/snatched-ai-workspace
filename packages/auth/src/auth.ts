@@ -27,6 +27,11 @@ export const config = {
       clientSecret: env.AUTH_DISCORD_SECRET,
       redirectURI: redirectURI + "/discord",
     },
+    apple: {
+      clientId: 'com.omnicentra.snatched-ai-dev',
+      clientSecret: env.AUTH_APPLE_SECRET,
+      redirectURI: redirectURI + "/apple",
+    },
     google: {
       clientId: env.AUTH_GOOGLE_ID,
       clientSecret: env.AUTH_GOOGLE_SECRET,
@@ -37,6 +42,7 @@ export const config = {
     "snatched-ai://",
     "snatched-ai-preview://",
     "snatched-ai-dev://",
+    "https://appleid.apple.com"
   ],
 } satisfies BetterAuthOptions;
 

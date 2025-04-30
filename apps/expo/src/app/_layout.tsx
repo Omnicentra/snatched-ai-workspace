@@ -53,8 +53,6 @@ export default function RootLayout() {
   });
 
   const initRevenueCat = useCallback(async () => {
-    console.log('revenuecatProjectAppleApiKey', revenuecatProjectAppleApiKey);
-    console.log('revenuecatProjectGoogleApiKey', revenuecatProjectGoogleApiKey);
     await Purchases.setLogLevel(LOG_LEVEL.VERBOSE);
     if (Platform.OS === "ios") {
       Purchases.configure({ apiKey: revenuecatProjectAppleApiKey });

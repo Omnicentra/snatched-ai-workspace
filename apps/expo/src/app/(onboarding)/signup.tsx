@@ -11,7 +11,7 @@ export default function SignupScreen() {
 
   const handleAppleSignIn = async () => {
     try {
-      const result = await authClient.signIn.social({ provider: 'discord', callbackURL: '/(onboarding)/analyzing' });
+      const result = await authClient.signIn.social({ provider: 'apple', callbackURL: '/(onboarding)/analyzing' });
       console.log(JSON.stringify(result, null, 2));
     } catch (error) {
       if (error instanceof Error) {

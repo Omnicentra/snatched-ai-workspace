@@ -8,6 +8,8 @@ export const env = createEnv({
     AUTH_DISCORD_SECRET: z.string().min(1),
     AUTH_GOOGLE_ID: z.string().min(1),
     AUTH_GOOGLE_SECRET: z.string().min(1),
+    AUTH_APPLE_ID: z.string().min(1).default('com.omnicentra.snatched-ai'),
+    AUTH_APPLE_SECRET: z.string().min(1),
     AUTH_SECRET:
       process.env.NODE_ENV === "production"
         ? z.string().min(1)

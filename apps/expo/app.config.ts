@@ -68,6 +68,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     supportsTablet: true,
     bundleIdentifier: iosBundleIdentifier,
     buildNumber: "2",
+    usesAppleSignIn: true,
     config: {
       usesNonExemptEncryption: false,
     },
