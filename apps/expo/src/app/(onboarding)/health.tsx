@@ -17,6 +17,7 @@ import {
 import { onboardingStore$ } from "@/stores/onboarding.store";
 import { medicalConditionResponseEnum } from "@omc/validators/onboarding";
 import { z } from "zod";
+import { use$ } from "@legendapp/state/react";
 
 type MedicalConditionResponse = z.infer<typeof medicalConditionResponseEnum>;
 
@@ -28,7 +29,7 @@ const healthValidationSchema = z.object({
 export default function HealthScreen() {
   const router = useRouter();
   const [selectedOption, setSelectedOption] = useState<MedicalConditionResponse>();
-  const [healthDetails, setHealthDetails] = useState("");
+  const healthDetails = use$(onboardingStore$.onboarding.healthConditions);
 
   const handleContinue = () => {
     if (!selectedOption) return;
@@ -42,7 +43,6 @@ export default function HealthScreen() {
 
     if (result.success) {
       onboardingStore$.onboarding.hasHealthConditions.set(selectedOption === "Yes");
-      onboardingStore$.onboarding.healthConditions.set(healthDetails);
       router.push("/(onboarding)/cycle");
     } else {
       console.error("Health validation failed:", result.error);
@@ -82,7 +82,7 @@ export default function HealthScreen() {
                   className="w-full rounded-xl border border-gray-200 p-4 text-base text-black"
                   multiline
                   value={healthDetails}
-                  onChangeText={setHealthDetails}
+                  onChangeText={(text) => onboardingStore$.onboarding.healthConditions.set(text)}
                 />
               </View>
             )}

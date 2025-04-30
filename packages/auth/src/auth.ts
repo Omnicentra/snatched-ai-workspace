@@ -33,7 +33,6 @@ const makeAppleClientSecret = () => {
   };
 
   const token = JWT.sign(payload, privateKey, { header: headers });
-  console.log("\ntoken", token);
   return token;
 };
 

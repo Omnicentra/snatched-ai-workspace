@@ -14,6 +14,10 @@ alwaysApply: false
   - Structure files: exported component, subcomponents, helpers, static content, types.
   - Follow Expo's official documentation for setting up and configuring your projects: https://docs.expo.dev/
 
+  Monorepo Guidelines
+  - Refer to https://turborepo.com/docs for understanding the turbo monorepo structure
+  - When trying to import types / zod schemas from another turbo package into @omc/expo app, they must come solely from the @omc/validators package 
+
   Naming Conventions
   - Use lowercase with dashes for directories (e.g., components/auth-wizard).
   - Favor named exports for components.

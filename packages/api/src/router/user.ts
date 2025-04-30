@@ -1,13 +1,26 @@
-import type { TRPCRouterRecord } from "@trpc/server";
+import { TRPCError  } from "@trpc/server";
+import type {TRPCRouterRecord} from "@trpc/server";
 import { z } from "zod";
-
-import { publicProcedure } from "../trpc";
+import { createTRPCRouter, publicProcedure } from "../trpc";
 import { images } from "../utils/benchmark-images";
 import { analyzeBodyImages } from "../utils/gemini";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { v4 as uuidv4 } from "uuid";
+import type { ImageScansKey } from "../utils/types";
 
 type BodyShapeEnum = keyof typeof images;
 
-export const userRouter = {
+// Create S3 client only if environment variables are available
+const s3Client = new S3Client({
+  region: "us-east-1",
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID ?? "",
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY ?? "",
+  },
+});
+
+export const userRouter = createTRPCRouter({
   /**
    * bodyRating
    * Accepts image URLs and desired body shape to calculate various body-rating scores
@@ -15,17 +28,79 @@ export const userRouter = {
   bodyRating: publicProcedure
     .input(
       z.object({
-        imageKeys: z.array(z.string()),
-        desiredBodyShape: z.enum(Object.keys(images) as [BodyShapeEnum, ...BodyShapeEnum[]]),
-      })
+        imageKeys: z.object({
+          front: z.string(),
+          side: z.string(),
+          back: z.string(),
+        }),
+        desiredBodyShape: z.enum(Object.keys(images) as [BodyShapeEnum]),
+      }),
     )
-    .mutation(async (opts) => {
-      const { imageKeys, desiredBodyShape } = opts.input;
+    .mutation(async ({ input }) => {
+      console.log(JSON.stringify(input, null, 2));
+      // Extract urls for each body angle
+      const { imageKeys, desiredBodyShape } = input;
       
-      if (imageKeys.length !== 3) {
-        throw new Error("Exactly 3 images are required: front, back, and side views");
-      }
+      // Format for the analyzeBodyImages function
+      const imageData : ImageScansKey[] = [
+        { angle: 'front', key: imageKeys.front },
+        { angle: 'side', key: imageKeys.side },
+        { angle: 'back', key: imageKeys.back },
+      ];
 
-      return analyzeBodyImages(imageKeys, desiredBodyShape);
+      // Run body analyzer with image URLs and desired shape
+      try {
+        return analyzeBodyImages(imageData, desiredBodyShape);
+      } catch (error) {
+        console.error(error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to analyze body images",
+        });
+      }
     }),
-} satisfies TRPCRouterRecord;
+
+  generatePhotoUploadUrl: publicProcedure
+    .input(
+      z.object({
+        deviceId: z.string(),
+        photoType: z.enum(["front", "side", "back"]),
+        fileType: z.string(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const { deviceId, photoType, fileType } = input;
+      
+      try {
+        // Generate unique file name
+        const fileName = `${uuidv4()}.${fileType.split("/").pop() ?? "jpg"}`;
+        
+        // Create S3 key path
+        const key = `temp-users/${deviceId}/${photoType}/${fileName}`;
+        
+        // Generate presigned URL for direct upload
+        const putCommand = new PutObjectCommand({
+          Bucket: "snatched-ai-bucket",
+          Key: key,
+          ContentType: fileType,
+        });
+        
+        // Generate signed URL that expires in 10 minutes
+        const presignedUrl = await getSignedUrl(s3Client, putCommand, {
+          expiresIn: 600,
+        });
+        
+        return {
+          presignedUrl,
+          key,
+          fileName,
+        };
+      } catch (error) {
+        console.error(error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to generate upload URL",
+        });
+      }
+    }),
+}) satisfies TRPCRouterRecord;

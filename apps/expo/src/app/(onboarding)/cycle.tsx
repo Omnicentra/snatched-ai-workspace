@@ -11,6 +11,7 @@ import {
 import { onboardingStore$ } from '@/stores/onboarding.store'
 import { menstrualCycleStatusEnum } from '@omc/validators/onboarding'
 import { z } from 'zod'
+import { use$ } from '@legendapp/state/react'
 
 type MenstrualCycleStatus = z.infer<typeof menstrualCycleStatusEnum>;
 
@@ -20,7 +21,7 @@ const cycleValidationSchema = z.object({
 
 export default function CycleScreen() {
   const router = useRouter()
-  const [selectedCycle, setSelectedCycle] = useState<MenstrualCycleStatus>()
+  const selectedCycle = use$(onboardingStore$.onboarding.menstruralCycle);
 
   const handleContinue = () => {
     if (!selectedCycle) return;
@@ -32,8 +33,6 @@ export default function CycleScreen() {
     const result = cycleValidationSchema.safeParse(cycleData);
 
     if (result.success) {
-      onboardingStore$.onboarding.menstruralCycle.set(selectedCycle);
-      
       if (selectedCycle === "Yes - Regular" || selectedCycle === "Yes - Irregular") {
         router.push('/(onboarding)/period-date')
       } else {
@@ -64,7 +63,7 @@ export default function CycleScreen() {
               key={option}
               text={option}
               selected={selectedCycle === option}
-              onPress={() => setSelectedCycle(option)}
+              onPress={() => onboardingStore$.onboarding.menstruralCycle.set(option)}
             />
           ))}
         </View>

@@ -1,8 +1,12 @@
 // app/(onboarding)/cravings.tsx
 import { OnboardingHeader, StyledButton } from '@/components/core'
+import { onboardingStore$ } from '@/stores/onboarding.store'
+import { use$ } from '@legendapp/state/react'
+import { cravingEnum } from '@omc/validators/onboarding'
 import Constants from 'expo-constants'
+import * as Haptics from 'expo-haptics'
 import { useRouter } from 'expo-router'
-import React, { useState } from 'react'
+import React from 'react'
 import {
   KeyboardAvoidingView,
   Pressable,
@@ -12,9 +16,6 @@ import {
   TextInput,
   View
 } from 'react-native'
-import * as Haptics from 'expo-haptics'
-import { onboardingStore$ } from '@/stores/onboarding.store'
-import { cravingEnum } from '@omc/validators/onboarding'
 import { z } from 'zod'
 
 type Craving = z.infer<typeof cravingEnum>;
@@ -47,12 +48,12 @@ const CravingTag = ({
 
 export default function CravingsScreen() {
   const router = useRouter()
-  const [selectedCravings, setSelectedCravings] = useState<Craving[]>([])
-  const [otherCravings, setOtherCravings] = useState('')
+  const selectedCravings = use$(onboardingStore$.onboarding.cravings);
+  const otherCravings = use$(onboardingStore$.onboarding.otherCravings);
 
   const toggleCraving = (craving: Craving) => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy)
-    setSelectedCravings((prev) =>
+    onboardingStore$.onboarding.cravings.set((prev) =>
       prev.includes(craving)
         ? prev.filter((c) => c !== craving)
         : [...prev, craving]
@@ -68,10 +69,6 @@ export default function CravingsScreen() {
     const result = cravingValidationSchema.safeParse(cravingsData);
 
     if (result.success) {
-      onboardingStore$.onboarding.cravings.set(selectedCravings);
-      if (otherCravings) {
-        onboardingStore$.onboarding.otherCravings.set(otherCravings);
-      }
       router.push('/(onboarding)/dietary-preferences')
     } else {
       console.error("Cravings validation failed:", result.error);
@@ -113,7 +110,7 @@ export default function CravingsScreen() {
               className="w-full rounded-xl border border-gray-200 p-4 text-base text-black"
               placeholder="Type here..."
               value={otherCravings}
-              onChangeText={setOtherCravings}
+              onChangeText={(text) => onboardingStore$.onboarding.otherCravings.set(text)}
             />
           </View>
 

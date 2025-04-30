@@ -9,7 +9,8 @@ import {
   useWindowDimensions,
 } from 'react-native' // Added Alert, StyleSheet
 // No 'styled' import
-import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
+import type { CameraType} from 'expo-camera';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as MediaLibrary from 'expo-media-library';
 import { useRouter } from 'expo-router';
 import Constants from 'expo-constants';
@@ -18,8 +19,9 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import sillhouetteFront from '@/assets/images/silhouette-front.png';
 import * as ImagePicker from 'expo-image-picker';
-import { getBaseUrl } from '@/utils/base-url';
 import { getOrCreateDeviceId } from '@/utils/device-id';
+import { onboardingStore$ } from '@/stores/onboarding.store';
+import { api } from '@/utils/api';
 
 // Reusable Progress Bar (Import or define as before using View)
 const ProgressBar = ({ progress }: { progress: number }) => (
@@ -79,7 +81,11 @@ export default function ScanFrontScreen() {
   const cameraRef = useRef<CameraView>(null)
   const [countdown, setCountdown] = useState<number | null>(null)
   const [capturedImage, setCapturedImage] = useState<string | null>(null)
+  const [isUploading, setIsUploading] = useState(false)
   const countdownRef = useRef<NodeJS.Timeout>()
+  
+  // Get the mutation from tRPC
+  const generatePhotoUploadUrl = api.user.generatePhotoUploadUrl.useMutation();
 
   useEffect(() => {
     // Request permissions on mount
@@ -106,29 +112,32 @@ export default function ScanFrontScreen() {
     }, 1000)
   }
 
-  function formDataFromImagePicker(result: ImagePicker.ImagePickerSuccessResult, deviceId: string, photoType: string) {
-    const formData = new FormData();
-    
-    formData.append('deviceId', deviceId);
-    formData.append('photoType', photoType);
-  
-    for (const index in result.assets) {
-      const asset = result.assets[index];
-  
-      // @ts-expect-error: special react native format for form data
-      formData.append(`photo.${index}`, {
-        uri: asset.uri,
-        name: asset.fileName ?? asset.uri.split("/").pop(),
-        type: asset.mimeType,
+  // Direct upload to S3 using the presigned URL
+  const uploadToS3 = async (uri: string, presignedUrl: string): Promise<boolean> => {
+    try {
+      // Get the blob from uri
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      
+      // Upload directly to S3 using the presigned URL
+      const uploadResponse = await fetch(presignedUrl, {
+        method: 'PUT',
+        body: blob,
+        headers: {
+          'Content-Type': blob.type,
+        },
       });
-  
-      if (asset.exif) {
-        formData.append(`exif.${index}`, JSON.stringify(asset.exif));
+      
+      if (!uploadResponse.ok) {
+        throw new Error(`Upload failed with status: ${uploadResponse.status}`);
       }
+
+      return true;
+    } catch (error) {
+      console.error('Error uploading to S3:', error);
+      return false;
     }
-  
-    return formData;
-  }
+  };
 
   const takePicture = async () => {
     if (!cameraRef.current) {
@@ -155,44 +164,47 @@ export default function ScanFrontScreen() {
 
       if (photo?.uri) {
         setCapturedImage(photo.uri);
-        
-        // Get or create device ID
-        const deviceId = await getOrCreateDeviceId();
-        
-        // Create form data
-        const formData = new FormData();
-        formData.append('deviceId', deviceId);
-        formData.append('photoType', 'front');
-        
-        // Append the photo
-        // @ts-expect-error: special react native format for form data
-        formData.append('photo.0', {
-          uri: photo.uri,
-          name: photo.uri.split("/").pop(),
-          type: 'image/jpeg',
-        });
-
-        if (photo.exif) {
-          formData.append('exif.0', JSON.stringify(photo.exif));
-        }
-        
-        // Upload image to backend
-        const response = await fetch(`${getBaseUrl()}/api/scan-upload`, {
-          method: "POST",
-          body: formData,
-          headers: {
-            Accept: "application/json",
-          },
-        });
-        
-        const data = await response.json();
-        console.log('Upload response:', data);
+        await handlePhotoUpload(photo.uri, 'image/jpeg');
       }
     } catch (error) {
       console.error('Failed to take picture:', error)
       Alert.alert('Capture Failed', 'Could not take photo. Please try again.')
     }
   }
+
+  const handlePhotoUpload = async (uri: string, mimeType: string) => {
+    setIsUploading(true);
+    
+    try {
+      // Get or create device ID
+      const deviceId = await getOrCreateDeviceId();
+      
+      // Generate presigned URL using tRPC
+      const result = await generatePhotoUploadUrl.mutateAsync({
+        deviceId,
+        photoType: 'front', 
+        fileType: mimeType,
+      });
+      
+      // Upload directly to S3
+      const uploadSuccess = await uploadToS3(uri, result.presignedUrl);
+      
+      if (uploadSuccess) {
+        console.log('Upload successful');
+        
+        // Store the image key in LegendState
+        onboardingStore$.onboarding.frontViewPhoto.set(result.key);
+        console.log('Stored image key in LegendState:', result.key);
+      } else {
+        Alert.alert('Upload Failed', 'Failed to upload image. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error in image upload process:', error);
+      Alert.alert('Upload Error', 'An error occurred during the upload process.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const handleRetake = () => {
     setCapturedImage(null)
@@ -211,30 +223,18 @@ export default function ScanFrontScreen() {
   const handleGalleryUpload = async () => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
-        allowsEditing: true,
+        mediaTypes: ["images"], 
+        allowsEditing: false,
         aspect: [3, 4],
         quality: 0.7,
       });
 
-      const uri = result.assets?.[0]?.uri;
-      if (!result.canceled && uri) {
-        setCapturedImage(uri);
-        
-        // Get or create device ID
-        const deviceId = await getOrCreateDeviceId();
-        
-        // Upload image to backend
-        const response = await fetch(`${getBaseUrl()}/api/scan-upload`, {
-          method: "POST",
-          body: formDataFromImagePicker(result, deviceId, 'front'),
-          headers: {
-            Accept: "application/json",
-          },
-        });
-        
-        const data = await response.json();
-        console.log('Upload response:', data);
+      if (!result.canceled && result.assets.length > 0) {
+        const asset = result.assets[0];
+        if (asset) {
+          setCapturedImage(asset.uri);
+          await handlePhotoUpload(asset.uri, asset.mimeType ?? 'image/jpeg');
+        }
       }
     } catch (error) {
       console.error('Failed to select image from gallery:', error);
@@ -352,6 +352,20 @@ export default function ScanFrontScreen() {
                 style={StyleSheet.absoluteFill}
                 contentFit="cover"
               />
+            </View>
+          )}
+
+          {/* Loading Indicator */}
+          {isUploading && (
+            <View className="absolute inset-0 z-40 items-center justify-center bg-black/30">
+              <BlurView
+                intensity={40}
+                tint="dark"
+                className="items-center justify-center overflow-hidden rounded-xl p-6"
+              >
+                <Text className="mb-4 font-inter-semibold text-white">Uploading Image</Text>
+                <MaterialCommunityIcons name="upload" size={32} color="white" />
+              </BlurView>
             </View>
           )}
 

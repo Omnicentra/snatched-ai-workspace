@@ -1,12 +1,14 @@
 // app/(onboarding)/timeline-goal.tsx
 import { OnboardingHeader, OptionCard, StyledButton } from '@/components/core'
+import { onboardingStore$ } from '@/stores/onboarding.store'
+import { authClient } from '@/utils/auth'
+import { use$ } from '@legendapp/state/react'
+import { timelineEnum } from '@omc/validators/onboarding'
 import Constants from 'expo-constants'
 import { useRouter } from 'expo-router'
-import React, { useState } from 'react'
+import React from 'react'
 import { SafeAreaView, ScrollView, View } from 'react-native'
-import { timelineEnum } from '@omc/validators/onboarding'
 import type { z } from 'zod'
-import { onboardingStore$ } from '@/stores/onboarding.store'
 
 interface TimelineOption {
   id: z.infer<typeof timelineEnum>
@@ -49,12 +51,16 @@ const timelineOptions: TimelineOption[] = [
 
 export default function TimelineGoalScreen() {
   const router = useRouter()
-  const [selectedTimeline, setSelectedTimeline] = useState<z.infer<typeof timelineEnum>>('In 1-2 months')
+  const selectedTimeline = use$(onboardingStore$.onboarding.goalTimeline);
+  const { data: session } = authClient.useSession();
 
   const handleContinue = () => {
     // Store selectedTimeline in the store
-    onboardingStore$.onboarding.goalTimeline.set(selectedTimeline)
-    router.push('/(onboarding)/signup')
+    if (session) {
+      router.push('/(onboarding)/analyzing')
+    } else {
+      router.push('/(onboarding)/signup')
+    }
   }
 
   return (
@@ -77,7 +83,7 @@ export default function TimelineGoalScreen() {
               text={option.text}
               iconBg={option.iconBg}
               selected={selectedTimeline === option.id}
-              onPress={() => setSelectedTimeline(option.id)}
+              onPress={() => onboardingStore$.onboarding.goalTimeline.set(option.id)}
             />
           ))}
         </View>

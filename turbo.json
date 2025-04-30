@@ -64,11 +64,15 @@
     "AUTH_SECRET",
     "AUTH_GOOGLE_ID",
     "AUTH_GOOGLE_SECRET",
+    "GOOGLE_API_KEY",
     "PORT",
     "BETTER_AUTH_URL",
     "AWS_ACCESS_KEY_ID",
     "AWS_SECRET_ACCESS_KEY",
-    "GOOGLE_API_KEY"
+    "APPLE_AUTH_CLIENT_ID",
+    "APPLE_AUTH_PRIVATE_KEY",
+    "APPLE_AUTH_TEAM_ID",
+    "APPLE_AUTH_KEY_ID"
   ],
   "globalPassThroughEnv": [
     "NODE_ENV",

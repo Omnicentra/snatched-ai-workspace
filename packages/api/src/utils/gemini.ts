@@ -3,6 +3,10 @@ import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 import { images } from "./benchmark-images";
 import sharp from "sharp";
 import { env } from "@omc/auth/env";
+import type { ImageScansKey } from "./types";
+import type { BodyRatingResponse } from "@omc/validators";
+import { desiredBodyShapeEnum } from "@omc/validators/onboarding";
+import { z } from "zod";
 
 const s3Client = new S3Client({
   region: "us-east-1"
@@ -16,22 +20,6 @@ const ai = new GoogleGenAI({ apiKey: env.GOOGLE_API_KEY });
 const MAX_WIDTH = 800;
 const MAX_HEIGHT = 1200;
 const JPEG_QUALITY = 80;
-
-export interface BodyRatingResponse {
-  imageRejected: boolean;
-  imageRejectionReason: string | null;
-  currentSnatchedScore: number | null;
-  potentialSnatchedScore: number | null;
-  potentialWaistReductionInches: number | null;
-  glowUpOdds: number | null;
-  transformationComplete: number | null;
-  waistDefinition: number | null;
-  hipCurve: number | null;
-  gluteShape: number | null;
-  posture: number | null;
-  armShape: number | null;
-  backDefinition: number | null;
-}
 
 async function optimizeImage(buffer: Buffer): Promise<Buffer> {
   return sharp(buffer)
@@ -90,9 +78,9 @@ async function getBenchmarkImage(desiredBodyShape: keyof typeof images): Promise
   }
 }
 
-async function processUserImages(imageKeys: string[]): Promise<{ inlineData: { mimeType: string; data: string } }[]> {
+async function processUserImages(imageKeys: ImageScansKey[]): Promise<{ inlineData: { mimeType: string; data: string } }[]> {
   const processedImages = await Promise.all(
-    imageKeys.map(async (key) => {
+    imageKeys.map(async ({key}) => {
       const imageBuffer = await getImageFromS3(key);
       const base64ImageData = imageBuffer.toString('base64');
       return {
@@ -107,12 +95,12 @@ async function processUserImages(imageKeys: string[]): Promise<{ inlineData: { m
 }
 
 export async function analyzeBodyImages(
-  imageUrls: string[],
-  desiredBodyShape: keyof typeof images
+  imageKeys: ImageScansKey[],
+  desiredBodyShape: z.infer<typeof desiredBodyShapeEnum>
 ): Promise<BodyRatingResponse> {
   try {
     const benchmarkImageUri = await getBenchmarkImage(desiredBodyShape);
-    const userImages = await processUserImages(imageUrls);
+    const userImages = await processUserImages(imageKeys);
 
 
     const response = await ai.models.generateContent({

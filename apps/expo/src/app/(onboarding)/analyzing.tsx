@@ -14,6 +14,11 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import Silhouette from "@/assets/images/logo2.png";
 import { CircleProgress } from "@/components/core/CircleProgress";
+import { authClient } from "@/utils/auth";
+import { api } from "@/utils/api";
+import { onboardingStore$ } from "@/stores/onboarding.store";
+import { use$ } from "@legendapp/state/react";
+import { prettyPrint } from "@omc/validators";
 
 const statusUpdates = [
   { emoji: "🎯", text: "Identifying focus areas..." },
@@ -52,9 +57,33 @@ export default function AnalyzingScreen() {
   const router = useRouter();
   const [progress, setProgress] = useState(0);
   const [currentStatusIndex, setCurrentStatusIndex] = useState(0);
+  const { data: session } = authClient.useSession();
+  
+  const {mutate: getBodyRating } = api.user.bodyRating.useMutation({
+    onSuccess: (data) => {
+      prettyPrint(JSON.stringify(data, null, 2));
+      onboardingStore$.bodyRating.set(data);
+    },
+    onError: (error) => {
+      console.error(error);
+    },
+  });
+
+  const frontImageKey = use$(onboardingStore$.onboarding.frontViewPhoto);
+  const sideImageKey = use$(onboardingStore$.onboarding.sideViewPhoto);
+  const backImageKey = use$(onboardingStore$.onboarding.backViewPhoto);
+  const desiredBodyShape = use$(onboardingStore$.onboarding.desiredShape);
 
   useEffect(() => {
     // Status update animation
+    getBodyRating({
+      imageKeys: {
+        front: frontImageKey,
+        side: sideImageKey,
+        back: backImageKey,
+      },
+      desiredBodyShape,
+    });
     const statusInterval = setInterval(() => {
       setCurrentStatusIndex((prev) => (prev + 1) % statusUpdates.length);
     }, 2000);
@@ -81,6 +110,10 @@ export default function AnalyzingScreen() {
       clearInterval(progressInterval);
     };
   }, [router]);
+
+  useEffect(() => {
+    console.log(JSON.stringify(session, null, 2));
+  }, [session]);
 
   return (
     <LinearGradient
@@ -120,8 +153,8 @@ export default function AnalyzingScreen() {
             Custom Plan
           </Text>
           <StatusUpdate
-            emoji={statusUpdates[currentStatusIndex].emoji}
-            text={statusUpdates[currentStatusIndex].text}
+            emoji={statusUpdates[currentStatusIndex]?.emoji ?? ""}
+            text={statusUpdates[currentStatusIndex]?.text ?? ""}
           />
           {/* Percentage Text Below */}
           <View className="mx-auto mt-6 max-w-24 rounded-full bg-black/20 px-4 py-1">
