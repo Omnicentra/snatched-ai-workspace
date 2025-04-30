@@ -1,12 +1,11 @@
-import { TRPCError  } from "@trpc/server";
-import type {TRPCRouterRecord} from "@trpc/server";
+import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { TRPCError } from "@trpc/server";
+import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "../trpc";
 import { images } from "../utils/benchmark-images";
 import { analyzeBodyImages } from "../utils/gemini";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { v4 as uuidv4 } from "uuid";
 import type { ImageScansKey } from "../utils/types";
 
 type BodyShapeEnum = keyof typeof images;
@@ -103,4 +102,4 @@ export const userRouter = createTRPCRouter({
         });
       }
     }),
-}) satisfies TRPCRouterRecord;
+});
