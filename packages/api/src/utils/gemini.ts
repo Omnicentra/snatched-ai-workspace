@@ -2,6 +2,7 @@ import { GoogleGenAI, createUserContent, createPartFromUri, Type } from "@google
 import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 import { images } from "./benchmark-images";
 import sharp from "sharp";
+import { env } from "@omc/auth/env";
 
 const s3Client = new S3Client({
   region: "us-east-1"
@@ -9,7 +10,7 @@ const s3Client = new S3Client({
 
 const BUCKET_NAME = "snatched-ai-bucket";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY });
+const ai = new GoogleGenAI({ apiKey: env.GOOGLE_API_KEY });
 
 // Image optimization constants
 const MAX_WIDTH = 800;

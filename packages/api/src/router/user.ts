@@ -1,8 +1,8 @@
 import type { TRPCRouterRecord } from "@trpc/server";
 import { z } from "zod";
 
+import { publicProcedure } from "../trpc";
 import { images } from "../utils/benchmark-images";
-import { protectedProcedure, publicProcedure } from "../trpc";
 import { analyzeBodyImages } from "../utils/gemini";
 
 type BodyShapeEnum = keyof typeof images;
@@ -12,7 +12,7 @@ export const userRouter = {
    * bodyRating
    * Accepts image URLs and desired body shape to calculate various body-rating scores
    */
-  bodyRating: protectedProcedure
+  bodyRating: publicProcedure
     .input(
       z.object({
         imageKeys: z.array(z.string()),

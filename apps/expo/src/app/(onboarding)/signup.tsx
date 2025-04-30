@@ -11,7 +11,7 @@ export default function SignupScreen() {
 
   const handleAppleSignIn = async () => {
     try {
-      const result = await authClient.signIn.social({ provider: 'apple', callbackURL: '/(onboarding)/analyzing' });
+      const result = await authClient.signIn.social({ provider: 'apple' });
       console.log(JSON.stringify(result, null, 2));
     } catch (error) {
       if (error instanceof Error) {
@@ -22,7 +22,7 @@ export default function SignupScreen() {
 
   const handleGoogleSignIn = async () => {
     try {
-      const result = await authClient.signIn.social({ provider: 'google' });
+      const result = await authClient.signIn.social({ provider: 'google', callbackURL: '/(onboarding)/analyzing' });
       if (result.data?.url) {
         router.push('/(onboarding)/analyzing');
       } else {

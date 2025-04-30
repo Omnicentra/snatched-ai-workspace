@@ -69,6 +69,7 @@ ios/
 /coverage
 
 credentials.json
-credentials/
+creds/
+certs/
 
 apps/expo/build-1745434169808.ipa
