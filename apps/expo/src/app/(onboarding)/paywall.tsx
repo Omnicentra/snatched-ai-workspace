@@ -21,6 +21,7 @@ import { Image } from 'expo-image';
 import beforeAfter from '@/assets/images/before-after.jpeg';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CAROUSEL_ITEM_WIDTH = SCREEN_WIDTH - 40; // 20px padding on each side
+import Purchases, { PurchasesPackage } from 'react-native-purchases';
 
 // Add a constant for uniform section height
 const SECTION_HEIGHT = 400; // This will be the uniform height for all sections
@@ -431,11 +432,26 @@ export default function PaywallScreen() {
   const scrollViewRef = useRef<ScrollView>(null);
   const autoScrollTimer = useRef<NodeJS.Timeout>();
   const [isManualScrolling, setIsManualScrolling] = useState(false);
+  const [packages, setPackages] = useState<PurchasesPackage[]>([]);
 
   const plans = {
-    weekly: { id: 'weekly', name: 'Weekly', price: '£4.99', popular: false },
-    lifetime: { id: 'lifetime', name: 'Lifetime', price: '£29.99', popular: true },
+    weekly: { id: 'weekly', name: 'Weekly', price: '£4.99', popular: false, package: 'snatched_weekly' },
+    lifetime: { id: 'lifetime', name: 'Lifetime', price: '£29.99', popular: true, package: 'snatched_lifetime' },
   };
+
+
+  useEffect(() => {
+    const fetchPackages = async () => {
+      const offerings = await Purchases.getOfferings();
+      console.log('offerings', offerings);
+      const packages = offerings.all.default?.availablePackages;
+      console.log('packages', packages);
+      if (packages) {
+        setPackages(packages);
+      }
+    };
+    void fetchPackages();
+  }, []);
 
   const scrollToNextPage = useCallback(() => {
     if (scrollViewRef.current && !isManualScrolling) {
@@ -480,6 +496,17 @@ export default function PaywallScreen() {
     const page = Math.round(offsetX / CAROUSEL_ITEM_WIDTH);
     if (page !== currentPage) {
       setCurrentPage(page);
+    }
+  };
+
+  const makePurchase = async () => {
+    // const customerInfo = await Purchases.getCustomerInfo();
+    // console.log('Customer Info:', customerInfo);
+    try {
+      const {customerInfo} = await Purchases.purchasePackage(pkg);
+      console.log('Customer Info:', customerInfo);
+    } catch (error) {
+      console.error('Error purchasing:', error);
     }
   };
 
@@ -598,8 +625,9 @@ export default function PaywallScreen() {
           <StyledButton
             title="Continue"
             onPress={() => {
-              console.log('Selected Plan:', selectedPlan);
-              router.replace('/(tabs)/home');
+              void makePurchase().then(() => {
+                router.replace('/(tabs)/home');
+              });
             }}
             variant="primary"
             style={{ backgroundColor: '#f472b6', marginBottom: 15 }}

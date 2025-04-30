@@ -1,7 +1,8 @@
 import "@bacons/text-decoder/install";
 
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import Purchases, { LOG_LEVEL } from "react-native-purchases";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
@@ -18,6 +19,12 @@ import "react-native-reanimated";
 import { TRPCProvider } from "~/utils/api";
 
 import "../styles.css";
+
+import { Platform } from "react-native";
+import {
+  revenuecatProjectAppleApiKey,
+  revenuecatProjectGoogleApiKey,
+} from "@/lib/utils";
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -45,12 +52,25 @@ export default function RootLayout() {
     "Fredoka-Bold": require("../assets/fonts/Fredoka/Fredoka-Bold.ttf"), // Load custom font
   });
 
+  const initRevenueCat = useCallback(async () => {
+    console.log('initRevenueCat');
+    console.log('revenuecatProjectAppleApiKey', revenuecatProjectAppleApiKey);
+    console.log('revenuecatProjectGoogleApiKey', revenuecatProjectGoogleApiKey);
+    await Purchases.setLogLevel(LOG_LEVEL.VERBOSE);
+    if (Platform.OS === "ios") {
+      Purchases.configure({ apiKey: revenuecatProjectAppleApiKey });
+    } else if (Platform.OS === "android") {
+      Purchases.configure({ apiKey: revenuecatProjectGoogleApiKey });
+    }
+  }, []);
+
   useEffect(() => {
+    void initRevenueCat();
     if (fontsLoaded || fontError) {
       // Hide the splash screen after the fonts have loaded or an error occurred
       void SplashScreen.hideAsync();
     }
-  }, [fontsLoaded, fontError]);
+  }, [fontsLoaded, fontError, initRevenueCat]);
 
   // Prevent rendering until the fonts have loaded or an error occurred
   if (!fontsLoaded && !fontError) {

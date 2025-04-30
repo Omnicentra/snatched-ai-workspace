@@ -24,11 +24,11 @@ export default function StayMotivatedScreen() {
 
   const openPrivacyPolicy = () => {
     // Replace with your actual URL
-    Linking.openURL('https://example.com/privacy')
+    void Linking.openURL('https://snatchedai.com/privacy')
   }
   const openTerms = () => {
     // Replace with your actual URL
-    Linking.openURL('https://example.com/terms')
+    void Linking.openURL('https://snatchedai.com/terms')
   }
 
   return (

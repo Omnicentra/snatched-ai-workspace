@@ -164,6 +164,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       projectId: "8bcf08a2-4cad-4b0d-a2c0-197528f19cc7",
       appVariant: process.env.APP_VARIANT,
       ngrokUrl: process.env.NGROK_URL,
+      revenuecatProjectAppleApiKey: "appl_ihLfvNYWzXDhzMTPQoGLwVGsJKF",
+      revenuecatProjectGoogleApiKey: "goog_zymKRJSOYmVtSusuckLwdQuXgIk"
     },
   },
   owner: "omnicentra",

@@ -38,9 +38,9 @@ export const StyledButton: React.FC<StyledButtonProps> = ({
 }) => {
     const pathname = usePathname();
 
-    useEffect(() => {
-        console.log(JSON.stringify(onboardingStore$.onboarding, null, 2));
-    }, [pathname])
+    // useEffect(() => {
+    //     console.log(JSON.stringify(onboardingStore$.onboarding, null, 2));
+    // }, [pathname])
 
     const baseClasses =
         'w-full py-5 px-6 rounded-full shadow-md flex-row items-center justify-center'

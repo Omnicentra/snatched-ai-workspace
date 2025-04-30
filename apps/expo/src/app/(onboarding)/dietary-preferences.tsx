@@ -8,6 +8,7 @@ import * as Haptics from 'expo-haptics'
 import { onboardingStore$ } from '@/stores/onboarding.store'
 import { dietaryPreferenceEnum } from '@omc/validators/onboarding'
 import { z } from 'zod'
+import { use$ } from '@legendapp/state/react'
 
 type DietaryPreference = z.infer<typeof dietaryPreferenceEnum>;
 
@@ -94,7 +95,7 @@ const DietCard = ({
 
 export default function DietaryPreferencesScreen() {
   const router = useRouter()
-  const [selectedDiet, setSelectedDiet] = useState<DietaryPreference>()
+  const selectedDiet = use$(onboardingStore$.onboarding.diet) 
 
   const handleContinue = () => {
     if (!selectedDiet) return;
@@ -106,7 +107,6 @@ export default function DietaryPreferencesScreen() {
     const result = dietValidationSchema.safeParse(dietData);
 
     if (result.success) {
-      onboardingStore$.onboarding.diet.set(selectedDiet);
       router.push('/(onboarding)/get-snatched')
     } else {
       console.error("Diet validation failed:", result.error);
@@ -118,7 +118,7 @@ export default function DietaryPreferencesScreen() {
       style={{ paddingTop: Constants.statusBarHeight }}
       className="flex-1 bg-white"
     >
-      <View className="flex-1 px-6">
+      <View className="flex-1 px-8 pt-8">
         <OnboardingHeader
           progress={14 / 20}
           title="What is your diet?"
@@ -133,7 +133,7 @@ export default function DietaryPreferencesScreen() {
               selected={selectedDiet === preference}
               onPress={() => {
                 void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy)
-                setSelectedDiet(preference)
+                onboardingStore$.onboarding.diet.set(preference);
               }}
             />
           ))}

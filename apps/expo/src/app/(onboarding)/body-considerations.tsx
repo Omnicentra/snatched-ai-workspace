@@ -145,7 +145,7 @@ export default function BodyConsiderationsScreen() {
       className="flex-1 bg-white"
     >
       <KeyboardAvoidingView behavior="padding" className="flex-1">
-        <ScrollView className="flex-1 px-6">
+        <ScrollView className="flex-1 px-8 pt-8">
           <OnboardingHeader
             progress={9 / 20}
             title="Tell us about your body?"

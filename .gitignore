@@ -27,7 +27,8 @@ apps/expo/.gitignore
 apps/expo/ios
 apps/expo/android
 apps/expo/credentials.json
-apps/expo/credentials/*
+apps/expo/creds/*
+apps/expo/certs/*
 
 # production
 build
