@@ -19,10 +19,13 @@
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.796.0",
+    "@google/genai": "^0.10.0",
     "@omc/auth": "workspace:*",
     "@omc/db": "workspace:*",
     "@omc/validators": "workspace:*",
     "@trpc/server": "catalog:",
+    "sharp": "^0.34.1",
     "superjson": "2.2.2",
     "zod": "catalog:"
   },
