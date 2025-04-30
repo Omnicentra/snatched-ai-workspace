@@ -4,6 +4,9 @@ import Constants from 'expo-constants';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import type {
+  NativeSyntheticEvent,
+  NativeScrollEvent} from 'react-native';
 import {
   Pressable,
   SafeAreaView,
@@ -13,15 +16,15 @@ import {
   StyleSheet,
   Dimensions,
   Platform,
-  NativeSyntheticEvent,
-  NativeScrollEvent,
+  Alert,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { Image } from 'expo-image';
 import beforeAfter from '@/assets/images/before-after.jpeg';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CAROUSEL_ITEM_WIDTH = SCREEN_WIDTH - 40; // 20px padding on each side
-import Purchases, { PurchasesPackage } from 'react-native-purchases';
+import Purchases from 'react-native-purchases';
+import type {PurchasesPackage} from 'react-native-purchases';
 
 // Add a constant for uniform section height
 const SECTION_HEIGHT = 400; // This will be the uniform height for all sections
@@ -427,27 +430,29 @@ const GrowthGuideSection = () => {
 
 export default function PaywallScreen() {
   const router = useRouter();
-  const [selectedPlan, setSelectedPlan] = useState<'weekly' | 'lifetime'>('lifetime');
+  // const [selectedPlan, setSelectedPlan] = useState<'weekly' | 'lifetime'>('lifetime');
   const [currentPage, setCurrentPage] = useState(0);
   const scrollViewRef = useRef<ScrollView>(null);
   const autoScrollTimer = useRef<NodeJS.Timeout>();
   const [isManualScrolling, setIsManualScrolling] = useState(false);
+  
   const [packages, setPackages] = useState<PurchasesPackage[]>([]);
+  const [selectedPackage, setSelectedPackage] = useState<PurchasesPackage>();
 
   const plans = {
-    weekly: { id: 'weekly', name: 'Weekly', price: '£4.99', popular: false, package: 'snatched_weekly' },
-    lifetime: { id: 'lifetime', name: 'Lifetime', price: '£29.99', popular: true, package: 'snatched_lifetime' },
+    weekly: { id: 'weekly', name: 'Weekly', price: '£4.99', popular: false, packageId: 'snatched_weekly' },
+    lifetime: { id: 'lifetime', name: 'Lifetime', price: '£29.99', popular: true, packageId: 'snatched_lifetime' },
   };
 
 
   useEffect(() => {
     const fetchPackages = async () => {
       const offerings = await Purchases.getOfferings();
-      console.log('offerings', offerings);
       const packages = offerings.all.default?.availablePackages;
-      console.log('packages', packages);
+      console.log(JSON.stringify(packages, null, 2));
       if (packages) {
         setPackages(packages);
+        setSelectedPackage(packages.find(pkg => pkg.product.identifier === plans.lifetime.packageId));
       }
     };
     void fetchPackages();
@@ -500,13 +505,18 @@ export default function PaywallScreen() {
   };
 
   const makePurchase = async () => {
-    // const customerInfo = await Purchases.getCustomerInfo();
-    // console.log('Customer Info:', customerInfo);
     try {
-      const {customerInfo} = await Purchases.purchasePackage(pkg);
-      console.log('Customer Info:', customerInfo);
+      if (!selectedPackage) {
+        Alert.alert('Error', 'No package selected');
+        return;
+      }
+      const {customerInfo} = await Purchases.purchasePackage(selectedPackage);
+      if (customerInfo.allPurchasedProductIdentifiers.includes(selectedPackage.product.identifier))  {
+        router.replace('/(tabs)/home');
+      }
     } catch (error) {
       console.error('Error purchasing:', error);
+      Alert.alert('Error', 'An error occurred while purchasing the package. Please try again.');
     }
   };
 
@@ -537,10 +547,15 @@ export default function PaywallScreen() {
             {Object.values(plans).map((plan) => (
               <Pressable
                 key={plan.id}
-                onPress={() => setSelectedPlan(plan.id as 'weekly' | 'lifetime')}
+                onPress={() => {
+                  const pkg = packages.find(pkg => pkg.product.identifier === plan.packageId);
+                  if (pkg) {
+                    setSelectedPackage(pkg);
+                  }
+                }}
                 style={[
                   styles.planBox,
-                  selectedPlan === plan.id && styles.selectedPlanBox,
+                  selectedPackage?.product.identifier === plan.packageId && styles.selectedPlanBox,
                   plan.id === 'weekly' ? { marginRight: 8 } : { marginLeft: 8 },
                 ]}
               >
@@ -557,10 +572,10 @@ export default function PaywallScreen() {
                   <View
                     style={[
                       styles.radioOuter,
-                      selectedPlan === plan.id && styles.selectedRadioOuter,
+                      selectedPackage?.product.identifier === plan.packageId && styles.selectedRadioOuter,
                     ]}
                   >
-                    {selectedPlan === plan.id && <View style={styles.radioInner} />}
+                    {selectedPackage?.product.identifier === plan.packageId && <View style={styles.radioInner} />}
                   </View>
                 </View>
               </Pressable>
@@ -624,10 +639,9 @@ export default function PaywallScreen() {
         <View style={styles.footer}>
           <StyledButton
             title="Continue"
+            disabled={!selectedPackage}
             onPress={() => {
-              void makePurchase().then(() => {
-                router.replace('/(tabs)/home');
-              });
+              void makePurchase();
             }}
             variant="primary"
             style={{ backgroundColor: '#f472b6', marginBottom: 15 }}

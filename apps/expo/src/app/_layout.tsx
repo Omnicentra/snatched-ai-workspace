@@ -53,15 +53,13 @@ export default function RootLayout() {
   });
 
   const initRevenueCat = useCallback(async () => {
-    console.log('initRevenueCat');
-    console.log('revenuecatProjectAppleApiKey', revenuecatProjectAppleApiKey);
-    console.log('revenuecatProjectGoogleApiKey', revenuecatProjectGoogleApiKey);
     await Purchases.setLogLevel(LOG_LEVEL.VERBOSE);
     if (Platform.OS === "ios") {
       Purchases.configure({ apiKey: revenuecatProjectAppleApiKey });
     } else if (Platform.OS === "android") {
       Purchases.configure({ apiKey: revenuecatProjectGoogleApiKey });
     }
+    console.log('Purchases Status: ', await Purchases.isConfigured());
   }, []);
 
   useEffect(() => {

@@ -70,18 +70,16 @@ export const bodyConcernEnum = z.enum([
 ]);
 
 export const desiredBodyShapeEnum = z.enum([
-  "Petite & toned",
-  "Toned",
-  "Glute Growth",
-  "Toned Thighs",
-
-  "Normal Weight Loss",
-  "Postpartum Snatched",
-  "Keep Fit",
-
-  "Athletic",
-  "Hourglass",
-  "Slim Thick",
+  "ATHLETIC",
+  "GLUTE_GROWTH", 
+  "HOURGLASS",
+  "KEEP_FIT",
+  "NORMAL_WEIGHT_LOSS",
+  "PETITE_AND_TONE",
+  "POSTPARTUM_SNATCHED",
+  "SLIM",
+  "TONE",
+  "TONED_THIGHS",
 ]);
 
 export const dietaryPreferenceEnum = z.enum([

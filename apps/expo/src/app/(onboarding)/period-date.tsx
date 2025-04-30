@@ -1,5 +1,5 @@
 // app/(onboarding)/period-date.tsx
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import {
   View,
   Text,
@@ -15,6 +15,7 @@ import { Calendar, DateData } from 'react-native-calendars'
 import * as Haptics from 'expo-haptics'
 import { onboardingStore$ } from '@/stores/onboarding.store'
 import { z } from 'zod'
+import { use$ } from '@legendapp/state/react'
 
 // Function to get today's date in YYYY-MM-DD format
 const getTodayDateString = () => {
@@ -34,10 +35,10 @@ const periodDateValidationSchema = z.object({
 export default function PeriodDateScreen() {
   const router = useRouter()
   // Use YYYY-MM-DD format for react-native-calendars
-  const [selectedDate, setSelectedDate] = useState<string>(getTodayDateString())
+  const selectedDate = use$(onboardingStore$.onboarding.lastPeriodDate);
 
   const handleDayPress = (day: DateData) => {
-    setSelectedDate(day.dateString)
+    onboardingStore$.onboarding.lastPeriodDate.set(day.dateString)
   }
 
   const handleContinue = () => {
@@ -54,6 +55,10 @@ export default function PeriodDateScreen() {
       console.error("Period date validation failed:", result.error);
     }
   }
+
+  useEffect(() => {
+    onboardingStore$.onboarding.lastPeriodDate.set(getTodayDateString());
+  }, []);
 
   return (
     <SafeAreaView

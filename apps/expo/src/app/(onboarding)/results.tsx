@@ -1,21 +1,21 @@
 // app/(onboarding)/results.tsx
-import React, { useRef, useEffect } from 'react' // Import useRef and useEffect
-import {
-  Pressable,
-  SafeAreaView,
-  ScrollView,
-  Text,
-  View,
-  Dimensions
-} from 'react-native' // Import Dimensions
-import { Feather, Ionicons } from '@expo/vector-icons'
 import Constants from 'expo-constants'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useRouter } from 'expo-router'
-import Svg, { Path, Defs, RadialGradient, Stop } from 'react-native-svg'
-import ConfettiCannon from 'react-native-confetti-cannon' // Import ConfettiCannon
+import React, { useEffect, useRef } from 'react'; // Import useRef and useEffect
+import {
+  Dimensions,
+  SafeAreaView,
+  ScrollView,
+  Text,
+  View
+} from 'react-native'; // Import Dimensions
+import ConfettiCannon from 'react-native-confetti-cannon'; // Import ConfettiCannon
+import Svg, { Path } from 'react-native-svg'
+import { use$ } from '@legendapp/state/react';
+import { onboardingStore$ } from '@/stores/onboarding.store';
 
-import { AnalysisResultRow, InfoCard, StyledButton } from '@/components/core' // Assuming correct path
+import { StyledButton } from '@/components/core'; // Assuming correct path
 
 // --- GoalTimelineGraph component remains the same ---
 const GoalTimelineGraph = () => {
@@ -70,15 +70,15 @@ const { width: screenWidth } = Dimensions.get('window') // Get screen width
 export default function ResultsScreen() {
   const router = useRouter()
   const confettiRef = useRef<ConfettiCannon>(null) // Create a ref for the confetti cannon
-
-  // Mock data (no change needed)
-  const analysisResults = [
-    // ... your analysisResults data
-  ]
+  const bodyRating = use$(onboardingStore$.bodyRating);
 
   const handleViewDetails = () => {
     router.push('/(onboarding)/paywall') // Or your target route
   }
+
+  useEffect(() => {
+    console.log(JSON.stringify(bodyRating, null, 2));
+  }, [bodyRating]);
 
   // Trigger confetti shortly after the component mounts
   useEffect(() => {
@@ -109,8 +109,6 @@ export default function ResultsScreen() {
           explosionSpeed={400} // How fast they shoot out
           fallSpeed={3000} // How fast they fall
           colors={['#a855f7', '#ec4899', '#f9a8d4', '#ffffff', '#ddd6fe']} // Purple, Pink, Light Pink, White, Light Purple
-          zIndex={1000} // Ensure it's on top
-          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} // Ensure it covers the screen
         />
 
         <ScrollView
@@ -139,7 +137,7 @@ export default function ResultsScreen() {
                     Current snatched score
                   </Text>
                   <Text className="text-center font-inter-bold text-3xl text-pink-400">
-                    {55} {/* Example Value */}
+                    {bodyRating.currentSnatchedScore ?? 55} {/* Use actual value or fallback */}
                   </Text>
                 </View>
                 {/* Card 2: Potential Score */}
@@ -148,7 +146,7 @@ export default function ResultsScreen() {
                     Potential snatched score
                   </Text>
                   <Text className="text-center font-inter-bold text-3xl text-pink-400">
-                    {98} {/* Example Value */}
+                    {bodyRating.potentialSnatchedScore ?? 98} {/* Use actual value or fallback */}
                   </Text>
                 </View>
               </View>
@@ -157,7 +155,7 @@ export default function ResultsScreen() {
             {/* Optimization Target - Adjusted styling */}
             <View className="mb-6 rounded-2xl border border-pink-100 bg-pink-50 p-4">
               <Text className="text-center font-inter-medium text-gray-600">
-                You can reduce your waist by <Text className="font-inter-bold">🔒</Text>{' '}
+                You can reduce your waist by <Text className="font-inter-bold">{bodyRating.potentialWaistReductionInches ?? "🔒"}</Text>{' '}
                 inch(es) <Text className="">📈</Text>
               </Text>
             </View>
@@ -222,15 +220,15 @@ export default function ResultsScreen() {
                 }}
               >
                 {[
-                  'Glow Up Odds',
-                  'Transformation complete',
-                  'Waist definition',
-                  'Hip curve',
-                  'Glute shape',
-                  'Posture',
-                  'Arm shape',
-                  'Back definition'
-                ].map((title, index) => (
+                  { title: 'Glow Up Odds', value: bodyRating.glowUpOdds },
+                  { title: 'Transformation complete', value: bodyRating.transformationComplete },
+                  { title: 'Waist definition', value: bodyRating.waistDefinition },
+                  { title: 'Hip curve', value: bodyRating.hipCurve },
+                  { title: 'Glute shape', value: bodyRating.gluteShape },
+                  { title: 'Posture', value: bodyRating.posture },
+                  { title: 'Arm shape', value: bodyRating.armShape },
+                  { title: 'Back definition', value: bodyRating.backDefinition }
+                ].map(({ title, value }, index) => (
                   <View
                     key={index}
                     className="mb-4 aspect-square w-[48%] rounded-2xl border border-pink-400/20 bg-white/90 p-4"
@@ -247,7 +245,7 @@ export default function ResultsScreen() {
                       <Text className="text-center font-inter-medium text-gray-800">
                         {title}
                       </Text>
-                      <Text className="text-2xl">🔒</Text>
+                      <Text className="text-2xl">{value ?? "🔒"}</Text>
                     </View>
                   </View>
                 ))}

@@ -13,23 +13,24 @@ import {
 } from 'react-native'
 import { onboardingStore$ } from '@/stores/onboarding.store'
 import { nameAgeSchema } from '@omc/validators/onboarding'
-
+import { use$ } from '@legendapp/state/react'
 export default function NameAgeScreen() {
   const router = useRouter()
-  const [name, setName] = useState('')
-  const [age, setAge] = useState('')
+  const name = use$(onboardingStore$.onboarding.name);
+  const age = use$(onboardingStore$.onboarding.age);
   const [validationError, setValidationError] = useState<string>()
+
+  const [_age, _setAge] = useState<string>('');
 
   const handleStartScanning = () => {
     try {
-      const result = nameAgeSchema.safeParse({ name, age });
+      const result = nameAgeSchema.safeParse({ name, age: _age });
 
       if (!result.success) {
         throw new Error(result.error.message);
       }
+      onboardingStore$.onboarding.age.set(Number(result.data.age));
 
-      onboardingStore$.onboarding.name.set(result.data.name);
-      onboardingStore$.onboarding.age.set(result.data.age);
       router.push('/(onboarding)/prepare-scan');
     } catch (error) {
       if (error instanceof Error) {
@@ -42,9 +43,9 @@ export default function NameAgeScreen() {
 
   // Validate as user types to enable/disable continue button
   const isValid = useMemo(() => {
-    console.log(nameAgeSchema.safeParse({ name, age }).success)
-    return nameAgeSchema.safeParse({ name, age }).success;
-  }, [name, age]);
+    console.log(nameAgeSchema.safeParse({ name, age: _age }).success)
+    return nameAgeSchema.safeParse({ name, age: _age }).success;
+  }, [name, _age]);
 
   return (
     <SafeAreaView
@@ -67,7 +68,7 @@ export default function NameAgeScreen() {
             placeholder="Enter your name"
             value={name}
             onChangeText={(text) => {
-              setName(text);
+              onboardingStore$.onboarding.name.set(text);
               setValidationError(undefined);
             }}
             autoCapitalize="words"
@@ -82,9 +83,9 @@ export default function NameAgeScreen() {
             className="w-full rounded-xl border border-gray-200 p-4 font-inter-medium text-xl text-black"
             placeholder="Enter your age"
             keyboardType="number-pad"
-            value={age}
+            value={_age}
             onChangeText={(text) => {
-              setAge(text);
+              _setAge(text);
               setValidationError(undefined);
             }}
             maxLength={3}

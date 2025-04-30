@@ -4,7 +4,7 @@ import { appRouter, createTRPCContext } from "@omc/api";
 import { auth } from "@omc/auth";
 import type { NextRequest } from "next/server";
 
-export const runtime = "edge";
+export const runtime = "nodejs";
 
 /**
  * Configure basic CORS headers

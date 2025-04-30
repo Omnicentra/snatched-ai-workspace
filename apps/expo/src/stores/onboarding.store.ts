@@ -1,6 +1,11 @@
 import { observable } from "@legendapp/state";
 import { ObservablePersistMMKV } from "@legendapp/state/persist-plugins/mmkv";
 import { syncObservable } from "@legendapp/state/sync";
+import { BodyRatingResponse } from "@omc/validators";
+import { desiredBodyShapeEnum } from "@omc/validators/onboarding";
+import { z } from "zod";
+
+type desiredBodyShape = z.infer<typeof desiredBodyShapeEnum>
 
 // Type your Store interface
 interface Onboarding {
@@ -27,12 +32,30 @@ interface Onboarding {
   frontViewPhoto: string;
   sideViewPhoto: string;
   backViewPhoto: string;  
-  desiredShape: string;
+  desiredShape: desiredBodyShape;
   goalTimeline: string;
+}
+
+// Initial state matching the BodyRatingResponse type
+const bodyRatingStoreInitialState: BodyRatingResponse = {
+  imageRejected: false,
+  imageRejectionReason: null,
+  currentSnatchedScore: null,
+  potentialSnatchedScore: null,
+  potentialWaistReductionInches: null,
+  glowUpOdds: null,
+  transformationComplete: null,
+  waistDefinition: null,
+  hipCurve: null,
+  gluteShape: null,
+  posture: null,
+  armShape: null,
+  backDefinition: null,
 }
 
 interface Store {
   onboarding: Onboarding;
+  bodyRating: BodyRatingResponse;
 }
 
 // Create a global observable for the store
@@ -50,7 +73,7 @@ export const onboardingStore$ = observable<Store>({
     frontViewPhoto: "",
     sideViewPhoto: "",
     backViewPhoto: "",
-    desiredShape: "",
+    desiredShape: "" as desiredBodyShape,
     goalTimeline: "",
     bodyDescription: [],
     otherBodyDetails: "",
@@ -64,6 +87,7 @@ export const onboardingStore$ = observable<Store>({
     name: "",
     age: 0,
   },
+  bodyRating: bodyRatingStoreInitialState,
 });
 
 // Persist the observable to the named key of the global persist plugin

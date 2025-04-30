@@ -44,70 +44,73 @@ const cardWidth =
   (screenWidth - PADDING_HORIZONTAL * 2 - CARD_MARGIN * (NUM_COLUMNS - 1)) /
   NUM_COLUMNS
 
+// Define the type for body shape IDs using the enum values directly
+type BodyShapeId = z.infer<typeof desiredBodyShapeEnum>
+
 interface BodyShape {
-  id: z.infer<typeof desiredBodyShapeEnum>
-  title: string
-  description: string
-  image: string
+  id: BodyShapeId;
+  title: string;
+  description: string;
+  image: string;
 }
 
 const bodyShapes: BodyShape[] = [
   {
-    id: 'Athletic',
+    id: "ATHLETIC",
     title: 'Athletic',
     description: 'Toned muscles, moderate curves',
     image: athletic
   },
   {
-    id: 'Hourglass',
+    id: "HOURGLASS",
     title: 'Hourglass',
     description: 'Balanced curves, defined waist',
     image: hourglass
   },
   {
-    id: 'Slim',
+    id: "SLIM",
     title: 'Slim',
     description: 'Lean with subtle definition',
     image: slimThick
   },
   {
-    id: 'Petite & toned',
+    id: "PETITE_AND_TONE",
     title: 'Petite & Toned',
     description: 'Small frame with proportional toned features',
     image: petiteToned
   },
   {
-    id: 'Toned',
+    id: "TONE",
     title: 'Toned',
     description: 'Lean and defined with a healthy body fat percentage',
     image: toned
   },
   {
-    id: 'Glute Growth',
+    id: "GLUTE_GROWTH",
     title: 'Glute Growth',
     description: 'Enhanced gluteal muscles',
     image: gluteGrowth
   },
   {
-    id: 'Toned Thighs',
+    id: "TONED_THIGHS",
     title: 'Toned Thighs',
     description: 'Lean and defined with a healthy body fat percentage',
     image: tonedThighs
   },
   {
-    id: 'Normal Weight Loss',
+    id: "NORMAL_WEIGHT_LOSS",
     title: 'Normal Weight Loss',
     description: 'Gradual and sustainable weight loss',
     image: normalWeightLoss
   },
   {
-    id: 'Postpartum Snatched',
+    id: "POSTPARTUM_SNATCHED",
     title: 'Postpartum Snatched',
     description: 'Recovering from pregnancy',
     image: postpartum
   },
   {
-    id: 'Keep Fit',
+    id: "KEEP_FIT",
     title: 'Keep Fit',
     description: 'Maintaining a healthy lifestyle',
     image: keepFit
@@ -171,15 +174,17 @@ const BodyShapeCard = ({
 const DesiredShape = () => {
   const router = useRouter()
   const [currentPageIndex, setCurrentPageIndex] = useState(0)
-  const [selectedShapeId, setSelectedShapeId] = useState<z.infer<typeof desiredBodyShapeEnum> | null>(null)
+  const [selectedShapeId, setSelectedShapeId] = useState<BodyShapeId | null>(null)
   const flatListRef = useRef<FlatList>(null)
 
   const handleContinue = () => {
     try {
-      // Validate and store the selected shape
-      const validatedShape = desiredBodyShapeEnum.parse(selectedShapeId)
-      onboardingStore$.onboarding.desiredShape.set(validatedShape)
-      router.push('/(onboarding)/timeline-goal')
+      if (selectedShapeId) {
+        // Validate the selected shape against the enum
+        const validatedShape = desiredBodyShapeEnum.parse(selectedShapeId)
+        onboardingStore$.onboarding.desiredShape.set(validatedShape)
+        router.push('/(onboarding)/timeline-goal')
+      }
     } catch (error) {
       if (error instanceof Error) {
         console.error('Invalid body shape selected:', error.message)

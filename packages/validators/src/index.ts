@@ -18,3 +18,19 @@ export const prettyPrint = (obj: string | object | number) => {
     console.log(obj);
   }
 };
+
+export interface BodyRatingResponse {
+  imageRejected: boolean;
+  imageRejectionReason: string | null;
+  currentSnatchedScore: number | null;
+  potentialSnatchedScore: number | null;
+  potentialWaistReductionInches: number | null;
+  glowUpOdds: number | null;
+  transformationComplete: number | null;
+  waistDefinition: number | null;
+  hipCurve: number | null;
+  gluteShape: number | null;
+  posture: number | null;
+  armShape: number | null;
+  backDefinition: number | null;
+}
