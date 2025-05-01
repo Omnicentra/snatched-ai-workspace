@@ -6,16 +6,24 @@ import {
   ScrollView,
   Pressable,
   TextInput,
-  Image
+  Image,
+  ActivityIndicator
 } from 'react-native'
 import { useRouter } from 'expo-router'
 import Constants from 'expo-constants'
 import { LinearGradient } from 'expo-linear-gradient'
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'
 import { MilestoneModal } from '@/app/(modals)/milestone-modal'
+import { api } from '@/utils/api'
+import type { RouterOutputs } from '@/utils/api'
+import { StyledButton } from '@/components/core'
 
-// Milestone Progress Component
-const MilestoneProgress = ({
+// Define types for workout data (prefixed with _ since they're only used for type checking)
+type _WorkoutCategory = RouterOutputs['workout']['getWorkoutCategories'][number]
+type _Workout = RouterOutputs['workout']['getWorkouts'][number]
+
+// Milestone Progress Component (unused but kept for future use)
+const _MilestoneProgress = ({
   level,
   currentDay,
   totalDays,
@@ -31,7 +39,7 @@ const MilestoneProgress = ({
   const firstRow = days.slice(0, midPoint)
   const secondRow = days.slice(midPoint).reverse()
 
-  const renderDay = (day: number, isReversed: boolean = false) => {
+  const renderDay = (day: number, isReversed = false) => {
     const isCompleted = day < currentDay
     const isActive = day === currentDay
     const position = isReversed ? 'bottom' : 'top'
@@ -153,18 +161,20 @@ const WorkoutCardLarge = ({
   description,
   rating,
   imageUrl,
+  id,
   onPress
 }: {
   title: string
   duration: string
   description: string
-  rating: number
+  rating: string
   imageUrl: string
-  onPress: () => void
+  id: number
+  onPress: (id: number) => void
 }) => (
   <Pressable
     className="mb-4 overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm"
-    onPress={onPress}
+    onPress={() => onPress(id)}
   >
     <View className="h-48 w-full bg-gray-100">
       <Image
@@ -186,7 +196,7 @@ const WorkoutCardLarge = ({
         <View className="flex-row items-center">
           <Ionicons name="star" size={16} color="#FACC15" />
           <Text className="ml-1 font-inter-medium text-sm text-black">
-            {rating.toFixed(1)}
+            {rating}
           </Text>
         </View>
       </View>
@@ -200,16 +210,18 @@ const WorkoutCardSmall = ({
   title,
   description,
   imageUrl,
+  id,
   onPress
 }: {
   title: string
   description: string
   imageUrl: string
-  onPress: () => void
+  id: number
+  onPress: (id: number) => void
 }) => (
   <Pressable
     className="overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm"
-    onPress={onPress}
+    onPress={() => onPress(id)}
   >
     <View className="h-32 bg-gray-100">
       <Image
@@ -231,64 +243,67 @@ const WorkoutCardSmall = ({
 
 export default function WorkoutLibraryScreen() {
   const router = useRouter()
-  const [activeCategory, setActiveCategory] = useState('All')
+  const [activeCategory, setActiveCategory] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [showMilestone, setShowMilestone] = useState(false)
-
-  const categories = [
-    'All',
-    'Full Body',
-    'Lower Body',
-    'Upper Body',
-    'Core',
-    'HIIT'
-  ]
-
-  // Mock data - filter based on activeCategory and searchQuery in real app
-  const recommendedWorkouts = [
-    {
-      title: 'Full Body Blast',
-      duration: '30 min',
-      description: 'Complete workout targeting all major muscle groups',
-      rating: 4.5,
-      imageUrl:
-        'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80'
-    },
-    {
-      title: 'Booty Builder',
-      duration: '25 min',
-      description: 'Focused glute workout for shape and strength',
-      rating: 4.9,
-      imageUrl:
-        'https://images.unsplash.com/photo-1574680178050-55c6a6a96e0a?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80'
-    },
-    {
-      title: 'Waist Snatched',
-      duration: '20 min',
-      description: 'Core-focused workout for a defined waistline',
-      rating: 4.0,
-      imageUrl:
-        'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80'
+  
+  // Fetch workouts using tRPC
+  const { data: workoutsData, isLoading } = api.workout.getWorkouts.useQuery()
+  
+  // Get the categories from API data
+  const { data: categoriesData } = api.workout.getWorkoutCategories.useQuery()
+  
+  // Set initial active category when categories load
+  React.useEffect(() => {
+    if (categoriesData?.length && !activeCategory && categoriesData[0]?.name) {
+      setActiveCategory(categoriesData[0].name)
     }
-  ]
+  }, [categoriesData, activeCategory])
+  
+  // Filter workouts based on active category and search query
+  const filteredWorkouts = React.useMemo(() => {
+    if (!workoutsData) return []
+    
+    return workoutsData.filter(workout => {
+      // Filter by category if one is selected
+      const matchesCategory = !activeCategory || 
+        (workout.categoryId && categoriesData?.some(cat => 
+          cat.id === workout.categoryId && cat.name === activeCategory))
+      
+      // Filter by search term
+      const matchesSearch = workout.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        (workout.description?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false)
+      
+      return matchesCategory && matchesSearch
+    })
+  }, [workoutsData, categoriesData, activeCategory, searchQuery])
+  
+  // Group workouts by difficulty level
+  const recommendedWorkouts = React.useMemo(() => {
+    return filteredWorkouts
+      .filter(workout => workout.difficultyLevel === 'intermediate')
+      .slice(0, 3)
+  }, [filteredWorkouts])
+  
+  // Quick workouts are shorter duration workouts
+  const quickWorkouts = React.useMemo(() => {
+    return filteredWorkouts
+      .filter(workout => workout.durationMinutes <= 30)
+      .slice(0, 4)
+  }, [filteredWorkouts])
 
-  const quickWorkouts = [
-    {
-      title: '10 Min Express',
-      description: 'Quick full body workout',
-      imageUrl:
-        'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80'
-    },
-    {
-      title: '15 Min Burn',
-      description: 'High-intensity cardio',
-      imageUrl:
-        'https://images.unsplash.com/photo-1574680178050-55c6a6a96e0a?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80'
-    }
-  ]
+  // Extract categories from data
+  const categories = React.useMemo(() => {
+    if (!categoriesData) return []
+    return categoriesData.map(category => category.name).filter(Boolean)
+  }, [categoriesData])
 
-  const navigateToWorkoutDetail = (workoutId: string) => {
+  const navigateToWorkoutDetail = (workoutId: number) => {
     router.push(`/(modals)/workout-detail?workoutId=${workoutId}`)
+  }
+  
+  const handleViewAllWorkouts = () => {
+    router.push('/(modals)/all-workouts' as any)
   }
 
   return (
@@ -312,7 +327,7 @@ export default function WorkoutLibraryScreen() {
       {/* Workout Lists */}
       <ScrollView className="flex-1 px-6">
         {/* Search and Filter */}
-        <View className="relative mb-6">
+        {/* <View className="relative mb-6">
           <TextInput
             placeholder="Search workouts..."
             className="rounded-2xl bg-gray-100 px-5 py-4 pr-12 text-base text-black"
@@ -323,7 +338,7 @@ export default function WorkoutLibraryScreen() {
           <View className="absolute right-4 top-4">
             <Ionicons name="search-outline" size={24} color="#9CA3AF" />
           </View>
-        </View>
+        </View> */}
 
         <ScrollView
           horizontal
@@ -345,32 +360,66 @@ export default function WorkoutLibraryScreen() {
         {/* Stats Summary */}
         <StatsSummary />
 
-        <Text className="mb-4 font-inter-bold text-lg text-black">
-          Recommended For You
-        </Text>
-        <View className="mb-8">
-          {recommendedWorkouts.map((workout, index) => (
-            <WorkoutCardLarge
-              key={`rec-${index}`}
-              {...workout}
-              onPress={() => navigateToWorkoutDetail(workout.title)}
-            />
-          ))}
-        </View>
+        {isLoading ? (
+          <View className="py-12 items-center justify-center">
+            <ActivityIndicator size="large" color="#9333EA" />
+            <Text className="mt-4 font-inter text-gray-500">Loading workouts...</Text>
+          </View>
+        ) : (
+          <>
+            <Text className="mb-4 font-inter-bold text-lg text-black">
+              Recommended For You
+            </Text>
+            <View className="mb-8">
+              {recommendedWorkouts.length > 0 ? (
+                recommendedWorkouts.map((workout) => (
+                  <WorkoutCardLarge
+                    key={`rec-${workout.id}`}
+                    id={workout.id}
+                    title={workout.title}
+                    duration={`${workout.durationMinutes} min`}
+                    description={workout.description ?? ''}
+                    rating={workout.rating ?? '4.5'}
+                    imageUrl={workout.imageUrl ?? 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438'}
+                    onPress={navigateToWorkoutDetail}
+                  />
+                ))
+              ) : (
+                <Text className="text-gray-500 italic py-4">No recommended workouts found</Text>
+              )}
+            </View>
 
-        <Text className="mb-4 font-inter-bold text-lg text-black">
-          Quick Workouts
-        </Text>
-        <View className="grid grid-cols-2 gap-4 pb-6">
-          {quickWorkouts.map((workout, index) => (
-            <View key={`quick-${index}`} className="flex-1">
-              <WorkoutCardSmall
-                {...workout}
-                onPress={() => navigateToWorkoutDetail(workout.title)}
+            <Text className="mb-4 font-inter-bold text-lg text-black">
+              Quick Workouts
+            </Text>
+            <View className="grid grid-cols-2 gap-4 pb-6">
+              {quickWorkouts.length > 0 ? (
+                quickWorkouts.map((workout) => (
+                  <View key={`quick-${workout.id}`} className="flex-1">
+                    <WorkoutCardSmall
+                      id={workout.id}
+                      title={workout.title}
+                      description={workout.description ?? ''}
+                      imageUrl={workout.imageUrl ?? 'https://images.unsplash.com/photo-1574680178050-55c6a6a96e0a'}
+                      onPress={navigateToWorkoutDetail}
+                    />
+                  </View>
+                ))
+              ) : (
+                <Text className="text-gray-500 italic py-4">No quick workouts found</Text>
+              )}
+            </View>
+            
+            {/* View All Workouts Button */}
+            <View className="mb-8 mt-4">
+              <StyledButton
+                title="View All Workouts"
+                onPress={handleViewAllWorkouts}
+                variant="secondary"
               />
             </View>
-          ))}
-        </View>
+          </>
+        )}
       </ScrollView>
 
       <MilestoneModal

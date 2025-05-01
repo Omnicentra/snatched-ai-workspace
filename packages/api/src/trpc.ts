@@ -33,6 +33,7 @@ export const createTRPCContext = async (opts: {
   return {
     session,
     db,
+    headers: opts.headers,
   };
 };
 
@@ -115,6 +116,7 @@ export const publicProcedure = t.procedure.use(timingMiddleware);
 export const protectedProcedure = t.procedure
   .use(timingMiddleware)
   .use(({ ctx, next }) => {
+    console.log('ctx.session', ctx.session)
     if (!ctx.session?.user) {
       throw new TRPCError({ code: "UNAUTHORIZED" });
     }
@@ -125,3 +127,24 @@ export const protectedProcedure = t.procedure
       },
     });
   });
+
+/**
+ * Admin procedure
+ * 
+ * Extends the protected procedure to ensure the user is not only authenticated
+ * but also has admin privileges (determined by @omnicentra.com email domain)
+ */
+export const adminProcedure = t.procedure.use(({ ctx, next }) => {
+  const isAdmin = ctx.headers.get("x-admin-email")?.includes("@omnicentra.com");
+  if (!isAdmin) {
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: "Only administrators can access this resource",
+    });
+  }
+  return next({
+    ctx: {
+      session: { ...ctx.session },
+    },
+  });
+});

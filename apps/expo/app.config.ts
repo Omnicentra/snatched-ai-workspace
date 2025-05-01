@@ -52,7 +52,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name,
   slug: "snatched-ai",
-  version: "1.0.5",
+  version: "1.0.6",
   orientation: "portrait",
   icon: "./assets/icon.png",
   scheme,
@@ -148,6 +148,12 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
           deploymentTarget: "15.1",
         },
       },
+    ],
+    [
+      "expo-sensors",
+      {
+        motionPermission: "Allow SnatchedAI to access your device motion. This helps us analyze your body shape, track your progress over time, and provide personalized fitness recommendations.",
+      }
     ]
   ],
   experiments: {

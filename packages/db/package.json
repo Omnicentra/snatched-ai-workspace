@@ -34,7 +34,9 @@
     "studio": "pnpm with-env drizzle-kit studio",
     "studio:prod": "doppler run -p snatched-ai-backend -c prd -- drizzle-kit studio",
     "typecheck": "tsc --noEmit --emitDeclarationOnly false",
-    "with-env": "dotenv -e ../../.env --"
+    "with-env": "dotenv -e ../../.env --",
+    "seed": "pnpm with-env tsx src/seed/index.ts",
+    "seed:prod": "doppler run -p snatched-ai-backend -c prd -- pnpm with-env tsx src/seed/index.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.0",
@@ -42,6 +44,7 @@
     "drizzle-orm": "^0.41.0",
     "drizzle-zod": "^0.7.0",
     "pg": "^8.14.1",
+    "tsx": "^4.19.4",
     "zod": "catalog:"
   },
   "devDependencies": {

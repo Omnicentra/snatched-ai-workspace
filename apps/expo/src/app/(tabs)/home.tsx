@@ -1,5 +1,6 @@
 import logo from "@/assets/images/logo-dark.png";
 import { ProgressRing } from "@/components/core";
+import { PedometerCard } from "@/components/core/PedometerCard";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import Constants from "expo-constants";
 import { Image } from "expo-image";
@@ -272,6 +273,12 @@ export default function HomeScreen() {
             <Pressable className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100">
               <Ionicons name="notifications-outline" size={20} color="#1F2937" />
             </Pressable>
+            <Pressable 
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100"
+              onPress={() => router.push("/(modals)/profile")}
+            >
+              <Ionicons name="person-outline" size={20} color="#1F2937" />
+            </Pressable>
           </View>
         </View>
 
@@ -306,6 +313,9 @@ export default function HomeScreen() {
       <ScrollView className="flex-1 px-6">
         {/* Nutrition Stats */}
         <NutritionStats />
+
+        {/* Pedometer Card */}
+        <PedometerCard />
 
         {/* Snatch Hack Card */}
         <Pressable

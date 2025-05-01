@@ -1,17 +1,22 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   Image,
   Pressable,
   SafeAreaView,
   ScrollView,
   Text,
-  View,
-  Platform
+  View
 } from 'react-native'
-import { useRouter } from 'expo-router'
+import { useRouter, useLocalSearchParams } from 'expo-router'
 import Constants from 'expo-constants'
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'
 import { StyledButton } from '@/components/core'
+import { api } from '@/utils/api'
+import type { RouterOutputs } from '@/utils/api'
+
+// Types
+type WorkoutWithExercises = RouterOutputs['workout']['getWorkoutWithExercises']
+type _WorkoutExercise = WorkoutWithExercises['exercises'][number]
 
 // Reusable Exercise Card
 const ExerciseCard = ({
@@ -63,57 +68,120 @@ const ExerciseCard = ({
   </View>
 )
 
-// Mock data
-const exercises = [
-  {
-    name: 'Dumbbell Bench Press',
-    setsReps: '3 sets × 12 reps',
-    target: 'Chest, shoulders, triceps',
-    rest: '60 seconds between sets',
-    imageUrl:
-      'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80'
-  },
-  {
-    name: 'Lateral Raise',
-    setsReps: '3 sets × 15 reps',
-    target: 'Shoulders, upper back',
-    rest: '45 seconds between sets',
-    imageUrl:
-      'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?ixlib=rb-1.2.1&auto=format&fit=crop&w=150&q=80'
-  },
-  {
-    name: 'Squat',
-    setsReps: '3 sets × 15 reps',
-    target: 'Glutes, quads, hamstrings',
-    rest: '60 seconds between sets',
-    imageUrl:
-      'https://images.unsplash.com/photo-1574680178050-55c6a6a96e0a?ixlib=rb-1.2.1&auto=format&fit=crop&w=150&q=80'
-  },
-  {
-    name: 'Glute Bridge',
-    setsReps: '3 sets × 20 reps',
-    target: 'Glutes, lower back',
-    rest: '45 seconds between sets',
-    imageUrl:
-      'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80'
-  }
-]
-
 export default function WorkoutDetailScreen() {
   const router = useRouter()
+  const params = useLocalSearchParams()
+  const workoutId = typeof params.workoutId === 'string' ? parseInt(params.workoutId, 10) : undefined
+  const [isLoading, setIsLoading] = useState(true)
+
+  // Get workout details with exercises
+  const { data: workoutWithExercises, isLoading: isLoadingWorkout } = 
+    api.workout.getWorkoutWithExercises.useQuery(
+      { workoutId: workoutId ?? 0 },
+      { enabled: !!workoutId && !isNaN(workoutId) }
+    )
+  
+  // Update loading state when data changes
+  useEffect(() => {
+    setIsLoading(isLoadingWorkout)
+  }, [isLoadingWorkout])
 
   const handlePlayWorkout = () => {
-    router.push('/(modals)/workout-start')
+    if (!workoutWithExercises) return;
+    
+    router.push({
+      pathname: '/(modals)/workout-start',
+      params: {
+        workoutId: workoutId?.toString(),
+        workoutTitle: workoutWithExercises.title,
+        totalExercises: workoutWithExercises.exercises.length.toString(),
+        duration: workoutWithExercises.durationMinutes.toString(),
+        categoryId: workoutWithExercises.categoryId?.toString() ?? '',
+        difficultyLevel: workoutWithExercises.difficultyLevel,
+      }
+    });
   }
 
   const handlePlayVideo = (exerciseName: string) => {
-    router.push('/(modals)/workout-start')
+    if (!workoutWithExercises) return;
+    
+    router.push({
+      pathname: '/(modals)/workout-start',
+      params: {
+        workoutId: workoutId?.toString(),
+        workoutTitle: workoutWithExercises.title,
+        exerciseName,
+        totalExercises: workoutWithExercises.exercises.length.toString(),
+        duration: workoutWithExercises.durationMinutes.toString(),
+      }
+    });
   }
 
   const handleMarkComplete = () => {
-    console.log('Workout marked complete')
-    router.back()
+    if (!workoutWithExercises) return;
+    
+    router.push({
+      pathname: '/(modals)/workout-complete',
+      params: {
+        workoutId: workoutId?.toString(),
+        workoutTitle: workoutWithExercises.title,
+        duration: workoutWithExercises.durationMinutes.toString(),
+        calories: workoutWithExercises.caloriesBurn?.toString() ?? '250',
+        moves: workoutWithExercises.exercises.length.toString(),
+      }
+    });
   }
+
+  // Format difficulty level for display
+  const formatDifficulty = (level: string) => {
+    if (!level) return 'Medium'
+    
+    switch (level.toLowerCase()) {
+      case 'beginner': return 'Beginner'
+      case 'intermediate': return 'Medium'
+      case 'advanced': return 'Advanced'
+      default: return level
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <SafeAreaView 
+        style={{ paddingTop: Constants.statusBarHeight }}
+        className="flex-1 bg-white items-center justify-center"
+      >
+        <Text className="font-inter text-gray-500">Loading workout details...</Text>
+      </SafeAreaView>
+    )
+  }
+
+  if (!workoutWithExercises) {
+    return (
+      <SafeAreaView 
+        style={{ paddingTop: Constants.statusBarHeight }}
+        className="flex-1 bg-white items-center justify-center"
+      >
+        <Text className="font-inter text-gray-500">Workout not found</Text>
+        <StyledButton
+          title="Go Back"
+          onPress={() => router.back()}
+          variant="secondary"
+          className="mt-4"
+        />
+      </SafeAreaView>
+    )
+  }
+
+  // Prepare data
+  const workout = workoutWithExercises
+  const exercises = workoutWithExercises.exercises
+  
+  // Format date for display
+  const formattedDate = new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric'
+  })
 
   return (
     <SafeAreaView 
@@ -130,7 +198,7 @@ export default function WorkoutDetailScreen() {
             <Ionicons name="arrow-back" size={24} color="#374151" />
           </Pressable>
           <Text className="font-inter-bold text-2xl text-black">
-            Full Body Blast
+            {workout.title}
           </Text>
         </View>
       </View>
@@ -141,10 +209,10 @@ export default function WorkoutDetailScreen() {
         <View className="mb-8 mt-6 flex-row items-center justify-between">
           <View>
             <Text className="font-inter-medium text-sm text-gray-500">
-              Wednesday, May 17
+              {formattedDate}
             </Text>
             <Text className="font-inter-bold text-2xl text-gray-900">
-              30 min workout
+              {workout.durationMinutes} min workout
             </Text>
           </View>
           <Pressable
@@ -167,7 +235,7 @@ export default function WorkoutDetailScreen() {
                   Estimated calories
                 </Text>
                 <Text className="font-inter-bold text-lg text-gray-900">
-                  250-300
+                  {workout.caloriesBurn ?? '250-300'}
                   <Text className="font-inter-medium text-sm text-gray-500"> kcal</Text>
                 </Text>
               </View>
@@ -183,7 +251,7 @@ export default function WorkoutDetailScreen() {
                   Intensity
                 </Text>
                 <Text className="font-inter-bold text-lg text-gray-900">
-                  Medium
+                  {formatDifficulty(workout.difficultyLevel)}
                 </Text>
               </View>
             </View>
@@ -191,15 +259,27 @@ export default function WorkoutDetailScreen() {
         </View>
 
         {/* Exercise List */}
-        <Text className="mb-4 font-inter-bold text-lg text-black">Exercises</Text>
+        <Text className="mb-4 font-inter-bold text-lg text-black">
+          Exercises ({exercises.length})
+        </Text>
         <View>
-          {exercises.map((ex, index) => (
-            <ExerciseCard
-              key={index}
-              {...ex}
-              onPlay={() => handlePlayVideo(ex.name)}
-            />
-          ))}
+          {exercises.length > 0 ? (
+            exercises.map((ex, index) => (
+              <ExerciseCard
+                key={index}
+                name={ex.name}
+                setsReps={`${ex.sets} sets × ${ex.reps} reps`}
+                target={ex.targetMuscles ?? 'Various muscle groups'}
+                rest={`${ex.restSeconds} seconds between sets`}
+                imageUrl={ex.imageUrl ?? 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438'}
+                onPlay={() => handlePlayVideo(ex.name)}
+              />
+            ))
+          ) : (
+            <Text className="text-center py-4 text-gray-500 italic">
+              No exercises found for this workout
+            </Text>
+          )}
         </View>
         <View className="h-6" />
       </ScrollView>

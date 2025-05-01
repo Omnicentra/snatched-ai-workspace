@@ -83,6 +83,7 @@ export default function RootLayout() {
         <Stack screenOptions={{ headerShown: false }}>
           {/* The `app/index.tsx` will handle redirection logic */}
           <Stack.Screen name="index" />
+          <Stack.Screen name="(auth)" />
           <Stack.Screen name="(onboarding)" />
           <Stack.Screen name="(tabs)" />
           {/* <Stack.Screen name="(modals)" options={{ presentation: "modal" }} /> */}

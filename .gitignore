@@ -53,6 +53,7 @@ yarn-error.log*
 # typescript
 dist/
 .cache
+exports
 
 # turbo
 .turbo

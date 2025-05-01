@@ -2,21 +2,21 @@ import React, { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { Redirect } from "expo-router";
 import * as SecureStore from "expo-secure-store";
+import { authClient } from "@/utils/auth";
 
-// Basic check for onboarding completion (replace with more robust logic)
+// Check onboarding completion status from SecureStore
 const checkOnboardingStatus = async () => {
   try {
-    const value = await SecureStore.getItemAsync("@onboarding_complete");
-    return value === "true";
-  } catch (e) {
+    const secureStoreFlag = await SecureStore.getItemAsync("@onboarding_complete");
+    return secureStoreFlag === "true";
+  } catch {
     return false; // Default to showing onboarding if error
   }
 };
 
 export default function AppEntry() {
-  const [isOnboardingComplete, setIsOnboardingComplete] = React.useState<
-    boolean | null
-  >(null);
+  const [isOnboardingComplete, setIsOnboardingComplete] = React.useState<boolean | null>(null);
+  const { data: session } = authClient.useSession();
 
   useEffect(() => {
     const checkStatus = async () => {
@@ -24,23 +24,26 @@ export default function AppEntry() {
       setIsOnboardingComplete(completed);
     };
     void checkStatus();
-  }, []);
+  }, []); // Only check once on mount
 
   if (isOnboardingComplete === null) {
-    // Show loading indicator while checking status
     return (
       <View className="flex-1 items-center justify-center">
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color="#EC4899" />
       </View>
     );
   }
 
-  console.log("isOnboardingComplete", isOnboardingComplete);
-
-  // Redirect based on onboarding status
-  if (isOnboardingComplete) {
-    return <Redirect href="/(tabs)/home" />;
-  } else {
-    return <Redirect href="/(onboarding)" />; // Redirects to onboarding/index.tsx
+  // If onboarding is not complete, go to onboarding flow
+  if (!isOnboardingComplete) {
+    return <Redirect href="/(onboarding)" />;
   }
+
+  // If onboarding is complete but no session, go to auth
+  if (!session?.user) {
+    return <Redirect href="/(auth)/login" />;
+  }
+
+  // If both onboarding is complete and user is authenticated, go to home
+  return <Redirect href="/(tabs)/home" />;
 }

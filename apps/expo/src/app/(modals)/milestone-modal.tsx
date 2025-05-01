@@ -30,7 +30,6 @@ interface MilestoneModalProps {
   totalDays: number
   emoji: string
   accentColor: string
-  bgColor: string
   type: 'nutrition' | 'workout'
 }
 
@@ -41,7 +40,6 @@ export const MilestoneModal: React.FC<MilestoneModalProps> = ({
   totalDays,
   emoji,
   accentColor,
-  bgColor,
   type
 }) => {
   const translateY = useSharedValue(0)

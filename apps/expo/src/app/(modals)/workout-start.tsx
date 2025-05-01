@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, Pressable, Dimensions } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,7 +8,6 @@ import Animated, {
   useAnimatedProps,
   useSharedValue,
   withTiming,
-  FadeIn,
   Easing,
 } from 'react-native-reanimated';
 import { Svg, Circle } from 'react-native-svg';
@@ -18,24 +17,31 @@ const PADDING = 32; // Total horizontal padding
 const CIRCLE_SIZE = SCREEN_WIDTH - PADDING; // Circle will fill screen width minus padding
 const CIRCLE_LENGTH = CIRCLE_SIZE * Math.PI; // Circumference
 const CIRCLE_RADIUS = CIRCLE_SIZE / 2; // Radius
-const INITIAL_TIME = 60; // 60 seconds
+const INITIAL_TIME = 45; // Default exercise time in seconds
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
-interface WorkoutStartProps {
-  title?: string;
-  subtitle?: string;
-  totalMoves?: number;
-  currentMove?: number;
-  nextExercise?: string;
-  workoutType?: string;
-}
-
 export default function WorkoutStartScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams();
   const [isPaused, setIsPaused] = useState(false);
   const [timeLeft, setTimeLeft] = useState(INITIAL_TIME);
-  const progress = useSharedValue(1);
+  const [currentExercise, setCurrentExercise] = useState(1);
+  // Use a ref to track initial setup
+  const initialSetupRef = useRef(true);
+  const progress = useSharedValue(initialSetupRef.current ? 1 : 0);
+  
+  // Get parameters from URL
+  const workoutId = typeof params.workoutId === 'string' ? parseInt(params.workoutId, 10) : undefined;
+  const workoutTitle = params.workoutTitle as string || 'Workout';
+  const totalExercises = typeof params.totalExercises === 'string' ? parseInt(params.totalExercises, 10) : 6;
+  const duration = typeof params.duration === 'string' ? parseInt(params.duration, 10) : 30;
+  const _difficultyLevel = params.difficultyLevel as string || 'Intermediate';
+  const exerciseName = params.exerciseName as string || 'Exercise';
+  const nextExerciseName = 'Next Exercise'; // In a real app, this would come from your workout data
+  
+  // Total calories estimated based on workout duration and difficulty
+  const estimatedCalories = Math.round(duration * 8.3); // Simple estimation formula
 
   // Format time as MM:SS
   const formatTime = (seconds: number) => {
@@ -44,17 +50,37 @@ export default function WorkoutStartScreen() {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Reset timer
+  // Reset timer - using withTiming instead of direct mutation
   const resetTimer = useCallback(() => {
     setTimeLeft(INITIAL_TIME);
-    progress.value = 1;
+    progress.value = withTiming(1, { duration: 300 });
+  }, [progress]);
+  
+  // Mark setup as complete after initial render
+  useEffect(() => {
+    initialSetupRef.current = false;
   }, []);
 
   // Handle timer completion
   const handleTimerComplete = useCallback(() => {
-    resetTimer();
-    router.push('/(modals)/workout-complete');
-  }, [router, resetTimer]);
+    if (currentExercise >= totalExercises) {
+      // Workout completed
+      router.push({
+        pathname: '/(modals)/workout-complete',
+        params: {
+          workoutId: workoutId?.toString(),
+          workoutTitle,
+          duration: duration.toString(),
+          calories: estimatedCalories.toString(),
+          moves: totalExercises.toString(),
+        }
+      });
+    } else {
+      // Move to next exercise
+      setCurrentExercise(prev => prev + 1);
+      resetTimer();
+    }
+  }, [router, resetTimer, currentExercise, totalExercises, workoutId, workoutTitle, duration, estimatedCalories]);
 
   // Timer effect
   useEffect(() => {
@@ -64,7 +90,7 @@ export default function WorkoutStartScreen() {
       interval = setInterval(() => {
         setTimeLeft((prev) => {
           const newTime = prev - 1;
-          // Animate progress ring
+          // Animate progress ring with withTiming
           progress.value = withTiming(newTime / INITIAL_TIME, {
             duration: 1000,
             easing: Easing.linear,
@@ -96,7 +122,15 @@ export default function WorkoutStartScreen() {
   };
 
   const handlePrevious = () => {
+    if (currentExercise > 1) {
+      setCurrentExercise(prev => prev - 1);
+    }
     resetTimer();
+  };
+
+  // Format the workout type display
+  const formatWorkoutType = () => {
+    return workoutTitle.toUpperCase();
   };
 
   return (
@@ -108,9 +142,9 @@ export default function WorkoutStartScreen() {
         <Pressable onPress={handleBack} className="p-2">
           <Ionicons name="arrow-back" size={24} color="black" />
         </Pressable>
-        <Text className="text-base font-inter-medium">Move 3 of 6</Text>
+        <Text className="text-base font-inter-medium">Move {currentExercise} of {totalExercises}</Text>
         <View className="bg-pink-100 px-3 py-1 rounded-full">
-          <Text className="text-pink-600 font-inter-medium">BOOTY BOOST</Text>
+          <Text className="text-pink-600 font-inter-medium">{formatWorkoutType()}</Text>
         </View>
       </View>
 
@@ -147,10 +181,10 @@ export default function WorkoutStartScreen() {
           {/* Content inside the circle */}
           <View className="absolute items-center px-8">
             <Text className="text-xl font-inter-bold mb-2 text-center">
-              Lying Bent Knee Clamshell
+              {exerciseName}
             </Text>
             <Text className="text-gray-600 text-center text-sm mb-8">
-              Keep your knees stacked and your core tight
+              Keep your core tight and maintain proper form
             </Text>
             
             {/* Timer */}
@@ -159,7 +193,7 @@ export default function WorkoutStartScreen() {
             </Text>
             
             <Text className="text-gray-500 text-sm">
-              Up Next: Fire Hydrants
+              Up Next: {nextExerciseName}
             </Text>
           </View>
         </View>

@@ -1,40 +1,57 @@
 import { StyledButton } from '@/components/core'
 import { MaterialCommunityIcons, SimpleLineIcons } from '@expo/vector-icons'
-import { useRouter } from 'expo-router'
-import React from 'react'
-import { Pressable, Text, View } from 'react-native'
+import { useRouter, useLocalSearchParams } from 'expo-router'
+import React, { useState } from 'react'
+import { Pressable, Text, View, ActivityIndicator } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 interface WorkoutStats {
   minutes: number
   calories: number
   moves: number
-  streak: number
+  streak?: number
 }
 
 export default function WorkoutCompleteScreen() {
   const router = useRouter()
-
-  // Mock stats - in real app, these would be passed as params or stored in state
+  const params = useLocalSearchParams()
+  const [saveInProgress, setSaveInProgress] = useState(false)
+  
+  // Get parameters from URL
+  const _workoutId = typeof params.workoutId === 'string' ? parseInt(params.workoutId, 10) : undefined
+  const workoutTitle = params.workoutTitle as string || 'Workout'
+  
+  // Get workout stats from parameters or use defaults
   const stats: WorkoutStats = {
-    minutes: 8,
-    calories: 87,
-    moves: 6,
-    streak: 3
+    minutes: typeof params.duration === 'string' ? parseInt(params.duration, 10) : 30,
+    calories: typeof params.calories === 'string' ? parseInt(params.calories, 10) : 250,
+    moves: typeof params.moves === 'string' ? parseInt(params.moves, 10) : 6,
+    streak: 1 // Hardcoded for now, would come from user progress data
   }
-
+  
   const handleStartCooldown = () => {
     // Navigate to cooldown workout
     router.push('/(modals)/workout-start')
   }
 
-  const handleSaveProgress = () => {
-    // Save progress logic here
-    router.back()
+  const handleSaveProgress = async () => {
+    try {
+      setSaveInProgress(true)
+      
+      // Simulate API delay for saving workout progress
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      // Success - go back to workouts screen
+      router.push('/(tabs)/workouts')
+    } catch (error) {
+      console.error('Failed to save workout progress:', error)
+    } finally {
+      setSaveInProgress(false)
+    }
   }
 
   const handleShareProgress = () => {
-    // Share progress logic here
+    // Share progress logic would go here
   }
 
   return (
@@ -56,7 +73,7 @@ export default function WorkoutCompleteScreen() {
         {/* Stats Card */}
         <View className="mt-8 w-full rounded-3xl bg-gray-50 p-6">
           <Text className="mb-4 text-center font-inter-bold text-xl">
-            Booty Boost Session
+            {workoutTitle}
           </Text>
 
           {/* Stats Grid */}
@@ -99,10 +116,14 @@ export default function WorkoutCompleteScreen() {
             variant="primary"
           />
           <StyledButton
-            title="Save Progress"
+            title={saveInProgress ? "Saving..." : "Save Progress"}
             onPress={handleSaveProgress}
             variant="secondary"
+            disabled={saveInProgress}
           />
+          {saveInProgress && (
+            <ActivityIndicator size="small" color="#9CA3AF" className="mt-2" />
+          )}
           <Pressable
             onPress={handleShareProgress}
             className="flex-row items-center justify-center gap-x-2 rounded-full border border-gray-200 bg-white py-4"

@@ -7,31 +7,12 @@ import * as Haptics from 'expo-haptics'
 import brandLogo from '../../assets/images/logo2.png'
 import { Image } from 'expo-image'
 import { appVariant } from '@/lib/utils'
-
-// Basic animation placeholder (needs Reanimated for real effect)
-// Keep the className directly on Text
-const BubbleLetter = ({
-  children,
-  delay
-}: {
-  children: string
-  delay: number
-}) => (
-  <Text
-    className="ml-1 font-bubbly-bold text-4xl tracking-widest text-white"
-    // Inline style for properties not directly in Tailwind/NativeWind V4 yet (like textShadow)
-    style={{
-      textShadowColor: 'rgba(0, 0, 0, 0.1)',
-      textShadowOffset: { width: 2, height: 2 },
-      textShadowRadius: 0
-    }}
-  >
-    {children}
-  </Text>
-)
+import { BubbleLetter } from '@/components/core/BubbleLetter'
+import { authClient } from '@/utils/auth'
 
 export default function SplashScreen() {
   const router = useRouter()
+  const { data: session } = authClient.useSession()
 
   const handleGetStarted = () => {
     void Haptics.selectionAsync().then(() => {
@@ -41,18 +22,16 @@ export default function SplashScreen() {
 
   const handleSkip = () => {
     void Haptics.selectionAsync().then(() => {
-      router.push('/(tabs)/home')
+      return session?.user ? router.replace('/(tabs)/home') : router.replace('/(auth)/login')
     })
   }
 
   console.log('appVariant', appVariant)
 
-  // Apply className directly to LinearGradient if supported, otherwise use style
-  // NativeWind v4 aims to support this, but if not: style={{ flex: 1 }}
   return (
     <LinearGradient
       colors={['#f472b6', '#FED0E2']}
-      className="flex-1" // Use className directly
+      className="flex-1"
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
     >
@@ -73,19 +52,18 @@ export default function SplashScreen() {
           </View>
 
           <View className="w-full items-center">
-            {/* Apply className directly */}
             <View className="mb-2 flex-row">
-              <BubbleLetter delay={1}>S</BubbleLetter>
-              <BubbleLetter delay={2}>n</BubbleLetter>
-              <BubbleLetter delay={3}>a</BubbleLetter>
-              <BubbleLetter delay={4}>t</BubbleLetter>
-              <BubbleLetter delay={5}>c</BubbleLetter>
-              <BubbleLetter delay={6}>h</BubbleLetter>
-              <BubbleLetter delay={7}>e</BubbleLetter>
-              <BubbleLetter delay={8}>d</BubbleLetter>
-              <BubbleLetter delay={9}> </BubbleLetter>
-              <BubbleLetter delay={10}>A</BubbleLetter>
-              <BubbleLetter delay={11}>I</BubbleLetter>
+              <BubbleLetter _delay={1}>S</BubbleLetter>
+              <BubbleLetter _delay={2}>n</BubbleLetter>
+              <BubbleLetter _delay={3}>a</BubbleLetter>
+              <BubbleLetter _delay={4}>t</BubbleLetter>
+              <BubbleLetter _delay={5}>c</BubbleLetter>
+              <BubbleLetter _delay={6}>h</BubbleLetter>
+              <BubbleLetter _delay={7}>e</BubbleLetter>
+              <BubbleLetter _delay={8}>d</BubbleLetter>
+              <BubbleLetter _delay={9}> </BubbleLetter>
+              <BubbleLetter _delay={10}>A</BubbleLetter>
+              <BubbleLetter _delay={11}>I</BubbleLetter>
             </View>
             <Text className="font-inter text-lg text-white">
               Your body, snatched.
