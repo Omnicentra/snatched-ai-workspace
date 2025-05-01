@@ -23,7 +23,7 @@ function TikTok() {
 
 export default function Footer() {
   return (
-      <footer id="contact" className="bg-white py-8 border-t border-pink-100">
+      <footer id="footer" className="bg-white py-8 border-t border-pink-100">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-6">
             <div className="flex flex-col md:flex-row md:items-center gap-4">
@@ -71,6 +71,9 @@ export default function Footer() {
           <div className="border-t border-pink-100 pt-4 flex flex-col md:flex-row md:justify-between md:items-center">
             <p className="text-gray-500 text-sm">&copy; {new Date().getFullYear()} Snatched AI. All rights reserved.</p>
             <div className="flex space-x-4 mt-2 md:mt-0">
+              <Link href="#contact" className="text-sm text-gray-500 hover:text-pink-500">
+                Support
+              </Link>
               <Link href="#" className="text-sm text-gray-500 hover:text-pink-500">
                 Privacy
               </Link>

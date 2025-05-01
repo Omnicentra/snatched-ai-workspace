@@ -69,6 +69,10 @@
   background: linear-gradient(135deg, #f472b6, #ec4899, #db2777);
 }
 
+.gradient-bg-medium {
+  background: linear-gradient(135deg, #f686c2, #f472b6, #ec4899);
+}
+
 .gradient-bg-light {
   background: linear-gradient(135deg, #fda4cf, #f472b6, #ec4899);
 }
