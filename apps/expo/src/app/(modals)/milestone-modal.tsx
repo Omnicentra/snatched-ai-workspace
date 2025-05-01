@@ -1,26 +1,27 @@
-import React, { useCallback } from 'react'
-import {
-  View,
-  Text,
-  Modal,
-  Dimensions
-} from 'react-native'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-  runOnJS
-} from 'react-native-reanimated'
+import React, { useCallback } from 'react'
+import {
+  Dimensions,
+  Modal,
+  Text,
+  View
+} from 'react-native'
 import {
   Gesture,
   GestureDetector,
   GestureHandlerRootView
 } from 'react-native-gesture-handler'
+import Animated, {
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring
+} from 'react-native-reanimated'
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window')
 const MAX_TRANSLATE_Y = -SCREEN_HEIGHT * 0.3
+const SNAP_POINTS = [0, SCREEN_HEIGHT]
 
 interface MilestoneModalProps {
   isVisible: boolean
@@ -29,6 +30,7 @@ interface MilestoneModalProps {
   totalDays: number
   emoji: string
   accentColor: string
+  bgColor: string
   type: 'nutrition' | 'workout'
 }
 
@@ -39,6 +41,7 @@ export const MilestoneModal: React.FC<MilestoneModalProps> = ({
   totalDays,
   emoji,
   accentColor,
+  bgColor,
   type
 }) => {
   const translateY = useSharedValue(0)
@@ -73,8 +76,6 @@ export const MilestoneModal: React.FC<MilestoneModalProps> = ({
   const rBottomSheetStyle = useAnimatedStyle(() => {
     return {
       transform: [{ translateY: translateY.value }],
-      height: SCREEN_HEIGHT,
-      top: SCREEN_HEIGHT * 0.7,
     }
   })
 
@@ -83,9 +84,10 @@ export const MilestoneModal: React.FC<MilestoneModalProps> = ({
   const firstRow = days.slice(0, midPoint)
   const secondRow = days.slice(midPoint).reverse()
 
-  const renderDay = (day: number) => {
+  const renderDay = (day: number, isReversed: boolean = false) => {
     const isCompleted = day < currentDay
     const isActive = day === currentDay
+    const position = isReversed ? 'bottom' : 'top'
 
     return (
       <View key={day} className="items-center">
@@ -112,6 +114,16 @@ export const MilestoneModal: React.FC<MilestoneModalProps> = ({
           )}
           {isActive && (
             <Text className="text-xl">{emoji}</Text>
+          )}
+          {day !== (isReversed ? secondRow[0] : firstRow[firstRow.length - 1]) && (
+            <View 
+              className={`absolute h-0.5 w-14 ${
+                position === 'top' ? '-top-0.5' : '-bottom-0.5'
+              } ${isReversed ? '-right-14' : '-left-14'}`}
+              style={{
+                backgroundColor: isCompleted ? accentColor : '#E5E7EB'
+              }}
+            />
           )}
         </View>
       </View>
@@ -150,19 +162,16 @@ export const MilestoneModal: React.FC<MilestoneModalProps> = ({
         <View className="flex-1 bg-black/30">
           <GestureDetector gesture={gesture}>
             <Animated.View 
-              className="absolute w-full overflow-hidden rounded-t-3xl bg-white"
+              className="absolute bottom-0 w-full overflow-hidden rounded-t-3xl"
               style={[rBottomSheetStyle]}
             >
               <LinearGradient
                 colors={['#FDF2F8', '#FCE7F3']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                style={{
-                  height: '100%',
-                  width: '100%'
-                }}
+                className="h-full w-full"
               >
-                <View className="h-full px-6 pb-12 pt-4">
+                <View className="px-6 pb-12 pt-4">
                   <View className="mb-6 items-center">
                     <View className="h-1.5 w-16 rounded-full bg-gray-300/50" />
                   </View>
@@ -196,7 +205,7 @@ export const MilestoneModal: React.FC<MilestoneModalProps> = ({
                       {firstRow.map((day) => renderDay(day))}
                     </View>
                     <View className="mt-8 flex-row justify-between">
-                      {secondRow.map((day) => renderDay(day))}
+                      {secondRow.map((day) => renderDay(day, true))}
                     </View>
                   </View>
 
