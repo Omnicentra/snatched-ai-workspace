@@ -21,6 +21,7 @@ export const env = createEnv({
     AWS_REGION: z.string().min(1).default("us-east-1"),
     AWS_ACCESS_KEY_ID: z.string().min(1),
     AWS_SECRET_ACCESS_KEY: z.string().min(1),
+    DOPPLER_ENVIRONMENT: z.enum(["prd", "stg", "dev"]).default("dev"),
   },
 
   /**
@@ -39,6 +40,7 @@ export const env = createEnv({
     AWS_REGION: process.env.AWS_REGION,
     AWS_ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID,
     AWS_SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY,
+    DOPPLER_ENVIRONMENT: process.env.DOPPLER_ENVIRONMENT,
 
     // NEXT_PUBLIC_CLIENTVAR: process.env.NEXT_PUBLIC_CLIENTVAR,
   },

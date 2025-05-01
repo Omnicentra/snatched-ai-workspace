@@ -10,7 +10,7 @@ import {
   Animated,
   Easing,
 } from "react-native";
-import { MilestoneModal } from "@/components/MilestoneModal";
+import { MilestoneModal } from "@/app/(modals)/milestone-modal";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import Constants from "expo-constants";
 import { Image } from "expo-image";
@@ -262,16 +262,6 @@ export default function NutritionPlanScreen() {
               color="#f472b6"
             />
           </Pressable>
-          <Pressable
-            className="rounded-full bg-gray-100 p-2"
-            onPress={() => console.log("Options")}
-          >
-            <MaterialCommunityIcons
-              name="dots-horizontal"
-              size={24}
-              color="#374151"
-            />
-          </Pressable>
         </View>
       </View>
 
@@ -339,7 +329,7 @@ export default function NutritionPlanScreen() {
         totalDays={7}
         emoji="🥗"
         accentColor="#f472b6"
-        bgColor="#FDF2F8"
+        type="nutrition"
       />
     </LinearGradient>
   );

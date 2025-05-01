@@ -71,7 +71,7 @@ const exercises = [
     target: 'Chest, shoulders, triceps',
     rest: '60 seconds between sets',
     imageUrl:
-      'https://images.unsplash.com/photo-1571019113664-8a70d82d31d1?ixlib=rb-1.2.1&auto=format&fit=crop&w=150&q=80'
+      'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80'
   },
   {
     name: 'Lateral Raise',
@@ -95,7 +95,7 @@ const exercises = [
     target: 'Glutes, lower back',
     rest: '45 seconds between sets',
     imageUrl:
-      'https://images.unsplash.com/photo-1571019113664-8a70d82d31d1?ixlib=rb-1.2.1&auto=format&fit=crop&w=150&q=80'
+      'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80'
   }
 ]
 
@@ -133,12 +133,6 @@ export default function WorkoutDetailScreen() {
             Full Body Blast
           </Text>
         </View>
-        <Pressable
-          className="rounded-full bg-gray-100 p-2"
-          onPress={() => console.log('Options')}
-        >
-          <MaterialCommunityIcons name="dots-horizontal" size={24} color="#374151" />
-        </Pressable>
       </View>
 
       {/* Main Content */}
@@ -212,10 +206,7 @@ export default function WorkoutDetailScreen() {
 
       {/* Footer Button */}
       <View 
-        className="border-t border-gray-100 bg-white p-6"
-        style={{
-          paddingBottom: Platform.OS === 'ios' ? 34 : 24
-        }}
+        className="bg-white pt-6 px-6"
       >
         <StyledButton
           title="Mark as Completed"

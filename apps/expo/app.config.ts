@@ -115,16 +115,16 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     [
       "expo-media-library",
       {
-        photosPermission: "Allow SnatchedAI to access your photos.",
-        savePhotosPermission: "Allow SnatchedAI to save photos.",
+        photosPermission: "Allow SnatchedAI to access your photos. This helps us analyze your body shape, track your progress over time, and provide personalized fitness recommendations.",
+        savePhotosPermission: "Allow SnatchedAI to save photos. This lets you save your progress photos and AI-generated visualizations to your device.",
         isAccessMediaLocationEnabled: true,
       },
     ],
     [
       "expo-camera",
       {
-        cameraPermission: "Allow SnatchedAI to access your camera",
-        microphonePermission: "Allow SnatchedAI to access your microphone",
+        cameraPermission: "Allow SnatchedAI to access your camera. This lets you take progress photos, get real-time body shape analysis, and receive instant style recommendations.",
+        microphonePermission: "Allow SnatchedAI to access your microphone. This enables voice commands for hands-free operation during workout sessions.",
         recordAudioAndroid: true,
       },
     ],

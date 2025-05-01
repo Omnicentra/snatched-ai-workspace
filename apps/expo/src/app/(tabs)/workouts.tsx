@@ -3,7 +3,6 @@ import React, { useState } from 'react'
 import {
   View,
   Text,
-  SafeAreaView,
   ScrollView,
   Pressable,
   TextInput,
@@ -13,7 +12,7 @@ import { useRouter } from 'expo-router'
 import Constants from 'expo-constants'
 import { LinearGradient } from 'expo-linear-gradient'
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'
-import { MilestoneModal } from '@/components/MilestoneModal'
+import { MilestoneModal } from '@/app/(modals)/milestone-modal'
 
 // Milestone Progress Component
 const MilestoneProgress = ({
@@ -307,9 +306,6 @@ export default function WorkoutLibraryScreen() {
           >
             <MaterialCommunityIcons name="trophy-outline" size={24} color="#f472b6" />
           </Pressable>
-          <Pressable className="rounded-full bg-gray-100 p-2">
-            <Ionicons name="options-outline" size={24} color="black" />
-          </Pressable>
         </View>
       </View>
 
@@ -384,7 +380,7 @@ export default function WorkoutLibraryScreen() {
         totalDays={7}
         emoji="💪"
         accentColor="#f472b6"
-        bgColor="#FDF2F8"
+        type="workout"
       />
     </LinearGradient>
   )

@@ -130,6 +130,7 @@ const NutritionStats = () => {
 
 // Recently Logged Component
 const RecentlyLogged = () => {
+  const router = useRouter();
   return (
     <View className="mb-8 rounded-3xl bg-white p-6 shadow-sm">
       <Text className="font-inter-bold mb-4 text-lg text-black">
@@ -142,7 +143,7 @@ const RecentlyLogged = () => {
         <Text className="font-inter mb-4 text-center text-sm text-gray-500">
           Start tracking today's meals by taking a quick picture.
         </Text>
-        <Pressable className="h-14 w-14 items-center justify-center rounded-full bg-black">
+        <Pressable onPress={() => router.push("/(tabs)/nutrition")} className="h-14 w-14 items-center justify-center rounded-full bg-black">
           <Ionicons name="add" size={24} color="white" />
         </Pressable>
       </View>

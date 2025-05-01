@@ -15,7 +15,7 @@ import { env } from "~/env";
 export const metadata: Metadata = {
   metadataBase: new URL(
     env.DOPPLER_ENVIRONMENT === "prd"
-      ? "https://snatched-ai-ljnck.ondigitalocean.app/"
+      ? "https://snatchedai.com"
       : "http://localhost:3000",
   ),
   title: "Snatched AI - Your Personal Body Transformation Assistant",
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
     title: "Snatched AI - Your Personal Body Transformation Assistant",
     description:
       "Visualise, achieve, and track your ideal body shape through personalised AI plans combining workouts, nutrition, body analysis, and styling tips.",
-    url: "https://snatched-ai-ljnck.ondigitalocean.app/",
+    url: "https://snatchedai.com",
     siteName: "Snatched AI",
   },
   itunes: {
@@ -46,7 +46,7 @@ export const metadata: Metadata = {
   },
   appLinks: {
     ios: {
-      url: 'https://snatched-ai-ljnck.ondigitalocean.app',
+      url: 'https://snatchedai.com',
       app_store_id: '6744844397',
     },
     android: {
@@ -54,7 +54,7 @@ export const metadata: Metadata = {
       app_name: 'Snatched AI',
     },
     web: {
-      url: 'https://snatched-ai-ljnck.ondigitalocean.app',
+      url: 'https://snatchedai.com',
       should_fallback: true,
     },
   },

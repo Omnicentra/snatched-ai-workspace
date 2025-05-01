@@ -3,7 +3,6 @@ import {
   View,
   Text,
   Modal,
-  Pressable,
   Dimensions
 } from 'react-native'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
@@ -22,7 +21,6 @@ import {
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window')
 const MAX_TRANSLATE_Y = -SCREEN_HEIGHT * 0.3
-const SNAP_POINTS = [0, SCREEN_HEIGHT]
 
 interface MilestoneModalProps {
   isVisible: boolean
@@ -31,7 +29,7 @@ interface MilestoneModalProps {
   totalDays: number
   emoji: string
   accentColor: string
-  bgColor: string
+  type: 'nutrition' | 'workout'
 }
 
 export const MilestoneModal: React.FC<MilestoneModalProps> = ({
@@ -41,7 +39,7 @@ export const MilestoneModal: React.FC<MilestoneModalProps> = ({
   totalDays,
   emoji,
   accentColor,
-  bgColor
+  type
 }) => {
   const translateY = useSharedValue(0)
   const context = useSharedValue({ y: 0 })
@@ -75,6 +73,8 @@ export const MilestoneModal: React.FC<MilestoneModalProps> = ({
   const rBottomSheetStyle = useAnimatedStyle(() => {
     return {
       transform: [{ translateY: translateY.value }],
+      height: SCREEN_HEIGHT,
+      top: SCREEN_HEIGHT * 0.7,
     }
   })
 
@@ -83,15 +83,14 @@ export const MilestoneModal: React.FC<MilestoneModalProps> = ({
   const firstRow = days.slice(0, midPoint)
   const secondRow = days.slice(midPoint).reverse()
 
-  const renderDay = (day: number, isReversed: boolean = false) => {
+  const renderDay = (day: number) => {
     const isCompleted = day < currentDay
     const isActive = day === currentDay
-    const position = isReversed ? 'bottom' : 'top'
 
     return (
       <View key={day} className="items-center">
         <View 
-          className={`h-14 w-14 items-center justify-center rounded-full ${
+          className={`relative h-14 w-14 items-center justify-center rounded-full ${
             isActive ? 'border-2 border-dashed bg-white' : 
             isCompleted ? '' : 'bg-white border border-gray-100'
           }`}
@@ -115,19 +114,28 @@ export const MilestoneModal: React.FC<MilestoneModalProps> = ({
             <Text className="text-xl">{emoji}</Text>
           )}
         </View>
-        {day !== (isReversed ? secondRow[0] : firstRow[firstRow.length - 1]) && (
-          <View 
-            className={`absolute h-0.5 w-12 ${
-              position === 'top' ? 'top-7' : 'bottom-7'
-            } ${isReversed ? 'right-7' : 'left-7'}`}
-            style={{
-              backgroundColor: isCompleted ? accentColor : '#E5E7EB'
-            }}
-          />
-        )}
       </View>
     )
   }
+
+  const getContextualContent = () => {
+    if (type === 'nutrition') {
+      return {
+        title: 'Nutrition Progress',
+        subtitle: 'Building healthy eating habits!',
+        goalTitle: "Today's Nutrition Goal",
+        goalDescription: 'Complete your daily macro targets and log all meals to maintain your streak!'
+      }
+    }
+    return {
+      title: 'Workout Progress',
+      subtitle: 'Crushing those fitness goals!',
+      goalTitle: "Today's Workout Goal",
+      goalDescription: 'Complete your scheduled workout and track your progress to keep the momentum going!'
+    }
+  }
+
+  const content = getContextualContent()
 
   if (!isVisible) return null
 
@@ -142,16 +150,19 @@ export const MilestoneModal: React.FC<MilestoneModalProps> = ({
         <View className="flex-1 bg-black/30">
           <GestureDetector gesture={gesture}>
             <Animated.View 
-              className="absolute bottom-0 w-full overflow-hidden rounded-t-3xl"
+              className="absolute w-full overflow-hidden rounded-t-3xl bg-white"
               style={[rBottomSheetStyle]}
             >
               <LinearGradient
                 colors={['#FDF2F8', '#FCE7F3']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                className="h-full w-full"
+                style={{
+                  height: '100%',
+                  width: '100%'
+                }}
               >
-                <View className="px-6 pb-12 pt-4">
+                <View className="h-full px-6 pb-12 pt-4">
                   <View className="mb-6 items-center">
                     <View className="h-1.5 w-16 rounded-full bg-gray-300/50" />
                   </View>
@@ -159,10 +170,10 @@ export const MilestoneModal: React.FC<MilestoneModalProps> = ({
                   <View className="mb-8 flex-row items-center justify-between">
                     <View>
                       <Text className="font-inter-medium text-base text-gray-600">
-                        Progress {emoji}
+                        {content.title} {emoji}
                       </Text>
                       <Text className="mt-1 font-inter text-sm text-gray-500">
-                        Keep up the great work!
+                        {content.subtitle}
                       </Text>
                     </View>
                     <Text className="font-inter-medium text-lg text-gray-900">
@@ -184,17 +195,17 @@ export const MilestoneModal: React.FC<MilestoneModalProps> = ({
                     <View className="flex-row justify-between">
                       {firstRow.map((day) => renderDay(day))}
                     </View>
-                    <View className="mt-6 flex-row justify-between">
-                      {secondRow.map((day) => renderDay(day, true))}
+                    <View className="mt-8 flex-row justify-between">
+                      {secondRow.map((day) => renderDay(day))}
                     </View>
                   </View>
 
                   <View className="mt-12 rounded-2xl bg-white/80 p-6 shadow-sm">
                     <Text className="font-inter-semibold text-lg text-gray-900">
-                      Today's Goal
+                      {content.goalTitle}
                     </Text>
                     <Text className="mt-2 font-inter text-base text-gray-600">
-                      Complete your daily nutrition targets and log all meals to maintain your streak!
+                      {content.goalDescription}
                     </Text>
                   </View>
                 </View>

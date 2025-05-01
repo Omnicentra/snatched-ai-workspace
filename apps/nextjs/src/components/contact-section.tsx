@@ -46,7 +46,7 @@ export default function ContactSection() {
   }
 
   return (
-    <section id="contact" className="gradient-bg-medium text-white py-16">
+    <section id="contact" className="gradient-bg text-white py-16">
       <div className="container mx-auto px-4">
         <div className="mx-auto max-w-3xl text-center">
           <h2 className="mb-4 text-3xl font-bold tracking-tight sm:text-4xl">
