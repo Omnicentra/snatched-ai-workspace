@@ -15,7 +15,9 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "eas:local:ios": "eas build --profile ios-simulator --platform ios --local",
-    "eas:local:android": "eas build --profile development --platform android --local"
+    "eas:local:android": "eas build --profile development --platform android --local",
+    "eas:prod:ios": "eas build --profile production --platform ios",
+    "eas:prod:android": "eas build --profile production --platform android"
   },
   "dependencies": {
     "@bacons/text-decoder": "^0.0.0",
