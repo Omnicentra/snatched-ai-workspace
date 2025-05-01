@@ -2,6 +2,9 @@ import { seedWorkoutCategories } from './workout-categories'
 import { seedExercises } from './exercises'
 import { seedWorkouts } from './workouts'
 import { seedWorkoutExercises } from './workout-exercises'
+import { seedRecipeCategories } from './recipe-categories'
+import { seedRecipes } from './recipes'
+import { seedMoreRecipes } from './more-recipes'
 
 async function main() {
   console.log('🌱 Starting database seeding...')
@@ -12,6 +15,11 @@ async function main() {
     await seedExercises()
     await seedWorkouts()
     await seedWorkoutExercises()
+    
+    // Seed recipe data
+    await seedRecipeCategories()
+    await seedRecipes()
+    await seedMoreRecipes()
     
     console.log('✅ Database seeding completed successfully')
   } catch (error) {

@@ -713,6 +713,7 @@ export const recipes = pgTable(
     carbsGrams: integer("carbs_grams").notNull(),
     fatsGrams: integer("fats_grams").notNull(),
     imageUrl: text("image_url"),
+    categoryId: integer("category_id"),
     rating: numeric({ precision: 2, scale: 1 }),
     reviewCount: integer("review_count").default(0),
     createdAt: timestamp("created_at", {
@@ -724,7 +725,16 @@ export const recipes = pgTable(
       mode: "string",
     }).default(sql`CURRENT_TIMESTAMP`),
   },
-  (_table) => [
+  (table) => [
+    index("idx_recipes_category").using(
+      "btree",
+      table.categoryId.asc().nullsLast().op("int4_ops"),
+    ),
+    foreignKey({
+      columns: [table.categoryId],
+      foreignColumns: [recipeCategories.id],
+      name: "recipes_category_id_fkey",
+    }),
     check(
       "recipes_servings_check",
       sql`servings
@@ -761,6 +771,20 @@ export const recipes = pgTable(
           AND (rating <= (5)::numeric)`,
     ),
   ],
+);
+
+export const recipeCategories = pgTable(
+  "recipe_categories",
+  {
+    id: serial().primaryKey().notNull(),
+    name: varchar({ length: 50 }).notNull(),
+    description: text(),
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+      mode: "string",
+    }).default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [unique("recipe_categories_name_key").on(table.name)],
 );
 
 export const createRecipeSchema = createInsertSchema(recipes, {

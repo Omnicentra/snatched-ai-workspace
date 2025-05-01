@@ -3,8 +3,9 @@ import { z } from "zod";
 import { GoogleGenAI, Type } from "@google/genai";
 import { db } from "@omc/db/client";
 import { recipes, recipeIngredients, recipeInstructions } from "@omc/db/schema";
+import { eq } from "drizzle-orm";
 
-import { protectedProcedure, publicProcedure } from "../trpc";
+import { publicProcedure } from "../trpc";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY });
 
@@ -28,6 +29,24 @@ const mealSchema = z.object({
   name: z.string(),
   ingredients: z.array(ingredientSchema),
   instructions: z.array(instructionSchema),
+});
+
+const recipeSchema = z.object({
+  id: z.number(),
+  title: z.string(),
+  description: z.string().nullable(),
+  servings: z.number(),
+  prepTimeMinutes: z.number().nullable(),
+  calories: z.number(),
+  proteinGrams: z.number(),
+  carbsGrams: z.number(),
+  fatsGrams: z.number(),
+  imageUrl: z.string().nullable(),
+  rating: z.string().nullable(),
+  reviewCount: z.number().nullable(),
+  categoryId: z.number().nullable(),
+  createdAt: z.string().nullable(),
+  updatedAt: z.string().nullable(),
 });
 
 type Meal = z.infer<typeof mealSchema>;
@@ -141,4 +160,99 @@ export const nutritionRouter = {
 
       return mealsWithIds;
     }),
+    
+  getAllRecipes: publicProcedure
+    .output(z.array(recipeSchema))
+    .query(async () => {
+      // Fetch all recipes from the database with categoryId
+      const allRecipes = await db.select().from(recipes).execute();
+      // Ensure all recipes match the schema - cast explicitly if needed
+      return allRecipes.map(recipe => ({
+        id: recipe.id,
+        title: recipe.title,
+        description: recipe.description,
+        servings: recipe.servings,
+        prepTimeMinutes: recipe.prepTimeMinutes,
+        calories: recipe.calories,
+        proteinGrams: recipe.proteinGrams,
+        carbsGrams: recipe.carbsGrams,
+        fatsGrams: recipe.fatsGrams, 
+        imageUrl: recipe.imageUrl,
+        rating: recipe.rating,
+        reviewCount: recipe.reviewCount,
+        categoryId: recipe.categoryId,
+        createdAt: recipe.createdAt,
+        updatedAt: recipe.updatedAt
+      }));
+    }),
+    
+  getRecipeById: publicProcedure
+    .input(z.object({ id: z.number() }))
+    .output(recipeSchema.extend({
+      ingredients: z.array(z.object({
+        id: z.number(),
+        recipeId: z.number(),
+        ingredientName: z.string(),
+        amount: z.string(),
+        unit: z.string(),
+        orderIndex: z.number(),
+        createdAt: z.string().nullable(),
+      })),
+      instructions: z.array(z.object({
+        id: z.number(),
+        recipeId: z.number(),
+        stepNumber: z.number(),
+        instruction: z.string(),
+        createdAt: z.string().nullable(),
+      }))
+    }))
+    .query(async ({ input }) => {
+      // Fetch recipe details
+      const [recipe] = await db
+        .select()
+        .from(recipes)
+        .where(eq(recipes.id, input.id))
+        .execute();
+        
+      if (!recipe) {
+        throw new Error(`Recipe with ID ${input.id} not found`);
+      }
+      
+      // Fetch ingredients
+      const ingredients = await db
+        .select()
+        .from(recipeIngredients)
+        .where(eq(recipeIngredients.recipeId, input.id))
+        .orderBy(recipeIngredients.orderIndex)
+        .execute();
+        
+      // Fetch instructions
+      const instructions = await db
+        .select()
+        .from(recipeInstructions)
+        .where(eq(recipeInstructions.recipeId, input.id))
+        .orderBy(recipeInstructions.stepNumber)
+        .execute();
+        
+      // Cast the combined data to ensure it matches the schema
+      return {
+        id: recipe.id,
+        title: recipe.title,
+        description: recipe.description,
+        servings: recipe.servings,
+        prepTimeMinutes: recipe.prepTimeMinutes,
+        calories: recipe.calories,
+        proteinGrams: recipe.proteinGrams,
+        carbsGrams: recipe.carbsGrams,
+        fatsGrams: recipe.fatsGrams,
+        imageUrl: recipe.imageUrl,
+        rating: recipe.rating,
+        reviewCount: recipe.reviewCount,
+        categoryId: recipe.categoryId,
+        createdAt: recipe.createdAt,
+        updatedAt: recipe.updatedAt,
+        ingredients,
+        instructions
+      };
+    })
 } satisfies TRPCRouterRecord;

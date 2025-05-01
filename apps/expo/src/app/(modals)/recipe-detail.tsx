@@ -10,15 +10,21 @@ import {
     Text,
     View,
     Animated,
+    ActivityIndicator,
 } from 'react-native'
+import { api } from "@/utils/api"
 
 const RecipeDetailScreen = () => {
     const router = useRouter()
     const params = useLocalSearchParams()
-    const mealId = params.mealId as string
+    const mealId = Number(params.mealId)
     const nutrition = use$(nutritionStore$)
-    const meal = nutrition.meals[mealId];
-    const loggedMeal = nutrition.loggedMeals[mealId];
+    const { data: recipe, isLoading } = api.nutrition.getRecipeById.useQuery({ 
+        id: mealId
+    }, {
+        enabled: !isNaN(mealId),
+    })
+    const loggedMeal = nutrition.loggedMeals[mealId.toString()]?.get();
     const isLogged = !!loggedMeal?.loggedAt;
 
     // Animation values
@@ -26,7 +32,7 @@ const RecipeDetailScreen = () => {
     const rotateAnim = useRef(new Animated.Value(0)).current;
 
     const handleLogMeal = () => {
-        if (!meal) return;
+        if (!recipe) return;
         
         // Start animation sequence
         Animated.parallel([
@@ -56,9 +62,9 @@ const RecipeDetailScreen = () => {
             // Update the store after animation
             nutritionStore$.loggedMeals.set({
                 ...nutritionStore$.loggedMeals.get(),
-                [mealId]: {
+                [mealId.toString()]: {
                     loggedAt: new Date().toISOString(),
-                    mealId: mealId,
+                    mealId: mealId.toString(),
                 }
             });
         });
@@ -69,20 +75,45 @@ const RecipeDetailScreen = () => {
         outputRange: ['0deg', '360deg'],
     });
 
-    if (!meal) {
+    if (isLoading) {
         return (
             <View className="flex-1 items-center justify-center bg-background">
-                <Text className="font-inter-medium text-gray-500">Meal not found</Text>
+                <ActivityIndicator size="large" color="#EC4899" />
+                <Text className="font-inter-medium mt-4 text-gray-500">Loading recipe...</Text>
             </View>
         );
     }
+
+    if (!recipe) {
+        return (
+            <View className="flex-1 items-center justify-center bg-background">
+                <Text className="font-inter-medium text-gray-500">Recipe not found</Text>
+            </View>
+        );
+    }
+
+    const defaultImage = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80";
+
+    // Get meal time based on recipe title/category
+    const getMealTime = () => {
+        const title = recipe.title.toLowerCase();
+        if (title.includes("breakfast") || title.includes("oatmeal") || title.includes("toast") || title.includes("parfait")) {
+            return "8:00 AM";
+        } else if (title.includes("lunch") || title.includes("salad") || title.includes("wrap") || title.includes("bowl")) {
+            return "12:30 PM"; 
+        } else if (title.includes("snack") || title.includes("protein") || title.includes("energy")) {
+            return "3:30 PM";
+        } else {
+            return "7:00 PM"; // dinner default
+        }
+    };
 
     return (
         <ScrollView className="flex-1 bg-background">
             {/* Header Image */}
             <View className="relative h-[200px]">
                 <Image
-                    source={{ uri: meal.imageUrl }}
+                    source={{ uri: recipe.imageUrl || defaultImage }}
                     className="h-full w-full"
                     resizeMode="cover"
                 />
@@ -123,7 +154,7 @@ const RecipeDetailScreen = () => {
                 <View className="py-4">
                     <View className="flex-row items-center justify-between">
                         <Text className="font-inter-bold text-2xl text-black">
-                            {meal.name}
+                            {recipe.title}
                         </Text>
                         {isLogged && loggedMeal && (
                             <Text className="font-inter-medium text-sm text-green-500">
@@ -132,7 +163,7 @@ const RecipeDetailScreen = () => {
                         )}
                     </View>
                     <Text className="font-inter-medium mt-1 text-gray-500">
-                        {meal.time}
+                        {getMealTime()}
                     </Text>
                 </View>
 
@@ -140,19 +171,19 @@ const RecipeDetailScreen = () => {
                 <View className="flex-row justify-between py-4">
                     <View className="items-center">
                         <Text className="font-inter-medium text-gray-600">Calories</Text>
-                        <Text className="font-inter-bold text-xl">{meal.calories}</Text>
+                        <Text className="font-inter-bold text-xl">{recipe.calories}</Text>
                     </View>
                     <View className="items-center">
                         <Text className="font-inter-medium text-gray-600">Protein</Text>
-                        <Text className="font-inter-bold text-xl">{meal.protein}g</Text>
+                        <Text className="font-inter-bold text-xl">{recipe.proteinGrams}g</Text>
                     </View>
                     <View className="items-center">
                         <Text className="font-inter-medium text-gray-600">Carbs</Text>
-                        <Text className="font-inter-bold text-xl">{meal.carbs}g</Text>
+                        <Text className="font-inter-bold text-xl">{recipe.carbsGrams}g</Text>
                     </View>
                     <View className="items-center">
                         <Text className="font-inter-medium text-gray-600">Fats</Text>
-                        <Text className="font-inter-bold text-xl">{meal.fats}g</Text>
+                        <Text className="font-inter-bold text-xl">{recipe.fatsGrams}g</Text>
                     </View>
                 </View>
 
@@ -162,23 +193,21 @@ const RecipeDetailScreen = () => {
                         Ingredients
                     </Text>
                     <View className="gap-y-3">
-                        {[
-                            "2 cups mixed greens",
-                            "1 grilled chicken breast",
-                            "1/2 avocado",
-                            "Cherry tomatoes",
-                            "Olive oil dressing"
-                        ].map((ingredient, index) => (
-                            <View
-                                key={index}
-                                className="flex-row items-center"
-                            >
-                                <View className="mr-3 h-6 w-6 items-center justify-center rounded-full border border-gray-200" />
-                                <Text className="font-inter text-base text-gray-800">
-                                    {ingredient}
-                                </Text>
-                            </View>
-                        ))}
+                        {recipe.ingredients ? (
+                            recipe.ingredients.map((ingredient, index) => (
+                                <View
+                                    key={index}
+                                    className="flex-row items-center"
+                                >
+                                    <View className="mr-3 h-6 w-6 items-center justify-center rounded-full border border-gray-200" />
+                                    <Text className="font-inter text-base text-gray-800">
+                                        {ingredient.amount} {ingredient.unit} {ingredient.ingredientName}
+                                    </Text>
+                                </View>
+                            ))
+                        ) : (
+                            <Text className="font-inter text-gray-500">No ingredients available</Text>
+                        )}
                     </View>
                 </View>
 
@@ -188,27 +217,25 @@ const RecipeDetailScreen = () => {
                         Instructions
                     </Text>
                     <View className="gap-y-4">
-                        {[
-                            "Wash and chop all vegetables",
-                            "Grill the chicken breast",
-                            "Mix ingredients in a bowl",
-                            "Add dressing and toss",
-                            "Serve immediately"
-                        ].map((step, index) => (
-                            <View
-                                key={index}
-                                className="flex-row"
-                            >
-                                <View className="mr-4 h-8 w-8 items-center justify-center rounded-full bg-pink-100">
-                                    <Text className="font-inter-medium text-black">
-                                        {index + 1}
+                        {recipe.instructions ? (
+                            recipe.instructions.map((instruction, index) => (
+                                <View
+                                    key={index}
+                                    className="flex-row"
+                                >
+                                    <View className="mr-4 h-8 w-8 items-center justify-center rounded-full bg-pink-100">
+                                        <Text className="font-inter-medium text-black">
+                                            {instruction.stepNumber}
+                                        </Text>
+                                    </View>
+                                    <Text className="flex-1 font-inter text-base text-gray-800">
+                                        {instruction.instruction}
                                     </Text>
                                 </View>
-                                <Text className="flex-1 font-inter text-base text-gray-800">
-                                    {step}
-                                </Text>
-                            </View>
-                        ))}
+                            ))
+                        ) : (
+                            <Text className="font-inter text-gray-500">No instructions available</Text>
+                        )}
                     </View>
                 </View>
 
