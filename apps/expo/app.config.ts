@@ -67,7 +67,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ios: {
     supportsTablet: true,
     bundleIdentifier: iosBundleIdentifier,
-    buildNumber: "2",
     usesAppleSignIn: true,
     config: {
       usesNonExemptEncryption: false,
@@ -77,6 +76,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       "applinks:snatched-ai-dev-oh2uj.ondigitalocean.app",
       "applinks:snatchedai.com",
     ],
+    entitlements: {
+      "com.apple.developer.applesignin": ["Default"],
+    },
   },
   android: {
     adaptiveIcon: {
