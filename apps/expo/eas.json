@@ -55,6 +55,19 @@
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "android": {
+        "serviceAccountKeyPath": "./certs/google-play-service-account-key.json",
+        "track": "internal"
+      },
+      "ios": {
+        "appleId": "chisom.oguibe@googlemail.com",
+        "ascAppId": "6744844397",
+        "appleTeamId": "U665535C27",
+        "sku": "snatched-ai-omnicentra",
+        "language": "en-UK",
+        "companyName": "Omnicentra"
+      }
+    }
   }
 }

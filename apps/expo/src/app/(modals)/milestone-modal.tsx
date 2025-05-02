@@ -82,7 +82,7 @@ export const MilestoneModal: React.FC<MilestoneModalProps> = ({
   const firstRow = days.slice(0, midPoint)
   const secondRow = days.slice(midPoint).reverse()
 
-  const renderDay = (day: number, isReversed: boolean = false) => {
+  const renderDay = (day: number, isReversed = false) => {
     const isCompleted = day < currentDay
     const isActive = day === currentDay
     const position = isReversed ? 'bottom' : 'top'
@@ -114,14 +114,28 @@ export const MilestoneModal: React.FC<MilestoneModalProps> = ({
             <Text className="text-xl">{emoji}</Text>
           )}
           {day !== (isReversed ? secondRow[0] : firstRow[firstRow.length - 1]) && (
-            <View 
-              className={`absolute h-0.5 w-14 ${
-                position === 'top' ? '-top-0.5' : '-bottom-0.5'
-              } ${isReversed ? '-right-14' : '-left-14'}`}
-              style={{
-                backgroundColor: isCompleted ? accentColor : '#E5E7EB'
-              }}
-            />
+            <>
+              {/* Horizontal connecting line */}
+              {/* <View 
+                className={`absolute h-[2px] w-[60px] ${
+                  position === 'top' ? 'top-[27px]' : 'bottom-[27px]'
+                } ${isReversed ? '-left-[60px]' : '-right-[60px]'}`}
+                style={{
+                  backgroundColor: isCompleted ? accentColor : '#D1D5DB',
+                  opacity: isCompleted ? 1 : 0.7
+                }}
+              /> */}
+              {/* Line end dot for better connection */}
+              {/* <View 
+                className={`absolute h-1 w-1 rounded-full ${
+                  position === 'top' ? 'top-[27px]' : 'bottom-[27px]'
+                } ${isReversed ? '-right-[60px]' : '-left-[60px]'}`}
+                style={{
+                  backgroundColor: isCompleted ? accentColor : '#D1D5DB',
+                  opacity: isCompleted ? 1 : 0.7
+                }}
+              /> */}
+            </>
           )}
         </View>
       </View>
@@ -167,7 +181,7 @@ export const MilestoneModal: React.FC<MilestoneModalProps> = ({
                 colors={['#FDF2F8', '#FCE7F3']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                className="h-full w-full"
+                style={{ width: '100%', height: '100%' }}
               >
                 <View className="px-6 pb-12 pt-4">
                   <View className="mb-6 items-center">
@@ -199,7 +213,7 @@ export const MilestoneModal: React.FC<MilestoneModalProps> = ({
                   </View>
 
                   <View className="mt-8">
-                    <View className="flex-row justify-between">
+                    <View className="flex-row justify-around">
                       {firstRow.map((day) => renderDay(day))}
                     </View>
                     <View className="mt-8 flex-row justify-between">

@@ -3,7 +3,7 @@ import "@bacons/text-decoder/install";
 import { useCallback, useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Purchases, { LOG_LEVEL } from "react-native-purchases";
-import { Stack } from "expo-router";
+import { Stack, useNavigationContainerRef } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import {
@@ -22,9 +22,30 @@ import "../styles.css";
 
 import { Platform } from "react-native";
 import {
+  appVariant,
   revenuecatProjectAppleApiKey,
   revenuecatProjectGoogleApiKey,
 } from "@/lib/utils";
+
+import * as Sentry from "@sentry/react-native";
+import Constants from "expo-constants";
+import { isRunningInExpoGo } from "expo";
+
+const navigationIntegration = Sentry.reactNavigationIntegration({
+  enableTimeToInitialDisplay: !isRunningInExpoGo(),
+});
+
+Sentry.init({
+  dsn: "https://2e5eb231c32a471fb517c336a9e13a54@o4504963099262976.ingest.us.sentry.io/4504963101818880",
+  // Adds more context data to events (IP address, cookies, user, etc.)
+  // For more information, visit: https://docs.sentry.io/platforms/react-native/data-management/data-collected/
+  environment: appVariant,
+  tracesSampleRate: 1.0,
+  integrations: [navigationIntegration],
+  release: String(Constants.expoConfig?.version),
+  enableNativeFramesTracking: !isRunningInExpoGo(),
+  sendDefaultPii: true,
+});
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -39,7 +60,8 @@ export const unstable_settings = {
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 void SplashScreen.preventAutoHideAsync();
 
-export default function RootLayout() {
+function RootLayout() {
+  const ref = useNavigationContainerRef();
   const [fontsLoaded, fontError] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
@@ -59,14 +81,21 @@ export default function RootLayout() {
     } else if (Platform.OS === "android") {
       Purchases.configure({ apiKey: revenuecatProjectGoogleApiKey });
     }
-    console.log('Purchases Status: ', await Purchases.isConfigured());
   }, []);
+
+
+  useEffect(() => {
+    if (ref) {
+      navigationIntegration.registerNavigationContainer(ref);
+    }
+  }, [ref]);
 
   useEffect(() => {
     void initRevenueCat();
     if (fontsLoaded || fontError) {
       // Hide the splash screen after the fonts have loaded or an error occurred
       void SplashScreen.hideAsync();
+      Sentry.captureException(new Error("First error"));
     }
   }, [fontsLoaded, fontError, initRevenueCat]);
 
@@ -93,3 +122,5 @@ export default function RootLayout() {
     </TRPCProvider>
   );
 }
+
+export default Sentry.wrap(RootLayout);

@@ -303,7 +303,7 @@ export default function WorkoutLibraryScreen() {
   }
   
   const handleViewAllWorkouts = () => {
-    router.push('/(modals)/all-workouts' as any)
+    router.push('/(modals)/all-workouts')
   }
 
   return (
@@ -362,7 +362,7 @@ export default function WorkoutLibraryScreen() {
 
         {isLoading ? (
           <View className="py-12 items-center justify-center">
-            <ActivityIndicator size="large" color="#9333EA" />
+            <ActivityIndicator size="large" color="#f472b6" />
             <Text className="mt-4 font-inter text-gray-500">Loading workouts...</Text>
           </View>
         ) : (

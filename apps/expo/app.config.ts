@@ -1,4 +1,5 @@
 import { ConfigContext, ExpoConfig } from "@expo/config";
+import { withSentry } from "@sentry/react-native/expo";
 
 function getAppConfig() {
   switch (process.env.APP_VARIANT) {
@@ -48,7 +49,7 @@ function getAppConfig() {
 const { name, scheme, androidPackage, iosBundleIdentifier, intentFilters } =
   getAppConfig();
 
-export default ({ config }: ConfigContext): ExpoConfig => ({
+const createConfig = ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name,
   slug: "snatched-ai",
@@ -179,3 +180,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   owner: "omnicentra",
 });
+
+export default (ctx: ConfigContext) => withSentry(createConfig(ctx), {
+  url: "https://sentry.io/",
+  // Use SENTRY_AUTH_TOKEN env to authenticate with Sentry.
+  project: "snatched-ai",
+  organization: "omnicentra",
+});
+
