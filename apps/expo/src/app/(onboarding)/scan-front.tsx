@@ -7,7 +7,8 @@ import {
   Alert,
   StyleSheet,
   useWindowDimensions,
-} from 'react-native' // Added Alert, StyleSheet
+  Linking,
+} from 'react-native' // Added Alert, StyleSheet, Linking
 // No 'styled' import
 import type { CameraType} from 'expo-camera';
 import { CameraView, useCameraPermissions } from 'expo-camera';
@@ -254,7 +255,22 @@ export default function ScanFrontScreen() {
           We need your permission to use the camera.
         </Text>
         <Pressable
-          onPress={requestCameraPermission}
+          onPress={async () => {
+            const permission = await requestCameraPermission();
+            if (!permission.granted) {
+              Alert.alert(
+                'Permission Required',
+                'Please enable camera access in your device settings to use this feature.',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  { 
+                    text: 'Open Settings', 
+                    onPress: () => void Linking.openSettings() 
+                  }
+                ]
+              );
+            }
+          }}
           className="rounded-lg bg-white px-5 py-3"
         >
           <Text className="font-inter-medium text-black">

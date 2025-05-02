@@ -13,6 +13,7 @@ import * as Progress from "react-native-progress";
 import { onboardingStore$ } from "@/stores/onboarding.store";
 import { nutritionStore$ } from "@/stores/nutrition.store";
 import { use$ } from "@legendapp/state/react";
+import * as Sentry from "@sentry/react-native";
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
@@ -303,7 +304,10 @@ export default function HomeScreen() {
             </Pressable>
             <Pressable 
               className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100"
-              onPress={() => router.push("/(modals)/profile")}
+              onPress={() => {
+                Sentry.captureException(new Error("Profile button pressed"));
+                router.push("/(modals)/profile")
+              }}
             >
               <Ionicons name="person-outline" size={20} color="#1F2937" />
             </Pressable>

@@ -21,30 +21,34 @@ import { TRPCProvider } from "~/utils/api";
 import "../styles.css";
 
 import { Platform } from "react-native";
+import { isRunningInExpoGo } from "expo";
+import Constants from "expo-constants";
 import {
   appVariant,
   revenuecatProjectAppleApiKey,
   revenuecatProjectGoogleApiKey,
 } from "@/lib/utils";
-
 import * as Sentry from "@sentry/react-native";
-import Constants from "expo-constants";
-import { isRunningInExpoGo } from "expo";
 
 const navigationIntegration = Sentry.reactNavigationIntegration({
   enableTimeToInitialDisplay: !isRunningInExpoGo(),
 });
 
 Sentry.init({
-  dsn: "https://2e5eb231c32a471fb517c336a9e13a54@o4504963099262976.ingest.us.sentry.io/4504963101818880",
+  dsn: "https://255eae722d27d164a8584b7972656ae7@o4504963099262976.ingest.us.sentry.io/4509253973901312",
   // Adds more context data to events (IP address, cookies, user, etc.)
   // For more information, visit: https://docs.sentry.io/platforms/react-native/data-management/data-collected/
   environment: appVariant,
   tracesSampleRate: 1.0,
-  integrations: [navigationIntegration],
+  integrations: [navigationIntegration, Sentry.mobileReplayIntegration()],
   release: String(Constants.expoConfig?.version),
   enableNativeFramesTracking: !isRunningInExpoGo(),
+  // Configure Session Replay
+  replaysSessionSampleRate: 0.1,
+  replaysOnErrorSampleRate: 1,
   sendDefaultPii: true,
+  // uncomment the line below to enable Spotlight (https://spotlightjs.com)
+  // spotlight: __DEV__,
 });
 
 export {
@@ -83,7 +87,6 @@ function RootLayout() {
     }
   }, []);
 
-
   useEffect(() => {
     if (ref) {
       navigationIntegration.registerNavigationContainer(ref);
@@ -95,7 +98,6 @@ function RootLayout() {
     if (fontsLoaded || fontError) {
       // Hide the splash screen after the fonts have loaded or an error occurred
       void SplashScreen.hideAsync();
-      Sentry.captureException(new Error("First error"));
     }
   }, [fontsLoaded, fontError, initRevenueCat]);
 
