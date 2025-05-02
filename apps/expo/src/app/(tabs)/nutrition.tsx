@@ -1,18 +1,6 @@
-// app/(modals)/nutrition-plan.tsx OR app/(details)/nutrition-plan.tsx
-import { MilestoneModal } from "@/app/(modals)/milestone-modal";
-import { nutritionStore$ } from "@/stores/nutrition.store";
 import type { RouterOutputs } from "@/utils/api";
-import { api } from "@/utils/api";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { use$ } from "@legendapp/state/react";
-import Constants from "expo-constants";
-import { Image } from "expo-image";
-import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
+import type { GestureResponderEvent } from "react-native";
 import React, { useRef, useState } from "react";
-import type {
-  GestureResponderEvent
-} from "react-native";
 import {
   ActivityIndicator,
   Animated,
@@ -22,9 +10,17 @@ import {
   Text,
   View,
 } from "react-native";
+import Constants from "expo-constants";
+import { Image } from "expo-image";
+import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
+import { MilestoneModal } from "@/app/(modals)/milestone-modal";
+import { api } from "@/utils/api";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 
-// Define recipe type for clarity
-type Recipe = RouterOutputs['nutrition']['getAllRecipes'][0];
+// Define types for clarity
+type MealPlanData = RouterOutputs["nutrition"]["getTodaysMealPlan"];
+type ScheduledMeal = MealPlanData["meals"][0];
 
 // Macro Pill Component
 const MacroPill = ({
@@ -47,7 +43,6 @@ const MacroPill = ({
 
 // Meal Card Component
 const MealCard = ({
-  id,
   title,
   calories,
   proteinGrams,
@@ -55,9 +50,10 @@ const MealCard = ({
   fatsGrams,
   imageUrl,
   time,
+  completed,
   onPress,
+  onToggleComplete,
 }: {
-  id: number;
   title: string;
   calories: number;
   proteinGrams: number;
@@ -65,22 +61,16 @@ const MealCard = ({
   fatsGrams: number;
   imageUrl: string | null;
   time: string;
+  completed: boolean;
   onPress: () => void;
+  onToggleComplete: (e: GestureResponderEvent) => void;
 }) => {
-  const loggedMeal = use$(nutritionStore$.loggedMeals[id.toString()]);
-  const isLogged = !!loggedMeal?.loggedAt;
   const scaleAnim = useRef(new Animated.Value(1)).current;
-  const rotateAnim = useRef(new Animated.Value(0)).current;
+  const rotateAnim = useRef(new Animated.Value(completed ? 1 : 0)).current;
   const opacityAnim = useRef(new Animated.Value(1)).current;
-  
-  const handleLogMeal = (e: GestureResponderEvent) => {
+
+  const handleToggle = (e: GestureResponderEvent) => {
     e.stopPropagation();
-    
-    // Check if meal is already logged
-    const currentMeals = nutritionStore$.loggedMeals.get();
-    const isLogged = Object.entries(currentMeals).some(
-      ([_, meal]) => meal.mealId === id.toString()
-    );
 
     // Reset opacity to 1 before starting new animation
     opacityAnim.setValue(1);
@@ -94,7 +84,7 @@ const MealCard = ({
           useNativeDriver: true,
         }),
         Animated.timing(rotateAnim, {
-          toValue: isLogged ? 0 : 2, // Rotate back to 0 when removing, forward to 1 when adding
+          toValue: completed ? 0 : 2,
           duration: 200,
           useNativeDriver: true,
         }),
@@ -118,37 +108,17 @@ const MealCard = ({
         useNativeDriver: true,
       }),
     ]).start(() => {
-      if (isLogged) {
-        // Remove the meal
-        const updatedMeals = { ...currentMeals };
-        const mealKeyToRemove = Object.entries(updatedMeals).find(
-          ([_, meal]) => meal.mealId === id.toString()
-        )?.[0];
-        
-        if (mealKeyToRemove) {
-          delete updatedMeals[mealKeyToRemove];
-          nutritionStore$.loggedMeals.set(updatedMeals);
-        }
-      } else {
-        // Add the meal
-        nutritionStore$.loggedMeals.set({
-          ...currentMeals,
-          [id.toString()]: {
-            loggedAt: new Date().toISOString(),
-            mealId: id.toString(),
-            mealName: title,
-          }
-        });
-      }
+      onToggleComplete(e);
     });
   };
 
   const spin = rotateAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: ['0deg', '180deg'],
+    outputRange: ["0deg", "180deg"],
   });
 
-  const defaultImage = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80";
+  const defaultImage =
+    "https://images.unsplash.com/photo-1495521821757-a1efb6729352?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80";
 
   return (
     <Pressable
@@ -172,32 +142,33 @@ const MealCard = ({
               <Text className="font-inter text-sm text-primary">
                 {calories} cal
               </Text>
-              {isLogged ? (
-                <Animated.View 
+              {completed ? (
+                <Animated.View
                   style={{
                     opacity: opacityAnim,
                     transform: [{ scale: scaleAnim }, { rotate: spin }],
                   }}
                 >
                   <Pressable
-                    onPress={handleLogMeal}
+                    onPress={handleToggle}
                     className="rounded-full bg-green-100 p-1"
                   >
-                    <Ionicons name="checkmark-circle" size={20} color="#22C55E" />
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={20}
+                      color="#22C55E"
+                    />
                   </Pressable>
                 </Animated.View>
               ) : (
                 <Animated.View
                   style={{
                     opacity: opacityAnim,
-                    transform: [
-                      { scale: scaleAnim },
-                      { rotate: spin }
-                    ],
+                    transform: [{ scale: scaleAnim }, { rotate: spin }],
                   }}
                 >
                   <Pressable
-                    onPress={handleLogMeal}
+                    onPress={handleToggle}
                     className="rounded-full bg-pink-50 p-1"
                   >
                     <MaterialCommunityIcons
@@ -210,9 +181,7 @@ const MealCard = ({
               )}
             </View>
           </View>
-          <Text className="font-inter-semibold mb-3 text-lg text-gray-900">
-            {title}
-          </Text>
+          <Text className="font-inter-semibold mb-3 text-lg text-gray-900" numberOfLines={1} ellipsizeMode="tail">{title}</Text>
           <View className="flex-row gap-2">
             <MacroPill label="protein" amount={proteinGrams} />
             <MacroPill label="carbs" amount={carbsGrams} />
@@ -224,7 +193,7 @@ const MealCard = ({
             source={{ uri: imageUrl ?? defaultImage }}
             allowDownscaling={false}
             style={{
-              position: 'absolute',
+              position: "absolute",
               top: 0,
               left: 0,
               right: 0,
@@ -243,166 +212,64 @@ const MealCard = ({
 export default function NutritionPlanScreen() {
   const router = useRouter();
   const [showMilestone, setShowMilestone] = useState(false);
-  const nutrition = use$(nutritionStore$);
-  const { data: recipes, isLoading: isLoadingRecipes } = api.nutrition.getAllRecipes.useQuery();
+  const { data: mealPlanData, isLoading: isLoadingMealPlan, refetch } = api.nutrition.getTodaysMealPlan.useQuery();
+  const { mutate: toggleMealCompletion } = api.nutrition.toggleMealCompletion.useMutation({
+    onSuccess: () => {
+      void refetch();
+    },
+    onError: (error) => {
+      console.error("Failed to toggle meal completion:", error);
+    },
+  });
 
-  // Predefined meal times
-  const mealTimes: Record<string, string> = {
-    breakfast: "8:00 AM",
-    lunch: "12:30 PM", 
-    snack: "3:30 PM",
-    dinner: "7:00 PM",
-    other: "6:00 PM", // Default time for other category
-  };
+  // Calculate current macros from completed meals
+  const calculateMacros = (macroType: "protein" | "carbs" | "fats") => {
+    if (!mealPlanData) return 0;
 
-  // Determine meal category based on recipe title or category
-  const getMealCategory = (recipe: Recipe): "breakfast" | "lunch" | "dinner" | "snack" | "other" => {
-    // First check the category if available
-    if (recipe.categoryId) {
-      // Map category IDs to meal types (would need to be updated based on your actual category IDs)
-      const categoryMap: Record<number, string> = {
-        1: "breakfast",
-        2: "lunch", 
-        3: "dinner",
-        4: "snack"
-      };
-      if (categoryMap[recipe.categoryId]) {
-        return categoryMap[recipe.categoryId] as "breakfast" | "lunch" | "dinner" | "snack";
-      }
-    }
-    return "other";
-  };
+    return mealPlanData.meals.reduce((acc: number, meal: ScheduledMeal) => {
+      if (!meal.completed) return acc;
 
-  // Assign times to recipes based on their category
-  const getMealTime = (category: "breakfast" | "lunch" | "dinner" | "snack" | "other") => {
-    return mealTimes[category] ?? "Other";
-  };
-
-  type MealCategory = "breakfast" | "lunch" | "dinner" | "snack" | "other";
-  type MealGroups = Record<MealCategory, Recipe[]>;
-
-  // Group recipes by meal type and ensure essential meals are included
-  const groupRecipesByMealType = (recipeList: Recipe[] | undefined): MealGroups => {
-    if (!recipeList || recipeList.length === 0) {
-      return {
-        breakfast: [],
-        lunch: [],
-        dinner: [],
-        snack: [],
-        other: []
-      };
-    }
-    
-    const mealGroups: MealGroups = {
-      breakfast: [],
-      lunch: [],
-      dinner: [],
-      snack: [],
-      other: []
-    };
-    
-    // Group recipes by meal type
-    recipeList.forEach(recipe => {
-      const category = getMealCategory(recipe);
-      mealGroups[category].push(recipe);
-    });
-    
-    return mealGroups;
-  };
-
-  // Get recipes ordered for a day's meals
-  const getOrderedMeals = (recipeList: Recipe[] | undefined) => {
-    if (!recipeList || recipeList.length === 0) return [];
-    
-    const mealGroups = groupRecipesByMealType(recipeList);
-    const orderedMeals: {recipe: Recipe, category: MealCategory}[] = [];
-    
-    // Essential meals first (breakfast, lunch, dinner)
-    const mealOrder: MealCategory[] = ["breakfast", "lunch", "dinner", "snack"];
-    
-    mealOrder.forEach(category => {
-      if (mealGroups[category].length > 0) {
-        // Get the first recipe of each category
-        orderedMeals.push({
-          recipe: mealGroups[category][0],
-          category
-        });
-      }
-    });
-    
-    // If we don't have all essential meals, fill with other recipes
-    if (orderedMeals.length < 3) {
-      // Check which essential meals we're missing
-      const essentialCategories: MealCategory[] = ["breakfast", "lunch", "dinner"];
-      const existingCategories = orderedMeals.map(meal => meal.category);
-      
-      const missingCategories = essentialCategories.filter(
-        category => !existingCategories.includes(category)
-      );
-      
-      // For each missing essential meal, try to fill from other categories or 'other'
-      missingCategories.forEach(missingCategory => {
-        // Try to get a recipe from 'other' category
-        if (mealGroups.other.length > 0) {
-          const recipe = mealGroups.other.shift();
-          if (recipe) {
-            orderedMeals.push({
-              recipe,
-              category: missingCategory
-            });
-          }
-        }
-      });
-    }
-    
-    return orderedMeals;
-  };
-
-  // Calculate current macros from logged meals
-  const calculateMacros = (macroType: 'protein' | 'carbs' | 'fats') => {
-    return Object.values(nutrition.loggedMeals).reduce((acc, meal) => {
-      const mealId = parseInt(meal.mealId);
-      if (isNaN(mealId) || !recipes) return acc;
-      
-      const recipe = recipes.find((r: Recipe) => r.id === mealId);
-      if (!recipe) return acc;
-      
-      if (macroType === 'protein') return acc + recipe.proteinGrams;
-      if (macroType === 'carbs') return acc + recipe.carbsGrams;
-      return acc + recipe.fatsGrams;
+      if (macroType === "protein") return acc + meal.recipe.proteinGrams;
+      if (macroType === "carbs") return acc + meal.recipe.carbsGrams;
+      return acc + meal.recipe.fatsGrams;
     }, 0);
   };
 
-  const macros = [
-    {
-      name: "Protein",
-      target: nutrition.dailyTargets.protein,
-      current: calculateMacros('protein'),
-      color: "#f472b6",
-      icon: "arm-flex-outline" as const,
-    },
-    {
-      name: "Carbs",
-      target: nutrition.dailyTargets.carbs,
-      current: calculateMacros('carbs'),
-      color: "#60a5fa",
-      icon: "barley" as const,
-    },
-    {
-      name: "Fats",
-      target: nutrition.dailyTargets.fats,
-      current: calculateMacros('fats'),
-      color: "#fbbf24",
-      icon: "food-drumstick-outline" as const,
-    },
-  ];
+  const macros = mealPlanData
+    ? [
+        {
+          name: "Protein",
+          target: mealPlanData.mealPlan.targetProtein,
+          current: calculateMacros("protein"),
+          color: "#f472b6",
+          icon: "arm-flex-outline" as const,
+        },
+        {
+          name: "Carbs",
+          target: mealPlanData.mealPlan.targetCarbs,
+          current: calculateMacros("carbs"),
+          color: "#60a5fa",
+          icon: "barley" as const,
+        },
+        {
+          name: "Fats",
+          target: mealPlanData.mealPlan.targetFats,
+          current: calculateMacros("fats"),
+          color: "#fbbf24",
+          icon: "food-drumstick-outline" as const,
+        },
+      ]
+    : [];
 
   const navigateToRecipeDetail = (mealId: number) => {
     router.push(`/(modals)/recipe-detail?mealId=${mealId}`);
   };
 
-  // Get ordered daily meals
-  const orderedMeals = getOrderedMeals(recipes);
+  const handleToggleComplete = (meal: ScheduledMeal) => {
+    toggleMealCompletion({
+      mealScheduleId: meal.id,
+    });
+  };
 
   return (
     <LinearGradient
@@ -410,7 +277,7 @@ export default function NutritionPlanScreen() {
       style={{ flexGrow: 1, paddingTop: Constants.statusBarHeight }}
     >
       {/* Header */}
-      <View className="flex-row items-center justify-between px-6 pt-6 pb-3">
+      <View className="flex-row items-center justify-between px-6 pb-3 pt-6">
         <Text className="font-inter-bold text-2xl text-black">Nutrition</Text>
         <View className="flex-row gap-2">
           <Pressable
@@ -473,33 +340,38 @@ export default function NutritionPlanScreen() {
         <Text className="font-inter-bold mb-4 px-2 text-lg text-black">
           Today's Meals
         </Text>
-        
-        {isLoadingRecipes ? (
+
+        {isLoadingMealPlan ? (
           <View className="items-center justify-center py-8">
             <ActivityIndicator size="large" color="#f472b6" />
-            <Text className="font-inter mt-2 text-gray-500">Loading meals...</Text>
+            <Text className="font-inter mt-2 text-gray-500">
+              Loading meals...
+            </Text>
           </View>
-        ) : orderedMeals.length > 0 ? (
-          orderedMeals.map(({ recipe, category }) => (
+        ) : mealPlanData?.meals.length ? (
+          mealPlanData.meals.map((meal) => (
             <MealCard
-              key={recipe.id}
-              id={recipe.id}
-              title={recipe.title}
-              calories={recipe.calories}
-              proteinGrams={recipe.proteinGrams}
-              carbsGrams={recipe.carbsGrams}
-              fatsGrams={recipe.fatsGrams}
-              imageUrl={recipe.imageUrl}
-              time={getMealTime(category)}
-              onPress={() => navigateToRecipeDetail(recipe.id)}
+              key={meal.id}
+              title={meal.recipe.title}
+              calories={meal.recipe.calories}
+              proteinGrams={meal.recipe.proteinGrams}
+              carbsGrams={meal.recipe.carbsGrams}
+              fatsGrams={meal.recipe.fatsGrams}
+              imageUrl={meal.recipe.imageUrl}
+              time={meal.scheduledTime}
+              completed={meal.completed}
+              onPress={() => navigateToRecipeDetail(meal.recipe.id)}
+              onToggleComplete={() => handleToggleComplete(meal)}
             />
           ))
         ) : (
           <View className="items-center justify-center py-8">
-            <Text className="font-inter text-gray-500">No meals available.</Text>
+            <Text className="font-inter text-gray-500">
+              No meals available.
+            </Text>
           </View>
         )}
-        
+
         <View className="h-6" />
       </ScrollView>
 
@@ -514,4 +386,4 @@ export default function NutritionPlanScreen() {
       />
     </LinearGradient>
   );
-};
+}

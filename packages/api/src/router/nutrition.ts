@@ -1,19 +1,18 @@
-import type { TRPCRouterRecord } from "@trpc/server";
 import { GoogleGenAI, Type } from "@google/genai";
-import { eq } from "drizzle-orm";
+import type { TRPCRouterRecord } from "@trpc/server";
+import { eq, and, sql, asc } from "drizzle-orm";
 import { z } from "zod";
 
 import { db } from "@omc/db/client";
 import {
+  mealPlans,
+  mealSchedule,
   recipeIngredients,
   recipeInstructions,
   recipes,
-  user,
-  userRecipes,
-  mealPlans,
-  mealSchedule,
+  user
 } from "@omc/db/schema";
-
+import { createSelectSchema } from "drizzle-zod";
 import { protectedProcedure, publicProcedure } from "../trpc";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY });
@@ -121,7 +120,7 @@ const createNewRecipe = async (meal: Meal) => {
 // TODO: Take diet into consideration
 export const nutritionRouter = {
   getMealPlan: protectedProcedure
-    .output(z.array(mealSchema.extend({ id: z.number() })))
+    .output(createSelectSchema(mealPlans))
     .query(async ({ ctx }) => {
       const [dbUser] = await db
         .select()
@@ -134,7 +133,7 @@ export const nutritionRouter = {
       const response = await ai.models.generateContent({
         model: "gemini-2.0-flash",
         contents:
-          "Generate a daily meal plan with categorybreakfast, lunch, and dinner (and optionally snacks). For each meal, provide: time, calories, protein (g), carbs (g), fat (g), meal name, ingredients list (with amounts and units), and step-by-step cooking instructions. Make it realistic and healthy.",
+          "Generate a daily meal plan with category breakfast, lunch, and dinner (and optionally snacks). For each meal, provide: time, calories, protein (g), carbs (g), fat (g), meal name, ingredients list (with amounts and units), and step-by-step cooking instructions. Make it realistic and healthy. Also return the target calories, protein, carbs, and fat for the day.",
         config: {
           responseMimeType: "application/json",
           responseSchema: {
@@ -152,6 +151,7 @@ export const nutritionRouter = {
                     carbs: { type: Type.NUMBER },
                     fat: { type: Type.NUMBER },
                     name: { type: Type.STRING },
+                    imageUrl: { type: Type.STRING },
                     ingredients: {
                       type: Type.ARRAY,
                       items: {
@@ -184,6 +184,7 @@ export const nutritionRouter = {
                     "carbs",
                     "fat",
                     "name",
+                    "imageUrl",
                     "ingredients",
                     "instructions",
                   ],
@@ -210,7 +211,6 @@ export const nutritionRouter = {
       }
 
       const genMealPlan = JSON.parse(response.text) as MealPlan;
-      const existingRecipes = await db.select().from(recipes).execute();
 
       // Create meal plan entry
       const [dbMealPlan] = await db.insert(mealPlans).values({
@@ -220,11 +220,13 @@ export const nutritionRouter = {
         targetProtein: genMealPlan.targetProtein,
         targetCarbs: genMealPlan.targetCarbs,
         targetFats: genMealPlan.targetFat,
-      }).returning({ id: mealPlans.id });
+      }).returning();
 
       if (!dbMealPlan) {
         throw new Error("Failed to insert meal plan");
       }
+
+      const existingRecipes = await db.select().from(recipes).execute();
 
       const mealsWithIds = await Promise.all(
         genMealPlan.meals.map(async (meal) => {
@@ -235,6 +237,7 @@ export const nutritionRouter = {
             If the meal is very similar to any existing recipe, return the ID of that recipe. If not similar, return null.
             Respond with just the ID number or null, nothing else.`,
             config: {
+              responseMimeType: "application/json",
               responseSchema: {
                 type: Type.OBJECT,
                 properties: {
@@ -295,7 +298,8 @@ export const nutritionRouter = {
         }),
       );
 
-      return mealsWithIds;
+      mealsWithIds.forEach((meal) => { console.log(JSON.stringify(meal, null, 2)) });
+      return dbMealPlan;
     }),
 
   getAllRecipes: publicProcedure
@@ -397,5 +401,148 @@ export const nutritionRouter = {
         ingredients,
         instructions,
       };
+    }),
+
+  getTodaysMealPlan: protectedProcedure
+    .output(z.object({
+      mealPlan: z.object({
+        id: z.number(),
+        targetCalories: z.number(),
+        targetProtein: z.number(),
+        targetCarbs: z.number(),
+        targetFats: z.number(),
+      }),
+      meals: z.array(z.object({
+        id: z.number(),
+        mealType: z.string(),
+        scheduledTime: z.string(),
+        completed: z.boolean().default(false),
+        recipe: recipeSchema.extend({
+          ingredients: z.array(z.object({
+            id: z.number(),
+            ingredientName: z.string(),
+            amount: z.string(),
+            unit: z.string(),
+            orderIndex: z.number(),
+          })),
+          instructions: z.array(z.object({
+            id: z.number(),
+            stepNumber: z.number(),
+            instruction: z.string(),
+          })),
+        }),
+      })),
+    }))
+    .query(async ({ ctx }) => {
+      const [dbUser] = await db
+        .select()
+        .from(user)
+        .where(eq(user.email, ctx.session.user.email))
+        .execute();
+
+      if (!dbUser) {
+        throw new Error("User not found");
+      }
+
+      // Get today's meal plan
+      const today = new Date().toISOString().split('T')[0];
+      const [todaysMealPlan] = await db
+        .select()
+        .from(mealPlans)
+        .where(
+          and(
+            eq(mealPlans.userId, dbUser.id),
+            sql`${mealPlans.date} = ${today}::date`
+          )
+        )
+        .execute();
+
+      if (!todaysMealPlan) {
+        throw new Error("No meal plan found for today");
+      }
+
+      // Get all scheduled meals with their recipes, ingredients, and instructions
+      const scheduledMeals = await db
+        .select({
+          id: mealSchedule.id,
+          mealType: mealSchedule.mealType,
+          scheduledTime: mealSchedule.scheduledTime,
+          completed: mealSchedule.completed,
+          recipe: recipes,
+        })
+        .from(mealSchedule)
+        .where(eq(mealSchedule.mealPlanId, todaysMealPlan.id))
+        .innerJoin(recipes, eq(mealSchedule.recipeId, recipes.id))
+        .orderBy(asc(mealSchedule.scheduledTime))
+        .execute();
+
+      // Get ingredients and instructions for each recipe
+      const mealsWithDetails = await Promise.all(
+        scheduledMeals.map(async (meal) => {
+          const ingredients = await db
+            .select()
+            .from(recipeIngredients)
+            .where(eq(recipeIngredients.recipeId, meal.recipe.id))
+            .orderBy(recipeIngredients.orderIndex)
+            .execute();
+
+          const instructions = await db
+            .select()
+            .from(recipeInstructions)
+            .where(eq(recipeInstructions.recipeId, meal.recipe.id))
+            .orderBy(recipeInstructions.stepNumber)
+            .execute();
+
+          return {
+            ...meal,
+            completed: meal.completed ?? false,
+            recipe: {
+              ...meal.recipe,
+              ingredients,
+              instructions,
+            },
+          };
+        })
+      );
+
+      return {
+        mealPlan: {
+          id: todaysMealPlan.id,
+          targetCalories: todaysMealPlan.targetCalories,
+          targetProtein: todaysMealPlan.targetProtein,
+          targetCarbs: todaysMealPlan.targetCarbs,
+          targetFats: todaysMealPlan.targetFats,
+        },
+        meals: mealsWithDetails,
+      };
+    }),
+
+  toggleMealCompletion: protectedProcedure
+    .input(z.object({
+      mealScheduleId: z.number(),
+    }))
+    .mutation(async ({ input }) => {
+      // Get current meal schedule
+      const [currentMeal] = await db
+        .select()
+        .from(mealSchedule)
+        .where(eq(mealSchedule.id, input.mealScheduleId))
+        .execute();
+
+      if (!currentMeal) {
+        throw new Error("Meal schedule not found");
+      }
+
+      // Toggle completion status
+      const [updatedMeal] = await db
+        .update(mealSchedule)
+        .set({
+          completed: !currentMeal.completed,
+          updatedAt: new Date().toISOString(),
+        })
+        .where(eq(mealSchedule.id, input.mealScheduleId))
+        .returning();
+
+      return updatedMeal;
     }),
 } satisfies TRPCRouterRecord;
