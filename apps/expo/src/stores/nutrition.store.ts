@@ -6,6 +6,7 @@ export interface NutritionData {
   loggedMeals: Record<string, {
     loggedAt: string;
     mealId: string;
+    mealName: string;
   }>;
   dailyTargets: {
     protein: number;

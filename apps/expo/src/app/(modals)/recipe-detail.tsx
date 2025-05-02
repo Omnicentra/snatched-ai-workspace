@@ -27,7 +27,7 @@ const RecipeDetailScreen = () => {
       enabled: !isNaN(mealId),
     },
   );
-  const loggedMeal = nutrition.loggedMeals[mealId.toString()]?.get();
+  const loggedMeal = nutrition.loggedMeals[mealId.toString()];
   const isLogged = !!loggedMeal?.loggedAt;
 
   // Animation values
@@ -62,14 +62,30 @@ const RecipeDetailScreen = () => {
         useNativeDriver: true,
       }),
     ]).start(() => {
-      // Update the store after animation
-      nutritionStore$.loggedMeals.set({
-        ...nutritionStore$.loggedMeals.get(),
-        [mealId.toString()]: {
-          loggedAt: new Date().toISOString(),
-          mealId: mealId.toString(),
-        },
-      });
+      const currentMeals = nutritionStore$.loggedMeals.get();
+      
+      if (isLogged) {
+        // Remove the meal
+        const updatedMeals = { ...currentMeals };
+        const mealKeyToRemove = Object.entries(updatedMeals).find(
+          ([_, meal]) => meal.mealId === mealId.toString()
+        )?.[0];
+        
+        if (mealKeyToRemove) {
+          delete updatedMeals[mealKeyToRemove];
+          nutritionStore$.loggedMeals.set(updatedMeals);
+        }
+      } else {
+        // Add the meal
+        nutritionStore$.loggedMeals.set({
+          ...currentMeals,
+          [mealId.toString()]: {
+            loggedAt: new Date().toISOString(),
+            mealId: mealId.toString(),
+            mealName: recipe.title,
+          }
+        });
+      }
     });
   };
 
@@ -135,7 +151,7 @@ const RecipeDetailScreen = () => {
       {/* Header Image */}
       <View className="relative h-[200px]">
         <Image
-          source={{ uri: recipe.imageUrl || defaultImage }}
+          source={{ uri: recipe.imageUrl ?? defaultImage }}
           className="h-full w-full"
           resizeMode="cover"
         />
@@ -150,23 +166,22 @@ const RecipeDetailScreen = () => {
             style={{
               transform: [
                 { scale: scaleAnim },
-                { rotate: isLogged ? "0deg" : spin },
+                { rotate: spin },
               ],
             }}
           >
-            {isLogged ? (
-              <View className="h-10 w-10 items-center justify-center rounded-full bg-green-500">
+            <Pressable
+              onPress={handleLogMeal}
+              className={`h-10 w-10 items-center justify-center rounded-full ${
+                isLogged ? "bg-green-500" : "bg-pink-500"
+              }`}
+            >
+              {isLogged ? (
                 <Ionicons name="checkmark" size={24} color="white" />
-              </View>
-            ) : (
-              <Pressable
-                onPress={handleLogMeal}
-                className="h-10 w-10 items-center justify-center rounded-full"
-                style={{ backgroundColor: "#EC4899" }}
-              >
+              ) : (
                 <MaterialCommunityIcons name="plus" size={24} color="white" />
-              </Pressable>
-            )}
+              )}
+            </Pressable>
           </Animated.View>
         </View>
       </View>
@@ -178,10 +193,15 @@ const RecipeDetailScreen = () => {
             <Text className="font-inter-bold text-2xl text-black">
               {recipe.title}
             </Text>
-            {isLogged && loggedMeal && (
-              <Text className="font-inter-medium text-sm text-green-500">
-                Logged at {new Date(loggedMeal.loggedAt).toLocaleTimeString()}
-              </Text>
+            {isLogged && (
+              <View className="rounded-full bg-green-100 px-3 py-1">
+                <Text className="font-inter-medium text-sm text-green-700">
+                  Logged at {new Date(loggedMeal.loggedAt).toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </Text>
+              </View>
             )}
           </View>
           <Text className="font-inter-medium mt-1 text-gray-500">

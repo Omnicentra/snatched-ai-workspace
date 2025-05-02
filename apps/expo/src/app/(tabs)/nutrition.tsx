@@ -67,7 +67,7 @@ const MealCard = ({
   time: string;
   onPress: () => void;
 }) => {
-  const loggedMeal = use$(nutritionStore$.loggedMeals[id.toString()]?.get());
+  const loggedMeal = use$(nutritionStore$.loggedMeals[id.toString()]);
   const isLogged = !!loggedMeal?.loggedAt;
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
@@ -76,6 +76,15 @@ const MealCard = ({
   const handleLogMeal = (e: GestureResponderEvent) => {
     e.stopPropagation();
     
+    // Check if meal is already logged
+    const currentMeals = nutritionStore$.loggedMeals.get();
+    const isLogged = Object.entries(currentMeals).some(
+      ([_, meal]) => meal.mealId === id.toString()
+    );
+
+    // Reset opacity to 1 before starting new animation
+    opacityAnim.setValue(1);
+
     // Start animation sequence
     Animated.sequence([
       Animated.parallel([
@@ -85,7 +94,7 @@ const MealCard = ({
           useNativeDriver: true,
         }),
         Animated.timing(rotateAnim, {
-          toValue: 2,
+          toValue: isLogged ? 0 : 2, // Rotate back to 0 when removing, forward to 1 when adding
           duration: 200,
           useNativeDriver: true,
         }),
@@ -97,24 +106,40 @@ const MealCard = ({
           useNativeDriver: true,
         }),
         Animated.timing(opacityAnim, {
-          toValue: 0,
+          toValue: 0.3,
           duration: 100,
           useNativeDriver: true,
           easing: Easing.linear,
         }),
       ]),
+      Animated.timing(opacityAnim, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
     ]).start(() => {
-      // Update the store after animation
-      nutritionStore$.loggedMeals.set({
-        ...nutritionStore$.loggedMeals.get(),
-        [id.toString()]: {
-          loggedAt: new Date().toISOString(),
-          mealId: id.toString(),
+      if (isLogged) {
+        // Remove the meal
+        const updatedMeals = { ...currentMeals };
+        const mealKeyToRemove = Object.entries(updatedMeals).find(
+          ([_, meal]) => meal.mealId === id.toString()
+        )?.[0];
+        
+        if (mealKeyToRemove) {
+          delete updatedMeals[mealKeyToRemove];
+          nutritionStore$.loggedMeals.set(updatedMeals);
         }
-      });
-      
-      // Reset opacity for next animation
-      opacityAnim.setValue(1);
+      } else {
+        // Add the meal
+        nutritionStore$.loggedMeals.set({
+          ...currentMeals,
+          [id.toString()]: {
+            loggedAt: new Date().toISOString(),
+            mealId: id.toString(),
+            mealName: title,
+          }
+        });
+      }
     });
   };
 
@@ -149,12 +174,17 @@ const MealCard = ({
               </Text>
               {isLogged ? (
                 <Animated.View 
-                  className="rounded-full bg-green-100 p-1"
                   style={{
-                    transform: [{ scale: scaleAnim }],
+                    opacity: opacityAnim,
+                    transform: [{ scale: scaleAnim }, { rotate: spin }],
                   }}
                 >
-                  <Ionicons name="checkmark-circle" size={20} color="#22C55E" />
+                  <Pressable
+                    onPress={handleLogMeal}
+                    className="rounded-full bg-green-100 p-1"
+                  >
+                    <Ionicons name="checkmark-circle" size={20} color="#22C55E" />
+                  </Pressable>
                 </Animated.View>
               ) : (
                 <Animated.View

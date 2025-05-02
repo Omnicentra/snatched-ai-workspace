@@ -6,8 +6,8 @@ import { LinearGradient } from 'expo-linear-gradient'
 import Constants from 'expo-constants'
 import { StatusBar } from 'expo-status-bar'
 import type { CustomerInfo, PurchasesPackage } from 'react-native-purchases';
-import Purchases from 'react-native-purchases'
-import { formatDate } from '@/lib/utils'
+import Purchases from 'react-native-purchases';
+import { formatDate } from '@/lib/utils';
 
 export default function SubscriptionScreen() {
   const router = useRouter()

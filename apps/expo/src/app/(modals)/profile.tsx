@@ -15,17 +15,20 @@ import {
   Linking,
 } from 'react-native'
 import Purchases from 'react-native-purchases'
+import { nutritionStore$ } from '@/stores/nutrition.store'
 
 const MenuItem = ({ 
   icon, 
   label, 
   onPress,
   showBorder = true,
+  textColor = "text-gray-900"
 }: { 
   icon: React.ReactNode;
   label: string;
   onPress: () => void;
   showBorder?: boolean;
+  textColor?: string;
 }) => (
   <Pressable 
     onPress={onPress}
@@ -34,7 +37,7 @@ const MenuItem = ({
     <View className="mr-4 h-8 w-8 items-center justify-center rounded-full bg-gray-50">
       {icon}
     </View>
-    <Text className="flex-1 font-inter-medium text-base text-gray-900">{label}</Text>
+    <Text className={`flex-1 font-inter-medium text-base ${textColor}`}>{label}</Text>
     <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
   </Pressable>
 );
@@ -61,6 +64,28 @@ export default function ProfileScreen() {
     }
     void loadUserData()
   }, [])
+
+  const handleResetNutrition = () => {
+    Alert.alert(
+      'Reset Nutrition Data',
+      'This will clear all your logged meals. This action cannot be undone.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Reset',
+          style: 'destructive',
+          onPress: () => {
+            // Reset to initial state
+            nutritionStore$.loggedMeals.set({});
+            Alert.alert('Success', 'Your nutrition data has been reset');
+          },
+        },
+      ],
+    );
+  };
 
   const menuItems = [
     {
@@ -92,6 +117,12 @@ export default function ProfileScreen() {
           Linking.openURL('https://snatchedai.com/privacy')
         ])
       }
+    },
+    {
+      icon: <Ionicons name="refresh-outline" size={18} color="#DC2626" />,
+      label: 'Reset Nutrition Data',
+      onPress: handleResetNutrition,
+      textColor: 'text-red-600'
     }
   ];
 
@@ -147,6 +178,7 @@ export default function ProfileScreen() {
               label={item.label}
               onPress={item.onPress}
               showBorder={index !== menuItems.length - 1}
+              textColor={item.textColor}
             />
           ))}
         </View>

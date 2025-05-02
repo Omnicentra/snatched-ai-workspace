@@ -10,55 +10,40 @@ import { StatusBar } from "expo-status-bar";
 import React, { useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import * as Progress from "react-native-progress";
+import { onboardingStore$ } from "@/stores/onboarding.store";
+import { nutritionStore$ } from "@/stores/nutrition.store";
+import { use$ } from "@legendapp/state/react";
 
 type IconName = keyof typeof Ionicons.glyphMap;
-
-// Simple Bar Chart Component
-const WeeklyProgressBarChart = () => {
-  const data = [30, 60, 35, 0, 0, 0, 0]; // Example percentages
-  const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-
-  return (
-    <View className="h-28 flex-row items-end justify-between px-2">
-      {data.map((percentage, index) => (
-        <View key={index} className="flex-1 items-center">
-          <View className="h-20 w-full flex-col-reverse px-1">
-            <View
-              className={`w-full rounded-lg ${
-                index === 2 ? "bg-pink-400" : "bg-gray-100"
-              }`}
-              style={{ height: `${percentage}%` }}
-            />
-          </View>
-          <Text
-            className={`mt-2 text-xs ${
-              index === 2
-                ? "font-inter-medium text-pink-500"
-                : "font-inter text-gray-500"
-            }`}
-          >
-            {days[index]}
-          </Text>
-        </View>
-      ))}
-    </View>
-  );
-};
 
 // Nutrition Stats Card Component
 const NutritionStats = () => {
   const router = useRouter();
+  const bodyRating = use$(onboardingStore$.bodyRating);
+
+  // Calculate the overall snatched score as an average of all metrics
+  const snatchedScore = Math.round(
+    [
+      bodyRating.waistDefinition ?? 0,
+      bodyRating.hipCurve ?? 0,
+      bodyRating.gluteShape ?? 0,
+      bodyRating.posture ?? 0,
+      bodyRating.armShape ?? 0,
+      bodyRating.backDefinition ?? 0,
+    ].filter(Boolean).reduce((a, b) => a + b, 0) / 6
+  );
+
   const bodyPartStats: {
     label: string;
-    value: string;
+    value: number;
     icon: IconName;
   }[] = [
-    { label: "Waist Definition", value: "65", icon: "hourglass-outline" },
-    { label: "Arm Shape", value: "72", icon: "barbell" },
-    { label: "Glute Progress", value: "58", icon: "fitness" },
-    { label: "Leg Definition", value: "70", icon: "walk" },
-    { label: "Back Shape", value: "63", icon: "body" },
-    { label: "Core Strength", value: "68", icon: "shield" },
+    { label: "Waist Definition", value: bodyRating.waistDefinition ?? 0, icon: "hourglass-outline" },
+    { label: "Arm Shape", value: bodyRating.armShape ?? 0, icon: "barbell" },
+    { label: "Glute Shape", value: bodyRating.gluteShape ?? 0, icon: "fitness" },
+    { label: "Hip Curve", value: bodyRating.hipCurve ?? 0, icon: "walk" },
+    { label: "Back Definition", value: bodyRating.backDefinition ?? 0, icon: "body" },
+    { label: "Posture", value: bodyRating.posture ?? 0, icon: "shield" },
   ];
 
   return (
@@ -70,12 +55,12 @@ const NutritionStats = () => {
             <ProgressRing
               size={160}
               strokeWidth={12}
-              progress={0.72}
+              progress={snatchedScore / 100}
               bgColor="#F3F4F6"
               progressColor="#F472B6"
             />
             <View className="absolute inset-0 items-center justify-center">
-              <Text className="font-inter-bold text-4xl text-black">72</Text>
+              <Text className="font-inter-bold text-4xl text-black">{snatchedScore}</Text>
               <Text className="font-inter mt-1 text-sm text-gray-500">
                 Snatched Score
               </Text>
@@ -111,7 +96,7 @@ const NutritionStats = () => {
                 <ProgressRing
                   size={50}
                   strokeWidth={4}
-                  progress={parseInt(stat.value) / 100}
+                  progress={stat.value / 100}
                   bgColor="#F3F4F6"
                   progressColor="#F472B6"
                 />
@@ -132,22 +117,66 @@ const NutritionStats = () => {
 // Recently Logged Component
 const RecentlyLogged = () => {
   const router = useRouter();
+  const loggedMeals = use$(nutritionStore$.loggedMeals);
+  
+  // Get today's meals
+  // const today = new Date().toISOString().split('T')[0];
+  const todaysMeals = Object.entries(loggedMeals).sort((a, b) => new Date(b[1].loggedAt).getTime() - new Date(a[1].loggedAt).getTime());
+
+    console.log(JSON.stringify(todaysMeals, null, 2));
+
   return (
     <View className="mb-8 rounded-3xl bg-white p-6 shadow-sm">
-      <Text className="font-inter-bold mb-4 text-lg text-black">
+      <Text className="font-inter-bold mb-1 text-lg text-black">
         Recently logged
       </Text>
-      <View className="items-center py-4">
-        <Text className="font-inter-medium mb-2 text-base text-black">
-          You haven't uploaded any food
-        </Text>
-        <Text className="font-inter mb-4 text-center text-sm text-gray-500">
-          Start tracking today's meals by taking a quick picture.
-        </Text>
-        <Pressable onPress={() => router.push("/(tabs)/nutrition")} className="h-14 w-14 items-center justify-center rounded-full bg-black">
-          <Ionicons name="add" size={24} color="white" />
-        </Pressable>
-      </View>
+      {todaysMeals.length > 0 ? (
+        <View>
+          {todaysMeals.map(([id, meal]) => (
+            <View key={id} className="mt-4 flex-row items-center justify-between">
+              <View className="flex-row items-center">
+                <View className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-gray-100">
+                  <Ionicons name="restaurant-outline" size={20} color="#1F2937" />
+                </View>
+                <View>
+                  <Text className="font-inter-medium text-base text-black">
+                    {meal.mealName}
+                  </Text>
+                  <Text className="font-inter text-sm text-gray-500">
+                    {new Date(meal.loggedAt).toLocaleTimeString([], { 
+                      hour: '2-digit', 
+                      minute: '2-digit' 
+                    })}
+                  </Text>
+                </View>
+              </View>
+              <Pressable 
+                className="h-8 w-8 items-center justify-center rounded-full bg-gray-100"
+                onPress={() => {
+                  router.push(`/(modals)/recipe-detail?mealId=${id}`);
+                }}
+              >
+                <Ionicons name="chevron-forward" size={20} color="#1F2937" />
+              </Pressable>
+            </View>
+          ))}
+        </View>
+      ) : (
+        <View className="items-center py-4">
+          <Text className="font-inter-medium mb-2 text-base text-black">
+            You haven't uploaded any food
+          </Text>
+          <Text className="font-inter mb-4 text-center text-sm text-gray-500">
+            Start tracking today's meals by taking a quick picture.
+          </Text>
+          <Pressable 
+            onPress={() => router.push("/(tabs)/nutrition")} 
+            className="h-14 w-14 items-center justify-center rounded-full bg-black"
+          >
+            <Ionicons name="add" size={24} color="white" />
+          </Pressable>
+        </View>
+      )}
     </View>
   );
 };
@@ -236,10 +265,8 @@ export default function HomeScreen() {
   // Set active day to today's index, defaulting to 0 (Monday) if somehow not found
   const [activeDayIndex, setActiveDayIndex] = useState(Math.max(0, todayIndex));
 
-  const navigateToWorkout = () => router.push("/(modals)/workout-detail");
+  const navigateToWorkout = () => router.push("/(modals)/workout-detail?workoutId=3");
   const navigateToSnatchHack = () => router.push("/(modals)/snatch-hack-detail");
-  const navigateToProgress = () => router.push("/(modals)/progress-tracker");
-
 
   return (
     <LinearGradient
