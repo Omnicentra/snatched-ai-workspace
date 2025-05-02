@@ -32,7 +32,7 @@ const CAROUSEL_ITEM_WIDTH = SCREEN_WIDTH - 40;
 const SECTION_HEIGHT = 400; // This will be the uniform height for all sections
 
 // Re-usable component for the feature graph (adapted from results screen)
-const PredictionGraph = () => {
+const _PredictionGraph = () => {
   return (
     <View className="relative h-[200px] w-full rounded-lg bg-gray-800/50 p-4">
       <Svg
@@ -84,7 +84,7 @@ const PredictionGraph = () => {
 };
 
 // Re-usable component for the checklist feature
-const PlanChecklist = () => {
+const _PlanChecklist = () => {
   const items = [
     { text: "Targeted waist exercises", icon: "🏋️‍♀️" },
     { text: "Core strengthening routine", icon: "💪" },
@@ -111,7 +111,7 @@ const PlanChecklist = () => {
 };
 
 // Maximize It Component
-const MaximizeSection = () => {
+const _MaximizeSection = () => {
   const items = [
     { text: "1 glass of milk + honey🍯🥛", completed: true },
     { text: "5m of bar hanging🦍", completed: false },
@@ -154,7 +154,7 @@ const MaximizeSection = () => {
 };
 
 // Community Section Component
-const CommunitySection = () => {
+const _CommunitySection = () => {
   const posts = [
     {
       title: "Waist training sleep routine",
@@ -515,7 +515,7 @@ const SnatchHacksSection = () => {
 };
 
 // Styling Tips Section
-const StylingTipsSection = () => {
+const _StylingTipsSection = () => {
   const tips = [
     { category: "Tops", tip: "High-waisted everything", icon: "👚" },
     { category: "Dresses", tip: "Wrap styles & A-line cuts", icon: "👗" },
@@ -553,7 +553,7 @@ const StylingTipsSection = () => {
 };
 
 // Growth Guide Section (Updated)
-const GrowthGuideSection = () => {
+const _GrowthGuideSection = () => {
   const modules = [
     { title: "Foundations", lessons: 3, completed: 0, icon: "📚" },
     { title: "Nutrition", lessons: 4, completed: 0, icon: "🥗" },
@@ -595,7 +595,6 @@ const GrowthGuideSection = () => {
 
 export default function PaywallScreen() {
   const router = useRouter();
-  // const [selectedPlan, setSelectedPlan] = useState<'weekly' | 'lifetime'>('lifetime');
   const [currentPage, setCurrentPage] = useState(0);
   const scrollViewRef = useRef<ScrollView>(null);
   const autoScrollTimer = useRef<NodeJS.Timeout>();
@@ -603,36 +602,81 @@ export default function PaywallScreen() {
 
   const [packages, setPackages] = useState<PurchasesPackage[]>([]);
   const [selectedPackage, setSelectedPackage] = useState<PurchasesPackage>();
-
-  const plans = {
-    weekly: {
-      id: "weekly",
-      name: "Weekly",
-      price: "£4.99",
-      popular: false,
-      packageId: "snatched_weekly",
-    },
-    lifetime: {
-      id: "lifetime",
-      name: "Lifetime",
-      price: "£29.99",
-      popular: true,
-      packageId: "snatched_lifetime",
-    },
-  };
+  const [plans, setPlans] = useState<{
+    weekly?: {
+      id: string;
+      name: string;
+      price: string;
+      popular: boolean;
+      packageId: string;
+    };
+    lifetime?: {
+      id: string;
+      name: string;
+      price: string;
+      popular: boolean;
+      packageId: string;
+    };
+  }>({});
 
   useEffect(() => {
     const fetchPackages = async () => {
       const offerings = await Purchases.getOfferings();
-      const packages = offerings.all.default?.availablePackages;
-      console.log(JSON.stringify(packages, null, 2));
-      if (packages) {
-        setPackages(packages);
-        setSelectedPackage(
-          packages.find(
-            (pkg) => pkg.product.identifier === plans.lifetime.packageId,
-          ),
+      const availablePackages = offerings.all.default?.availablePackages;
+      console.log(JSON.stringify(availablePackages, null, 2));
+      
+      if (availablePackages?.length) {
+        // Process packages and create plans
+        const plansObj: Record<string, {
+          id: string;
+          name: string;
+          price: string;
+          popular: boolean;
+          packageId: string;
+        }> = {};
+        
+        // Find weekly package
+        const weeklyPackage = availablePackages.find(
+          (pkg) => 
+            typeof pkg.packageType === "string" && 
+            (pkg.packageType.toUpperCase() === "WEEKLY" || 
+            pkg.product.identifier.toLowerCase().includes("weekly"))
         );
+        
+        // Find lifetime package
+        const lifetimePackage = availablePackages.find(
+          (pkg) => 
+            typeof pkg.packageType === "string" && 
+            (pkg.packageType.toUpperCase() === "LIFETIME" || 
+            pkg.product.identifier.toLowerCase().includes("lifetime"))
+        );
+        
+        if (weeklyPackage) {
+          plansObj.weekly = {
+            id: weeklyPackage.packageType.toLowerCase(),
+            name: "Weekly",
+            price: weeklyPackage.product.priceString,
+            popular: false,
+            packageId: weeklyPackage.product.identifier,
+          };
+        }
+        
+        if (lifetimePackage) {
+          plansObj.lifetime = {
+            id: "lifetime",
+            name: "Lifetime",
+            price: lifetimePackage.product.priceString,
+            popular: true,
+            packageId: lifetimePackage.product.identifier,
+          };
+        }
+        
+        setPlans(plansObj);
+        setPackages(availablePackages);
+        
+        // Default select lifetime package if available, otherwise the first package
+        const defaultPackage = lifetimePackage ?? availablePackages[0];
+        setSelectedPackage(defaultPackage);
       }
     };
     void fetchPackages();
@@ -640,7 +684,7 @@ export default function PaywallScreen() {
 
   const scrollToNextPage = useCallback(() => {
     if (scrollViewRef.current && !isManualScrolling) {
-      const nextPage = (currentPage + 1) % 6; // 6 is the total number of pages
+      const nextPage = (currentPage + 1) % 4; // 4 is the total number of pages
       scrollViewRef.current.scrollTo({
         x: nextPage * (CAROUSEL_ITEM_WIDTH + 20),
         animated: true,
@@ -697,7 +741,7 @@ export default function PaywallScreen() {
         )
       ) {
         // Set onboarding completion flag
-        await SecureStore.setItemAsync("@onboarding_complete", "true");
+        await SecureStore.setItemAsync("onboarding_complete", "true");
         router.replace("/(tabs)/home");
       }
     } catch (error) {
@@ -733,48 +777,55 @@ export default function PaywallScreen() {
 
           {/* Subscription Options */}
           <View style={styles.planContainer}>
-            {Object.values(plans).map((plan) => (
-              <Pressable
-                key={plan.id}
-                onPress={() => {
-                  const pkg = packages.find(
-                    (pkg) => pkg.product.identifier === plan.packageId,
-                  );
-                  if (pkg) {
-                    setSelectedPackage(pkg);
-                  }
-                }}
-                style={[
-                  styles.planBox,
-                  selectedPackage?.product.identifier === plan.packageId &&
-                    styles.selectedPlanBox,
-                  plan.id === "weekly" ? { marginRight: 8 } : { marginLeft: 8 },
-                ]}
-              >
-                {plan.popular && (
-                  <View style={styles.popularBadge}>
-                    <Text style={styles.popularText}>Popular</Text>
+            {Object.keys(plans).length > 0 ? (
+              Object.values(plans).map((plan) => (
+                <Pressable
+                  key={plan.id}
+                  onPress={() => {
+                    const pkg = packages.find(
+                      (pkg) => pkg.product.identifier === plan.packageId,
+                    );
+                    if (pkg) {
+                      setSelectedPackage(pkg);
+                    }
+                  }}
+                  style={[
+                    styles.planBox,
+                    selectedPackage?.product.identifier === plan.packageId &&
+                      styles.selectedPlanBox,
+                    plan.id === "weekly" ? { marginRight: 8 } : { marginLeft: 8 },
+                  ]}
+                >
+                  {plan.popular && (
+                    <View style={styles.popularBadge}>
+                      <Text style={styles.popularText}>Popular</Text>
+                    </View>
+                  )}
+                  <View style={styles.planContent}>
+                    <View>
+                      <Text style={styles.planName}>{plan.name}</Text>
+                      <Text style={styles.planPrice}>{plan.price}</Text>
+                    </View>
+                    <View
+                      style={[
+                        styles.radioOuter,
+                        selectedPackage?.product.identifier === plan.packageId &&
+                          styles.selectedRadioOuter,
+                      ]}
+                    >
+                      {selectedPackage?.product.identifier === plan.packageId && (
+                        <View style={styles.radioInner} />
+                      )}
+                    </View>
                   </View>
-                )}
-                <View style={styles.planContent}>
-                  <View>
-                    <Text style={styles.planName}>{plan.name}</Text>
-                    <Text style={styles.planPrice}>{plan.price}</Text>
-                  </View>
-                  <View
-                    style={[
-                      styles.radioOuter,
-                      selectedPackage?.product.identifier === plan.packageId &&
-                        styles.selectedRadioOuter,
-                    ]}
-                  >
-                    {selectedPackage?.product.identifier === plan.packageId && (
-                      <View style={styles.radioInner} />
-                    )}
-                  </View>
-                </View>
-              </Pressable>
-            ))}
+                </Pressable>
+              ))
+            ) : (
+              // Show placeholder if no plans loaded yet
+              <View style={[styles.planBox, { flex: 1, justifyContent: 'center', alignItems: 'center' }]}>
+                <Text style={[styles.planName, { color: 'rgba(255,255,255,0.5)' }]}>Loading plans...</Text>
+              </View>
+            )}
           </View>
 
           <Text style={styles.featuresTitle}>Here's what you'll get:</Text>
@@ -815,21 +866,11 @@ export default function PaywallScreen() {
               >
                 <SnatchHacksSection />
               </View>
-              <View
-                style={[styles.carouselItem, { width: CAROUSEL_ITEM_WIDTH }]}
-              >
-                <StylingTipsSection />
-              </View>
-              <View
-                style={[styles.carouselItem, { width: CAROUSEL_ITEM_WIDTH }]}
-              >
-                <GrowthGuideSection />
-              </View>
             </ScrollView>
 
             {/* Pagination Dots */}
             <View style={styles.paginationDots}>
-              {[0, 1, 2, 3, 4, 5].map((index) => (
+              {[0, 1, 2, 3].map((index) => (
                 <View
                   key={index}
                   style={[

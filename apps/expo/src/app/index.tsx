@@ -7,7 +7,7 @@ import { authClient } from "@/utils/auth";
 // Check onboarding completion status from SecureStore
 const checkOnboardingStatus = async () => {
   try {
-    const secureStoreFlag = await SecureStore.getItemAsync("@onboarding_complete");
+    const secureStoreFlag = await SecureStore.getItemAsync("onboarding_complete");
     return secureStoreFlag === "true";
   } catch {
     return false; // Default to showing onboarding if error

@@ -58,7 +58,7 @@ export default function CompositionDetailScreen() {
 
   const handleReveal = () => {
     // Mark onboarding as complete and navigate to the main app
-    // AsyncStorage.setItem('@onboarding_complete', 'true'); // Example persistence
+    // AsyncStorage.setItem('onboarding_complete', 'true'); // Example persistence
     router.replace('/(onboarding)/feature-welcome') // Go to welcome/feature screens first
   }
 

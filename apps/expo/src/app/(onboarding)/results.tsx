@@ -245,7 +245,7 @@ export default function ResultsScreen() {
                       <Text className="text-center font-inter-medium text-gray-800">
                         {title}
                       </Text>
-                      <Text className="text-2xl">{value ?? "🔒"}</Text>
+                      <Text className="text-2xl">{"🔒"}</Text>
                     </View>
                   </View>
                 ))}

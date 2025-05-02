@@ -1,24 +1,37 @@
-import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Linking,
   Pressable,
   ScrollView,
   Text,
   View,
-  Linking
 } from "react-native";
-
+import Purchases from "react-native-purchases";
+import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
 import { StyledButton } from "@/components/core";
 import { BubbleLetter } from "@/components/core/BubbleLetter";
 import { authClient } from "@/utils/auth";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function LoginScreen() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const { data: session } = authClient.useSession();
+
+  useEffect(() => {
+    if (session?.user) {
+      void Purchases.logIn(session.user.email).then((info) => {
+        if (info.customerInfo.activeSubscriptions.length > 0) {
+          router.push("/(tabs)/home");
+        } else {
+          router.push("/(onboarding)/paywall");
+        }
+      });
+    }
+  }, [session, router]);
 
   const handleAppleSignIn = async () => {
     setIsLoading(true);
@@ -26,9 +39,6 @@ export default function LoginScreen() {
       await authClient.signIn.social(
         { provider: "apple", callbackURL: "/(tabs)/home" },
         {
-          onSuccess: () => {
-            router.push("/(tabs)/home");
-          },
           onError: (ctx) => {
             Alert.alert(ctx.error.message);
           },
@@ -51,9 +61,6 @@ export default function LoginScreen() {
       await authClient.signIn.social(
         { provider: "google", callbackURL: "/(tabs)/home" },
         {
-          onSuccess: () => {
-            router.push("/(tabs)/home");
-          },
           onError: (ctx) => {
             Alert.alert("Google Sign In Failed", ctx.error.message);
           },
@@ -82,19 +89,19 @@ export default function LoginScreen() {
           <View className="flex-1 justify-center">
             {/* Logo or App Name */}
             <View className="mb-12 items-center">
-            <View className="mb-2 flex-row">
-              <BubbleLetter _delay={1}>S</BubbleLetter>
-              <BubbleLetter _delay={2}>n</BubbleLetter>
-              <BubbleLetter _delay={3}>a</BubbleLetter>
-              <BubbleLetter _delay={4}>t</BubbleLetter>
-              <BubbleLetter _delay={5}>c</BubbleLetter>
-              <BubbleLetter _delay={6}>h</BubbleLetter>
-              <BubbleLetter _delay={7}>e</BubbleLetter>
-              <BubbleLetter _delay={8}>d</BubbleLetter>
-              <BubbleLetter _delay={9}> </BubbleLetter>
-              <BubbleLetter _delay={10}>A</BubbleLetter>
-              <BubbleLetter _delay={11}>I</BubbleLetter>
-            </View>
+              <View className="mb-2 flex-row">
+                <BubbleLetter _delay={1}>S</BubbleLetter>
+                <BubbleLetter _delay={2}>n</BubbleLetter>
+                <BubbleLetter _delay={3}>a</BubbleLetter>
+                <BubbleLetter _delay={4}>t</BubbleLetter>
+                <BubbleLetter _delay={5}>c</BubbleLetter>
+                <BubbleLetter _delay={6}>h</BubbleLetter>
+                <BubbleLetter _delay={7}>e</BubbleLetter>
+                <BubbleLetter _delay={8}>d</BubbleLetter>
+                <BubbleLetter _delay={9}> </BubbleLetter>
+                <BubbleLetter _delay={10}>A</BubbleLetter>
+                <BubbleLetter _delay={11}>I</BubbleLetter>
+              </View>
               <Text className="font-inter mt-2 text-base text-gray-600">
                 Welcome back! Sign in to continue
               </Text>
@@ -116,7 +123,9 @@ export default function LoginScreen() {
                   title="Continue with Google"
                   onPress={handleGoogleSignIn}
                   variant="secondary"
-                  icon={<Ionicons name="logo-google" size={20} color="#DB4437" />}
+                  icon={
+                    <Ionicons name="logo-google" size={20} color="#DB4437" />
+                  }
                   className="bg-white"
                 />
               </View>
@@ -130,7 +139,9 @@ export default function LoginScreen() {
               >
                 <Text className="font-inter text-sm text-gray-600">
                   Don't have an account?{" "}
-                  <Text className="font-inter-medium text-pink-500">Sign up</Text>
+                  <Text className="font-inter-medium text-pink-500">
+                    Sign up
+                  </Text>
                 </Text>
               </Pressable>
             </View>
@@ -141,14 +152,18 @@ export default function LoginScreen() {
                 By continuing, you agree to our{" "}
                 <Text
                   className="font-inter-medium text-gray-900 underline"
-                  onPress={() => Linking.openURL("https://snatchedai.com/terms")}
+                  onPress={() =>
+                    Linking.openURL("https://snatchedai.com/terms")
+                  }
                 >
                   Terms
                 </Text>
                 {" & "}
                 <Text
                   className="font-inter-medium text-gray-900 underline"
-                  onPress={() => Linking.openURL("https://snatchedai.com/privacy")}
+                  onPress={() =>
+                    Linking.openURL("https://snatchedai.com/privacy")
+                  }
                 >
                   Privacy Policy
                 </Text>
@@ -159,4 +174,4 @@ export default function LoginScreen() {
       </LinearGradient>
     </>
   );
-} 
+}

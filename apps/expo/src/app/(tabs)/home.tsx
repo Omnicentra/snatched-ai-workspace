@@ -240,6 +240,7 @@ export default function HomeScreen() {
   const navigateToSnatchHack = () => router.push("/(modals)/snatch-hack-detail");
   const navigateToProgress = () => router.push("/(modals)/progress-tracker");
 
+
   return (
     <LinearGradient
       colors={['#e5e7eb', '#fff']}

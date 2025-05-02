@@ -14,6 +14,7 @@ import {
   View,
   Linking,
 } from 'react-native'
+import Purchases from 'react-native-purchases'
 
 const MenuItem = ({ 
   icon, 
@@ -52,7 +53,7 @@ export default function ProfileScreen() {
         if (session?.user) {
           setUserName(session.user.name)
         }
-      } catch (error) {
+      } catch (_error) {
         Alert.alert('Error', 'Failed to load user data')
       } finally {
         setIsLoading(false)
@@ -70,7 +71,7 @@ export default function ProfileScreen() {
     {
       icon: <Ionicons name="card-outline" size={18} color="#1F2937" />,
       label: 'Subscription',
-      onPress: () => console.log('Navigate to Subscription')
+      onPress: () => router.push('/(modals)/subscription')
     },
     {
       icon: <Ionicons name="notifications-outline" size={18} color="#1F2937" />,
@@ -157,6 +158,7 @@ export default function ProfileScreen() {
             void authClient.signOut({
               fetchOptions: {
                 onSuccess: () => {
+                  void Purchases.logOut()
                   router.replace('/(auth)/login')
                 }
               }

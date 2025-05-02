@@ -6,7 +6,7 @@ import { use$ } from '@legendapp/state/react'
 import { timelineEnum } from '@omc/validators/onboarding'
 import Constants from 'expo-constants'
 import { useRouter } from 'expo-router'
-import React from 'react'
+import React, { useEffect } from 'react'
 import { SafeAreaView, ScrollView, View } from 'react-native'
 import type { z } from 'zod'
 
@@ -53,6 +53,10 @@ export default function TimelineGoalScreen() {
   const router = useRouter()
   const selectedTimeline = use$(onboardingStore$.onboarding.goalTimeline);
   const { data: session } = authClient.useSession();
+
+  useEffect(() => {
+    console.log(JSON.stringify(session, null, 2))
+  }, [session])
 
   const handleContinue = () => {
     // Store selectedTimeline in the store

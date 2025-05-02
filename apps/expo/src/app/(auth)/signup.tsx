@@ -1,23 +1,37 @@
-import { StyledButton } from "@/components/core";
-import { BubbleLetter } from "@/components/core/BubbleLetter";
-import { authClient } from "@/utils/auth";
-import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Linking,
   Pressable,
   ScrollView,
   Text,
   View,
-  Linking
 } from "react-native";
+import Purchases from "react-native-purchases";
+import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
+import { StyledButton } from "@/components/core";
+import { BubbleLetter } from "@/components/core/BubbleLetter";
+import { authClient } from "@/utils/auth";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function SignupScreen() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const { data: session } = authClient.useSession();
+
+  useEffect(() => {
+    if (session?.user) {
+      void Purchases.logIn(session.user.email).then((info) => {
+        if (info.customerInfo.activeSubscriptions.length > 0) {
+          router.push("/(tabs)/home");
+        } else {
+          router.push("/(onboarding)/paywall");
+        }
+      });
+    }
+  }, [session, router]);
 
   const handleAppleSignIn = async () => {
     setIsLoading(true);
@@ -146,7 +160,9 @@ export default function SignupScreen() {
               {" & "}
               <Text
                 className="font-inter-medium text-gray-900 underline"
-                onPress={() => Linking.openURL("https://snatchedai.com/privacy")}
+                onPress={() =>
+                  Linking.openURL("https://snatchedai.com/privacy")
+                }
               >
                 Privacy Policy
               </Text>

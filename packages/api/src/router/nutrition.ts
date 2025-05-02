@@ -1,11 +1,18 @@
 import type { TRPCRouterRecord } from "@trpc/server";
-import { z } from "zod";
 import { GoogleGenAI, Type } from "@google/genai";
-import { db } from "@omc/db/client";
-import { recipes, recipeIngredients, recipeInstructions } from "@omc/db/schema";
 import { eq } from "drizzle-orm";
+import { z } from "zod";
 
-import { publicProcedure } from "../trpc";
+import { db } from "@omc/db/client";
+import {
+  recipeIngredients,
+  recipeInstructions,
+  recipes,
+  user,
+  userRecipes,
+} from "@omc/db/schema";
+
+import { protectedProcedure, publicProcedure } from "../trpc";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY });
 
@@ -51,16 +58,72 @@ const recipeSchema = z.object({
 
 type Meal = z.infer<typeof mealSchema>;
 
+const createNewRecipe = async (meal: Meal) => {
+  // Insert recipe
+  const [recipe] = await db
+    .insert(recipes)
+    .values({
+      title: meal.name,
+      description: `A ${meal.name} recipe`,
+      servings: 1,
+      prepTimeMinutes: 30, // Default value
+      calories: meal.calories,
+      proteinGrams: meal.protein,
+      carbsGrams: meal.carbs,
+      fatsGrams: meal.fat,
+    })
+    .returning({ id: recipes.id });
+
+  if (!recipe) {
+    throw new Error("Failed to insert recipe");
+  }
+
+  // Insert ingredients
+  await Promise.all(
+    meal.ingredients.map((ingredient, index) =>
+      db.insert(recipeIngredients).values({
+        recipeId: recipe.id,
+        ingredientName: ingredient.name,
+        amount: ingredient.amount.toString(),
+        unit: ingredient.unit,
+        orderIndex: index + 1,
+      }),
+    ),
+  );
+
+  // Insert instructions
+  await Promise.all(
+    meal.instructions.map((instruction) =>
+      db.insert(recipeInstructions).values({
+        recipeId: recipe.id,
+        stepNumber: instruction.stepNumber,
+        instruction: instruction.instruction,
+      }),
+    ),
+  );
+
+  return recipe;
+};
+
 // TODO: Take diet into consideration
 export const nutritionRouter = {
-  getDailyMeals: publicProcedure
+  getDailyMeals: protectedProcedure
     .output(z.array(mealSchema.extend({ id: z.number() })))
-    .query(async () => {
+    .query(async ({ ctx }) => {
+      const [dbUser] = await db
+        .select()
+        .from(user)
+        .where(eq(user.email, ctx.session.user.email))
+        .execute();
+      if (!dbUser) {
+        throw new Error("User not found");
+      }
       const response = await ai.models.generateContent({
         model: "gemini-2.0-flash",
-        contents: "Generate a daily meal plan with breakfast, lunch, and dinner. For each meal, provide: time, calories, protein (g), carbs (g), fat (g), meal name, ingredients list (with amounts and units), and step-by-step cooking instructions. Make it realistic and healthy.",
+        contents:
+          "Generate a daily meal plan with breakfast, lunch, and dinner. For each meal, provide: time, calories, protein (g), carbs (g), fat (g), meal name, ingredients list (with amounts and units), and step-by-step cooking instructions. Make it realistic and healthy.",
         config: {
-          responseMimeType: 'application/json',
+          responseMimeType: "application/json",
           responseSchema: {
             type: Type.ARRAY,
             items: {
@@ -79,10 +142,10 @@ export const nutritionRouter = {
                     properties: {
                       name: { type: Type.STRING },
                       amount: { type: Type.NUMBER },
-                      unit: { type: Type.STRING }
+                      unit: { type: Type.STRING },
                     },
-                    required: ['name', 'amount', 'unit']
-                  }
+                    required: ["name", "amount", "unit"],
+                  },
                 },
                 instructions: {
                   type: Type.ARRAY,
@@ -90,16 +153,25 @@ export const nutritionRouter = {
                     type: Type.OBJECT,
                     properties: {
                       stepNumber: { type: Type.NUMBER },
-                      instruction: { type: Type.STRING }
+                      instruction: { type: Type.STRING },
                     },
-                    required: ['stepNumber', 'instruction']
-                  }
-                }
+                    required: ["stepNumber", "instruction"],
+                  },
+                },
               },
-              required: ['time', 'calories', 'protein', 'carbs', 'fat', 'name', 'ingredients', 'instructions']
-            }
-          }
-        }
+              required: [
+                "time",
+                "calories",
+                "protein",
+                "carbs",
+                "fat",
+                "name",
+                "ingredients",
+                "instructions",
+              ],
+            },
+          },
+        },
       });
 
       if (!response.text) {
@@ -107,67 +179,79 @@ export const nutritionRouter = {
       }
 
       const meals = JSON.parse(response.text) as Meal[];
+      const existingRecipes = await db.select().from(recipes).execute();
 
-      // Insert meals into database and return with IDs
       const mealsWithIds = await Promise.all(
         meals.map(async (meal) => {
-          // Insert recipe
-          const [recipe] = await db.insert(recipes).values({
-            title: meal.name,
-            description: `A ${meal.name} recipe`,
-            servings: 1,
-            prepTimeMinutes: 30, // Default value
-            calories: meal.calories,
-            proteinGrams: meal.protein,
-            carbsGrams: meal.carbs,
-            fatsGrams: meal.fat,
-          }).returning({ id: recipes.id });
+          // Check if a similar recipe already exists using Gemini
+          const similarityResponse = await ai.models.generateContent({
+            model: "gemini-2.0-flash",
+            contents: `Compare this meal title: "${meal.name}" with these existing recipe titles and IDs: ${existingRecipes.map((r) => `"Title: ${r.title}" (ID: ${r.id})`).join(", ")}. 
+            If the meal is very similar to any existing recipe, return the ID of that recipe. If not similar, return null.
+            Respond with just the ID number or null, nothing else.`,
+            config: {
+              responseSchema: {
+                type: Type.OBJECT,
+                properties: {
+                  id: {
+                    type: Type.NUMBER,
+                    nullable: true,
+                  },
+                },
+              },
+            },
+          });
 
-          if (!recipe) {
-            throw new Error("Failed to insert recipe");
+          // Parse the response safely
+          let similarRecipeId: number | null = null;
+          try {
+            const responseData = JSON.parse(
+              similarityResponse.text ?? "{}",
+            ) as { id?: number | null };
+            similarRecipeId = responseData.id ?? null;
+          } catch (error) {
+            console.error("Failed to parse similarity response:", error);
           }
 
-          // Insert ingredients
-          await Promise.all(
-            meal.ingredients.map((ingredient, index) =>
-              db.insert(recipeIngredients).values({
-                recipeId: recipe.id,
-                ingredientName: ingredient.name,
-                amount: ingredient.amount.toString(),
-                unit: ingredient.unit,
-                orderIndex: index + 1,
-              })
-            )
-          );
+          let recipe;
 
-          // Insert instructions
-          await Promise.all(
-            meal.instructions.map((instruction) =>
-              db.insert(recipeInstructions).values({
-                recipeId: recipe.id,
-                stepNumber: instruction.stepNumber,
-                instruction: instruction.instruction,
-              })
-            )
-          );
+          if (similarRecipeId) {
+            // Use existing recipe
+            recipe = existingRecipes.find((r) => r.id === similarRecipeId);
+
+            console.log("Found existing recipe:", recipe);
+            // Fallback to creating a new recipe if the found recipe ID doesn't exist
+            recipe ??= await createNewRecipe(meal);
+          } else {
+            //   Create new recipe
+            recipe = await createNewRecipe(meal);
+          }
+
+          // Create userRecipe entry
+          await db.insert(userRecipes).values({
+            userId: dbUser.id,
+            recipeId: recipe.id,
+            isFavorite: false,
+            createdAt: new Date().toISOString(),
+          });
 
           return {
             ...meal,
             id: recipe.id,
           };
-        })
+        }),
       );
 
       return mealsWithIds;
     }),
-    
+
   getAllRecipes: publicProcedure
     .output(z.array(recipeSchema))
     .query(async () => {
       // Fetch all recipes from the database with categoryId
       const allRecipes = await db.select().from(recipes).execute();
       // Ensure all recipes match the schema - cast explicitly if needed
-      return allRecipes.map(recipe => ({
+      return allRecipes.map((recipe) => ({
         id: recipe.id,
         title: recipe.title,
         description: recipe.description,
@@ -176,36 +260,42 @@ export const nutritionRouter = {
         calories: recipe.calories,
         proteinGrams: recipe.proteinGrams,
         carbsGrams: recipe.carbsGrams,
-        fatsGrams: recipe.fatsGrams, 
+        fatsGrams: recipe.fatsGrams,
         imageUrl: recipe.imageUrl,
         rating: recipe.rating,
         reviewCount: recipe.reviewCount,
         categoryId: recipe.categoryId,
         createdAt: recipe.createdAt,
-        updatedAt: recipe.updatedAt
+        updatedAt: recipe.updatedAt,
       }));
     }),
-    
+
   getRecipeById: publicProcedure
     .input(z.object({ id: z.number() }))
-    .output(recipeSchema.extend({
-      ingredients: z.array(z.object({
-        id: z.number(),
-        recipeId: z.number(),
-        ingredientName: z.string(),
-        amount: z.string(),
-        unit: z.string(),
-        orderIndex: z.number(),
-        createdAt: z.string().nullable(),
-      })),
-      instructions: z.array(z.object({
-        id: z.number(),
-        recipeId: z.number(),
-        stepNumber: z.number(),
-        instruction: z.string(),
-        createdAt: z.string().nullable(),
-      }))
-    }))
+    .output(
+      recipeSchema.extend({
+        ingredients: z.array(
+          z.object({
+            id: z.number(),
+            recipeId: z.number(),
+            ingredientName: z.string(),
+            amount: z.string(),
+            unit: z.string(),
+            orderIndex: z.number(),
+            createdAt: z.string().nullable(),
+          }),
+        ),
+        instructions: z.array(
+          z.object({
+            id: z.number(),
+            recipeId: z.number(),
+            stepNumber: z.number(),
+            instruction: z.string(),
+            createdAt: z.string().nullable(),
+          }),
+        ),
+      }),
+    )
     .query(async ({ input }) => {
       // Fetch recipe details
       const [recipe] = await db
@@ -213,11 +303,11 @@ export const nutritionRouter = {
         .from(recipes)
         .where(eq(recipes.id, input.id))
         .execute();
-        
+
       if (!recipe) {
         throw new Error(`Recipe with ID ${input.id} not found`);
       }
-      
+
       // Fetch ingredients
       const ingredients = await db
         .select()
@@ -225,7 +315,7 @@ export const nutritionRouter = {
         .where(eq(recipeIngredients.recipeId, input.id))
         .orderBy(recipeIngredients.orderIndex)
         .execute();
-        
+
       // Fetch instructions
       const instructions = await db
         .select()
@@ -233,7 +323,7 @@ export const nutritionRouter = {
         .where(eq(recipeInstructions.recipeId, input.id))
         .orderBy(recipeInstructions.stepNumber)
         .execute();
-        
+
       // Cast the combined data to ensure it matches the schema
       return {
         id: recipe.id,
@@ -252,7 +342,7 @@ export const nutritionRouter = {
         createdAt: recipe.createdAt,
         updatedAt: recipe.updatedAt,
         ingredients,
-        instructions
+        instructions,
       };
-    })
+    }),
 } satisfies TRPCRouterRecord;

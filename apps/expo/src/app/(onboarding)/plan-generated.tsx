@@ -34,7 +34,7 @@ export default function WelcomeScreen() {
 
   const handleViewPlan = () => {
     // Mark onboarding complete
-    // AsyncStorage.setItem('@onboarding_complete', 'true');
+    // AsyncStorage.setItem('onboarding_complete', 'true');
     // Navigate to the main app, potentially directly to the plan tab
     router.replace('/(tabs)/progress')
   }

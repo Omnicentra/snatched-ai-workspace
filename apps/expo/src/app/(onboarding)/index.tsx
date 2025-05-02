@@ -1,36 +1,45 @@
-import React from 'react'
-import { Text, View, Pressable, SafeAreaView } from 'react-native'
-import { LinearGradient } from 'expo-linear-gradient'
-import { useRouter } from 'expo-router'
-import Constants from 'expo-constants'
-import * as Haptics from 'expo-haptics'
-import brandLogo from '../../assets/images/logo2.png'
-import { Image } from 'expo-image'
-import { appVariant } from '@/lib/utils'
-import { BubbleLetter } from '@/components/core/BubbleLetter'
-import { authClient } from '@/utils/auth'
+import React from "react";
+import { Pressable, SafeAreaView, Text, View } from "react-native";
+import Constants from "expo-constants";
+import * as Haptics from "expo-haptics";
+import { Image } from "expo-image";
+import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
+import { BubbleLetter } from "@/components/core/BubbleLetter";
+import { appVariant } from "@/lib/utils";
+import { authClient } from "@/utils/auth";
+
+import brandLogo from "../../assets/images/logo2.png";
 
 export default function SplashScreen() {
-  const router = useRouter()
-  const { data: session } = authClient.useSession()
+  const router = useRouter();
+  const { data: session } = authClient.useSession();
 
   const handleGetStarted = () => {
     void Haptics.selectionAsync().then(() => {
-      router.push('/(onboarding)/body-positivity')
-    })
-    }
+      router.push("/(onboarding)/body-positivity");
+    });
+  };
+
+  const handleLogin = () => {
+    void Haptics.selectionAsync().then(() => {
+      return session?.user
+        ? router.replace("/(tabs)/home")
+        : router.replace("/(auth)/login");
+    });
+  };
 
   const handleSkip = () => {
     void Haptics.selectionAsync().then(() => {
-      return session?.user ? router.replace('/(tabs)/home') : router.replace('/(auth)/login')
-    })
-  }
+      router.push("/(onboarding)/timeline-goal");
+    });
+  };
 
-  console.log('appVariant', appVariant)
+  console.log("appVariant", appVariant);
 
   return (
     <LinearGradient
-      colors={['#f472b6', '#FED0E2']}
+      colors={["#f472b6", "#FED0E2"]}
       className="flex-1"
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
@@ -45,8 +54,8 @@ export default function SplashScreen() {
               source={brandLogo}
               className="h-full w-full"
               style={{
-                width: '100%',
-                height: '100%'
+                width: "100%",
+                height: "100%",
               }}
             />
           </View>
@@ -74,7 +83,7 @@ export default function SplashScreen() {
             className="rounded-full bg-white px-16 py-4 shadow-lg active:scale-95"
             onPress={handleGetStarted}
           >
-            <Text className="text-center font-inter-semibold text-base text-black">
+            <Text className="font-inter-semibold text-center text-base text-black">
               Get Started
             </Text>
           </Pressable>
@@ -84,13 +93,23 @@ export default function SplashScreen() {
               className="rounded-full bg-black px-16 py-4 shadow-lg active:scale-95"
               onPress={handleSkip}
             >
-            <Text className="text-center font-inter-semibold text-base text-white">
-              Skip
+              <Text className="font-inter-semibold text-center text-base text-white">
+                Skip
+              </Text>
+            </Pressable>
+          )}
+          {appVariant !== "production" && (
+            <Pressable
+              className="rounded-full bg-black px-16 py-4 shadow-lg active:scale-95"
+              onPress={handleLogin}
+            >
+              <Text className="font-inter-semibold text-center text-base text-white">
+                Login
               </Text>
             </Pressable>
           )}
         </View>
       </SafeAreaView>
     </LinearGradient>
-  )
+  );
 }

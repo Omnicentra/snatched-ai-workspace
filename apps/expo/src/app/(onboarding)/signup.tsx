@@ -1,19 +1,31 @@
 import React, { useEffect, useState } from "react";
-import { Alert, SafeAreaView, ScrollView, Text, View, ActivityIndicator } from "react-native";
+import {
+  ActivityIndicator,
+  Alert,
+  SafeAreaView,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
 import Constants from "expo-constants";
 import { useRouter } from "expo-router";
 import { OnboardingHeader, StyledButton } from "@/components/core";
 import { authClient } from "@/utils/auth";
 import { Ionicons } from "@expo/vector-icons";
+import Purchases from "react-native-purchases";
 
 export default function SignupScreen() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const { data: session } = authClient.useSession();
-  
 
   useEffect(() => {
     console.log(JSON.stringify(session, null, 2));
+    if (session?.user) {
+      void Purchases.logIn(session.user.email).then(() => {
+        router.push("/(onboarding)/analyzing");
+      });
+    }
   }, [session]);
 
   const handleAppleSignIn = async () => {
@@ -26,7 +38,7 @@ export default function SignupScreen() {
             // Handled by isLoading state
           },
           onSuccess: (_ctx) => {
-            router.push("/(onboarding)/analyzing");
+            // router.push("/(onboarding)/analyzing");
             setIsLoading(false);
           },
           onError: (ctx) => {
@@ -59,7 +71,7 @@ export default function SignupScreen() {
             // Handled by isLoading state
           },
           onSuccess: (_ctx) => {
-            router.push("/(onboarding)/analyzing");
+            // router.push("/(onboarding)/analyzing");
             setIsLoading(false);
           },
           onError: (ctx) => {
@@ -75,7 +87,10 @@ export default function SignupScreen() {
         console.error("Google sign in failed:", error.message);
         Alert.alert("Google Sign In Failed", error.message);
       } else {
-        console.error("An unknown error occurred during Google sign in:", error);
+        console.error(
+          "An unknown error occurred during Google sign in:",
+          error,
+        );
         Alert.alert("Google Sign In Failed", "An unknown error occurred.");
       }
     } finally {
