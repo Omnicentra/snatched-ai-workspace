@@ -154,7 +154,6 @@ export default function ScanBackScreen() {
 
       if (photo?.uri) {
         setCapturedImage(photo.uri);
-        await handlePhotoUpload(photo.uri, 'image/jpeg');
       }
     } catch (error) {
       console.error('Failed to take picture:', error)
@@ -185,6 +184,9 @@ export default function ScanBackScreen() {
         // Store the image key in LegendState
         onboardingStore$.onboarding.backViewPhoto.set(result.key);
         console.log('Stored image key in LegendState:', result.key);
+        
+        // Navigate to next screen
+        router.push('/(onboarding)/desired-shape');
       } else {
         Alert.alert('Upload Failed', 'Failed to upload image. Please try again.');
       }
@@ -202,7 +204,7 @@ export default function ScanBackScreen() {
 
   const handleContinue = () => {
     if (capturedImage) {
-      router.push('/(onboarding)/desired-shape')
+      void handlePhotoUpload(capturedImage, 'image/jpeg');
     }
   }
 
@@ -223,7 +225,6 @@ export default function ScanBackScreen() {
         const asset = result.assets[0];
         if (asset) {
           setCapturedImage(asset.uri);
-          await handlePhotoUpload(asset.uri, asset.mimeType ?? 'image/jpeg');
         }
       }
     } catch (error) {

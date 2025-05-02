@@ -8,6 +8,7 @@ import type { AppRouter } from "@omc/api";
 
 import { getBaseUrl } from "./base-url";
 import { getToken } from "./session-store";
+import { authClient } from "./auth";
 
 /**
  * A set of typesafe hooks for consuming your API.
@@ -36,6 +37,8 @@ export function TRPCProvider(props: { children: React.ReactNode }) {
           headers() {
             const headers = new Map<string, string>();
             headers.set("x-trpc-source", "expo-react");
+            const cookies = authClient.getCookie();
+            if (cookies) headers.set("Cookie", cookies);
 
             const token = getToken();
             if (token) headers.set("Authorization", `Bearer ${token}`);

@@ -164,7 +164,6 @@ export default function ScanFrontScreen() {
 
       if (photo?.uri) {
         setCapturedImage(photo.uri);
-        await handlePhotoUpload(photo.uri, 'image/jpeg');
       }
     } catch (error) {
       console.error('Failed to take picture:', error)
@@ -195,6 +194,9 @@ export default function ScanFrontScreen() {
         // Store the image key in LegendState
         onboardingStore$.onboarding.frontViewPhoto.set(result.key);
         console.log('Stored image key in LegendState:', result.key);
+        
+        // Navigate to next screen
+        router.push('/(onboarding)/scan-side');
       } else {
         Alert.alert('Upload Failed', 'Failed to upload image. Please try again.');
       }
@@ -212,7 +214,7 @@ export default function ScanFrontScreen() {
 
   const handleContinue = () => {
     if (capturedImage) {
-      router.push('/(onboarding)/scan-side')
+      void handlePhotoUpload(capturedImage, 'image/jpeg');
     }
   }
 
@@ -233,7 +235,6 @@ export default function ScanFrontScreen() {
         const asset = result.assets[0];
         if (asset) {
           setCapturedImage(asset.uri);
-          await handlePhotoUpload(asset.uri, asset.mimeType ?? 'image/jpeg');
         }
       }
     } catch (error) {

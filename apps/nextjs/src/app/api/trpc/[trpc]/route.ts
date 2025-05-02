@@ -26,16 +26,15 @@ export const OPTIONS = () => {
 };
 
 const handler = async (req: NextRequest) => {
-  const session = await auth.api.getSession({
-    headers: req.headers,
-  })
+  // const session = await auth.api.getSession({
+  //   headers: req.headers,
+  // })
   const response = await fetchRequestHandler({
     endpoint: "/api/trpc",
     router: appRouter,
     req,
     createContext: () =>
       createTRPCContext({
-        session,
         headers: req.headers,
       }),
     onError({ error, path }) {
