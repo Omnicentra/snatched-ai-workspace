@@ -10,6 +10,8 @@ import {
   recipes,
   user,
   userRecipes,
+  mealPlans,
+  mealSchedule,
 } from "@omc/db/schema";
 
 import { protectedProcedure, publicProcedure } from "../trpc";
@@ -28,6 +30,7 @@ const instructionSchema = z.object({
 });
 
 const mealSchema = z.object({
+  category: z.string(),
   time: z.string(),
   calories: z.number(),
   protein: z.number(),
@@ -56,7 +59,17 @@ const recipeSchema = z.object({
   updatedAt: z.string().nullable(),
 });
 
+const mealPlanSchema = z.object({
+  meals: z.array(mealSchema),
+  targetCalories: z.number(),
+  targetProtein: z.number(),
+  targetCarbs: z.number(),
+  targetFat: z.number(),
+});
+
 type Meal = z.infer<typeof mealSchema>;
+
+type MealPlan = z.infer<typeof mealPlanSchema>;
 
 const createNewRecipe = async (meal: Meal) => {
   // Insert recipe
@@ -107,7 +120,7 @@ const createNewRecipe = async (meal: Meal) => {
 
 // TODO: Take diet into consideration
 export const nutritionRouter = {
-  getDailyMeals: protectedProcedure
+  getMealPlan: protectedProcedure
     .output(z.array(mealSchema.extend({ id: z.number() })))
     .query(async ({ ctx }) => {
       const [dbUser] = await db
@@ -121,55 +134,73 @@ export const nutritionRouter = {
       const response = await ai.models.generateContent({
         model: "gemini-2.0-flash",
         contents:
-          "Generate a daily meal plan with breakfast, lunch, and dinner. For each meal, provide: time, calories, protein (g), carbs (g), fat (g), meal name, ingredients list (with amounts and units), and step-by-step cooking instructions. Make it realistic and healthy.",
+          "Generate a daily meal plan with categorybreakfast, lunch, and dinner (and optionally snacks). For each meal, provide: time, calories, protein (g), carbs (g), fat (g), meal name, ingredients list (with amounts and units), and step-by-step cooking instructions. Make it realistic and healthy.",
         config: {
           responseMimeType: "application/json",
           responseSchema: {
-            type: Type.ARRAY,
-            items: {
-              type: Type.OBJECT,
-              properties: {
-                time: { type: Type.STRING },
-                calories: { type: Type.NUMBER },
-                protein: { type: Type.NUMBER },
-                carbs: { type: Type.NUMBER },
-                fat: { type: Type.NUMBER },
-                name: { type: Type.STRING },
-                ingredients: {
-                  type: Type.ARRAY,
-                  items: {
-                    type: Type.OBJECT,
-                    properties: {
-                      name: { type: Type.STRING },
-                      amount: { type: Type.NUMBER },
-                      unit: { type: Type.STRING },
+            type: Type.OBJECT,
+            properties: {
+              meals: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    category: { type: Type.STRING },
+                    time: { type: Type.STRING },
+                    calories: { type: Type.NUMBER },
+                    protein: { type: Type.NUMBER },
+                    carbs: { type: Type.NUMBER },
+                    fat: { type: Type.NUMBER },
+                    name: { type: Type.STRING },
+                    ingredients: {
+                      type: Type.ARRAY,
+                      items: {
+                        type: Type.OBJECT,
+                        properties: {
+                          name: { type: Type.STRING },
+                          amount: { type: Type.NUMBER },
+                          unit: { type: Type.STRING },
+                        },
+                        required: ["name", "amount", "unit"],
+                      },
                     },
-                    required: ["name", "amount", "unit"],
-                  },
-                },
-                instructions: {
-                  type: Type.ARRAY,
-                  items: {
-                    type: Type.OBJECT,
-                    properties: {
-                      stepNumber: { type: Type.NUMBER },
-                      instruction: { type: Type.STRING },
+                    instructions: {
+                      type: Type.ARRAY,
+                      items: {
+                        type: Type.OBJECT,
+                        properties: {
+                          stepNumber: { type: Type.NUMBER },
+                          instruction: { type: Type.STRING },
+                        },
+                        required: ["stepNumber", "instruction"],
+                      },
                     },
-                    required: ["stepNumber", "instruction"],
                   },
+                  required: [
+                    "category",
+                    "time",
+                    "calories",
+                    "protein",
+                    "carbs",
+                    "fat",
+                    "name",
+                    "ingredients",
+                    "instructions",
+                  ],
                 },
               },
-              required: [
-                "time",
-                "calories",
-                "protein",
-                "carbs",
-                "fat",
-                "name",
-                "ingredients",
-                "instructions",
-              ],
+              targetCalories: { type: Type.NUMBER },
+              targetProtein: { type: Type.NUMBER },
+              targetCarbs: { type: Type.NUMBER },
+              targetFat: { type: Type.NUMBER },
             },
+            required: [
+              "meals",
+              "targetCalories",
+              "targetProtein",
+              "targetCarbs",
+              "targetFat",
+            ],
           },
         },
       });
@@ -178,11 +209,25 @@ export const nutritionRouter = {
         throw new Error("No response from Gemini");
       }
 
-      const meals = JSON.parse(response.text) as Meal[];
+      const genMealPlan = JSON.parse(response.text) as MealPlan;
       const existingRecipes = await db.select().from(recipes).execute();
 
+      // Create meal plan entry
+      const [dbMealPlan] = await db.insert(mealPlans).values({
+        userId: dbUser.id,
+        date: new Date().toISOString(),
+        targetCalories: genMealPlan.targetCalories,
+        targetProtein: genMealPlan.targetProtein,
+        targetCarbs: genMealPlan.targetCarbs,
+        targetFats: genMealPlan.targetFat,
+      }).returning({ id: mealPlans.id });
+
+      if (!dbMealPlan) {
+        throw new Error("Failed to insert meal plan");
+      }
+
       const mealsWithIds = await Promise.all(
-        meals.map(async (meal) => {
+        genMealPlan.meals.map(async (meal) => {
           // Check if a similar recipe already exists using Gemini
           const similarityResponse = await ai.models.generateContent({
             model: "gemini-2.0-flash",
@@ -227,13 +272,21 @@ export const nutritionRouter = {
             recipe = await createNewRecipe(meal);
           }
 
-          // Create userRecipe entry
-          await db.insert(userRecipes).values({
-            userId: dbUser.id,
+          // Create meal schedule entry
+          await db.insert(mealSchedule).values({
+            mealPlanId: dbMealPlan.id,
             recipeId: recipe.id,
-            isFavorite: false,
-            createdAt: new Date().toISOString(),
+            mealType: meal.category.toLowerCase(),
+            scheduledTime: meal.time,
+            completed: false,
           });
+
+          // await db.insert(userRecipes).values({
+          //   userId: dbUser.id,
+          //   recipeId: recipe.id,
+          //   isFavorite: false,
+          //   createdAt: new Date().toISOString(),
+          // });
 
           return {
             ...meal,

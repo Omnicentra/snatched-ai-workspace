@@ -14,10 +14,11 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import Silhouette from "@/assets/images/logo2.png";
 import { CircleProgress } from "@/components/core/CircleProgress";
-import { authClient } from "@/utils/auth";
-import { api } from "@/utils/api";
 import { onboardingStore$ } from "@/stores/onboarding.store";
+import { api } from "@/utils/api";
+import { authClient } from "@/utils/auth";
 import { use$ } from "@legendapp/state/react";
+
 import { prettyPrint } from "@omc/validators";
 
 const statusUpdates = [
@@ -58,8 +59,8 @@ export default function AnalyzingScreen() {
   const [progress, setProgress] = useState(0);
   const [currentStatusIndex, setCurrentStatusIndex] = useState(0);
   const { data: session } = authClient.useSession();
-  
-  const {mutate: getBodyRating } = api.user.bodyRating.useMutation({
+
+  const { mutate: getBodyRating } = api.user.bodyRating.useMutation({
     onSuccess: (data) => {
       prettyPrint(JSON.stringify(data, null, 2));
       onboardingStore$.bodyRating.set(data);
@@ -69,13 +70,16 @@ export default function AnalyzingScreen() {
     },
   });
 
+  const { data: mealPlan } = api.nutrition.getMealPlan.useQuery(undefined, {
+    enabled: !!session?.user,
+  });
+
   const frontImageKey = use$(onboardingStore$.onboarding.frontViewPhoto);
   const sideImageKey = use$(onboardingStore$.onboarding.sideViewPhoto);
   const backImageKey = use$(onboardingStore$.onboarding.backViewPhoto);
   const desiredBodyShape = use$(onboardingStore$.onboarding.desiredShape);
 
   useEffect(() => {
-    // Status update animation
     getBodyRating({
       imageKeys: {
         front: frontImageKey,
@@ -84,6 +88,8 @@ export default function AnalyzingScreen() {
       },
       desiredBodyShape,
     });
+
+    // Status update animation
     const statusInterval = setInterval(() => {
       setCurrentStatusIndex((prev) => (prev + 1) % statusUpdates.length);
     }, 2000);
@@ -103,7 +109,7 @@ export default function AnalyzingScreen() {
         }
         return nextProgress;
       });
-    }, 50);
+    }, 100);
 
     return () => {
       clearInterval(statusInterval);
@@ -112,8 +118,8 @@ export default function AnalyzingScreen() {
   }, [router]);
 
   useEffect(() => {
-    console.log(JSON.stringify(session, null, 2));
-  }, [session]);
+    console.log(JSON.stringify(mealPlan, null, 2));
+  }, [mealPlan]);
 
   return (
     <LinearGradient

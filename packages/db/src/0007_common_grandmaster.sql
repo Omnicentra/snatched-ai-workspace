@@ -1,0 +1,1 @@
+ALTER TABLE "recipe_categories" ADD COLUMN "slug" varchar(50) DEFAULT 'breakfast' NOT NULL;

@@ -50,6 +50,13 @@
       "when": 1746105001993,
       "tag": "0006_salty_virginia_dare",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1746200377868,
+      "tag": "0007_common_grandmaster",
+      "breakpoints": true
     }
   ]
 }

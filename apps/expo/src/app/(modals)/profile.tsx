@@ -98,11 +98,11 @@ export default function ProfileScreen() {
       label: 'Subscription',
       onPress: () => router.push('/(modals)/subscription')
     },
-    {
-      icon: <Ionicons name="notifications-outline" size={18} color="#1F2937" />,
-      label: 'Notifications',
-      onPress: () => console.log('Navigate to Notifications')
-    },
+    // {
+    //   icon: <Ionicons name="notifications-outline" size={18} color="#1F2937" />,
+    //   label: 'Notifications',
+    //   onPress: () => console.log('Navigate to Notifications')
+    // },
     {
       icon: <Ionicons name="help-circle-outline" size={18} color="#1F2937" />,
       label: 'Help & Support',
@@ -117,6 +117,30 @@ export default function ProfileScreen() {
           Linking.openURL('https://snatchedai.com/privacy')
         ])
       }
+    },
+    {
+      icon: <Ionicons name="refresh-circle-outline" size={18} color="#DC2626" />,
+      label: 'Reset Onboarding',
+      onPress: () => {
+        Alert.alert(
+          'Reset Onboarding',
+          'This will reset your onboarding progress. You will need to go through the initial setup process again.',
+          [
+            {
+              text: 'Cancel',
+              style: 'cancel',
+            },
+            {
+              text: 'Reset',
+              style: 'destructive',
+              onPress: () => {
+                router.replace('/(onboarding)');
+              },
+            },
+          ],
+        );
+      },
+      textColor: 'text-red-600'
     },
     {
       icon: <Ionicons name="refresh-outline" size={18} color="#DC2626" />,
@@ -170,7 +194,7 @@ export default function ProfileScreen() {
       </View>
 
       <ScrollView className="flex-1 px-6">
-        <View className="rounded-2xl bg-white p-4 shadow-sm">
+        <View className="rounded-2xl bg-white px-4 shadow-sm">
           {menuItems.map((item, index) => (
             <MenuItem
               key={index}

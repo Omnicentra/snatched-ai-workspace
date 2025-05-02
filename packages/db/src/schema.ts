@@ -778,6 +778,7 @@ export const recipeCategories = pgTable(
   {
     id: serial().primaryKey().notNull(),
     name: varchar({ length: 50 }).notNull(),
+    slug: varchar({ length: 50 }).notNull().default('breakfast'),
     description: text(),
     createdAt: timestamp("created_at", {
       withTimezone: true,
