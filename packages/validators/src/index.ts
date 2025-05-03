@@ -17,6 +17,7 @@ export const prettyPrint = (obj: string | object | number) => {
   } else {
     console.log(obj);
   }
+  console.log("");
 };
 
 export interface BodyRatingResponse {

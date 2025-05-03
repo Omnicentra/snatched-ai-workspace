@@ -7,6 +7,7 @@ import { createTRPCRouter, publicProcedure } from "../trpc";
 import { images } from "../utils/benchmark-images";
 import { analyzeBodyImages } from "../utils/gemini";
 import type { ImageScansKey } from "../utils/types";
+import { prettyPrint } from "@omc/validators";
 
 type BodyShapeEnum = keyof typeof images;
 
@@ -69,13 +70,15 @@ export const userRouter = createTRPCRouter({
     )
     .mutation(async ({ input }) => {
       const { deviceId, photoType, fileType } = input;
-      
+      prettyPrint(input);
       try {
         // Generate unique file name
         const fileName = `${uuidv4()}.${fileType.split("/").pop() ?? "jpg"}`;
+        console.log(fileName);
         
         // Create S3 key path
         const key = `temp-users/${deviceId}/${photoType}/${fileName}`;
+        console.log(key);
         
         // Generate presigned URL for direct upload
         const putCommand = new PutObjectCommand({
@@ -88,6 +91,8 @@ export const userRouter = createTRPCRouter({
         const presignedUrl = await getSignedUrl(s3Client, putCommand, {
           expiresIn: 600,
         });
+
+        prettyPrint(presignedUrl);
         
         return {
           presignedUrl,
