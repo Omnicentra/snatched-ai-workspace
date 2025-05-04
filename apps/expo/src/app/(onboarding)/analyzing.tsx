@@ -76,6 +76,14 @@ export default function AnalyzingScreen() {
       console.error(error);
     },
   });
+  const { mutate: generateWorkoutPlan } = api.workout.generateWeeklyPlan.useMutation({
+    onSuccess: (data) => {
+      prettyPrint(JSON.stringify(data, null, 2));
+    },
+    onError: (error) => {
+      console.error(error);
+    }
+  });
 
   const frontImageKey = use$(onboardingStore$.onboarding.frontViewPhoto);
   const sideImageKey = use$(onboardingStore$.onboarding.sideViewPhoto);
@@ -92,6 +100,7 @@ export default function AnalyzingScreen() {
       desiredBodyShape,
     });
     generateMealPlan()
+    generateWorkoutPlan()
 
     // Status update animation
     const statusInterval = setInterval(() => {

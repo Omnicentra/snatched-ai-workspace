@@ -924,3 +924,86 @@ export const verification = pgTable(
     ),
   ],
 );
+
+export const workoutPlans = pgTable(
+  "workout_plans",
+  {
+    id: serial().primaryKey().notNull(),
+    userId: integer("user_id").notNull(),
+    startDate: date("start_date").notNull(),
+    endDate: date("end_date").notNull(),
+    targetCaloriesBurn: integer("target_calories_burn"),
+    status: varchar("status", { length: 20 }).default("active").notNull(),
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+      mode: "string",
+    }).default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: timestamp("updated_at", {
+      withTimezone: true,
+      mode: "string",
+    }).default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    index("idx_workout_plans_user_date").using(
+      "btree",
+      table.userId.asc().nullsLast().op("int4_ops"),
+      table.startDate.asc().nullsLast().op("date_ops"),
+    ),
+    foreignKey({
+      columns: [table.userId],
+      foreignColumns: [user.id],
+      name: "workout_plans_user_id_fkey",
+    }),
+    check(
+      "workout_plans_date_check",
+      sql`end_date >= start_date`,
+    ),
+  ],
+);
+
+export const workoutPlanDays = pgTable(
+  "workout_plan_days",
+  {
+    id: serial().primaryKey().notNull(),
+    planId: integer("plan_id").notNull(),
+    workoutId: integer("workout_id").notNull(),
+    dayNumber: integer("day_number").notNull(),
+    completed: boolean("completed").default(false),
+    completedAt: timestamp("completed_at", {
+      withTimezone: true,
+      mode: "string",
+    }),
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+      mode: "string",
+    }).default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: timestamp("updated_at", {
+      withTimezone: true,
+      mode: "string",
+    }).default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    index("idx_workout_plan_days_plan").using(
+      "btree",
+      table.planId.asc().nullsLast().op("int4_ops"),
+    ),
+    foreignKey({
+      columns: [table.planId],
+      foreignColumns: [workoutPlans.id],
+      name: "workout_plan_days_plan_id_fkey",
+    }),
+    foreignKey({
+      columns: [table.workoutId],
+      foreignColumns: [workouts.id],
+      name: "workout_plan_days_workout_id_fkey",
+    }),
+    unique("workout_plan_days_plan_id_day_number_key").on(
+      table.planId,
+      table.dayNumber,
+    ),
+    check(
+      "workout_plan_days_day_number_check",
+      sql`day_number > 0 AND day_number <= 7`,
+    ),
+  ],
+);

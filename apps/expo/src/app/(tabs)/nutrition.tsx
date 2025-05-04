@@ -66,7 +66,7 @@ const MealCard = ({
   onToggleComplete: (e: GestureResponderEvent) => void;
 }) => {
   const scaleAnim = useRef(new Animated.Value(1)).current;
-  const rotateAnim = useRef(new Animated.Value(completed ? 1 : 0)).current;
+  const rotateAnim = useRef(new Animated.Value(completed ? 2 : 0)).current;
   const opacityAnim = useRef(new Animated.Value(1)).current;
 
   const handleToggle = (e: GestureResponderEvent) => {

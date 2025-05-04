@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, Pressable, Dimensions } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -11,13 +11,13 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 import { Svg, Circle } from 'react-native-svg';
+import { api } from '@/utils/api';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const PADDING = 32; // Total horizontal padding
 const CIRCLE_SIZE = SCREEN_WIDTH - PADDING; // Circle will fill screen width minus padding
 const CIRCLE_LENGTH = CIRCLE_SIZE * Math.PI; // Circumference
 const CIRCLE_RADIUS = CIRCLE_SIZE / 2; // Radius
-const INITIAL_TIME = 45; // Default exercise time in seconds
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
@@ -25,85 +25,110 @@ export default function WorkoutStartScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const [isPaused, setIsPaused] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(INITIAL_TIME);
-  const [currentExercise, setCurrentExercise] = useState(1);
-  // Use a ref to track initial setup
-  const initialSetupRef = useRef(true);
-  const progress = useSharedValue(initialSetupRef.current ? 1 : 0);
+  const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(0);
+  const [totalTimeElapsed, setTotalTimeElapsed] = useState(0);
+  const [caloriesBurned, setCaloriesBurned] = useState(0);
+  const progress = useSharedValue(1);
   
-  // Get parameters from URL
+  // Get workout ID from params
   const workoutId = typeof params.workoutId === 'string' ? parseInt(params.workoutId, 10) : undefined;
-  const workoutTitle = params.workoutTitle as string || 'Workout';
-  const totalExercises = typeof params.totalExercises === 'string' ? parseInt(params.totalExercises, 10) : 6;
-  const duration = typeof params.duration === 'string' ? parseInt(params.duration, 10) : 30;
-  const _difficultyLevel = params.difficultyLevel as string || 'Intermediate';
-  const exerciseName = params.exerciseName as string || 'Exercise';
-  const nextExerciseName = 'Next Exercise'; // In a real app, this would come from your workout data
-  
-  // Total calories estimated based on workout duration and difficulty
-  const estimatedCalories = Math.round(duration * 8.3); // Simple estimation formula
 
-  // Format time as MM:SS
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
+  // Fetch workout details with exercises
+  const { data: workoutData } = api.workout.getWorkoutWithExercises.useQuery(
+    { workoutId: workoutId ?? 0 },
+    { enabled: !!workoutId }
+  );
 
-  // Reset timer - using withTiming instead of direct mutation
-  const resetTimer = useCallback(() => {
-    setTimeLeft(INITIAL_TIME);
-    progress.value = withTiming(1, { duration: 300 });
-  }, [progress]);
+  // Track workout progress mutation
+  const trackProgressMutation = api.workout.trackWorkoutProgress.useMutation();
+
+  // Current exercise data
+  const currentExercise = workoutData?.exercises[currentExerciseIndex];
+  const nextExercise = workoutData?.exercises[currentExerciseIndex + 1];
+  const totalExercises = workoutData?.exercises.length ?? 0;
   
-  // Mark setup as complete after initial render
-  useEffect(() => {
-    initialSetupRef.current = false;
+  // Calculate exercise duration (work time + rest time)
+  const calculateExerciseDuration = useCallback((exercise: NonNullable<typeof currentExercise>) => {
+    // Each set takes: (time for reps) + rest time
+    const timePerRep = 3; // Assume 3 seconds per rep
+    return exercise.sets * ((exercise.reps * timePerRep) + exercise.restSeconds);
   }, []);
 
-  // Handle timer completion
-  const handleTimerComplete = useCallback(() => {
-    if (currentExercise >= totalExercises) {
-      // Workout completed
-      router.push({
-        pathname: '/(modals)/workout-complete',
-        params: {
-          workoutId: workoutId?.toString(),
-          workoutTitle,
-          duration: duration.toString(),
-          calories: estimatedCalories.toString(),
-          moves: totalExercises.toString(),
-        }
-      });
-    } else {
-      // Move to next exercise
-      setCurrentExercise(prev => prev + 1);
-      resetTimer();
+  // Initialize timer when exercise changes
+  useEffect(() => {
+    if (currentExercise) {
+      const duration = calculateExerciseDuration(currentExercise);
+      setTimeLeft(duration);
+      progress.value = withTiming(1, { duration: 300 });
     }
-  }, [router, resetTimer, currentExercise, totalExercises, workoutId, workoutTitle, duration, estimatedCalories]);
+  }, [currentExercise, calculateExerciseDuration, progress]);
 
   // Timer effect
   useEffect(() => {
     let interval: NodeJS.Timeout;
 
-    if (!isPaused && timeLeft > 0) {
+    if (!isPaused && timeLeft > 0 && currentExercise) {
       interval = setInterval(() => {
         setTimeLeft((prev) => {
           const newTime = prev - 1;
-          // Animate progress ring with withTiming
-          progress.value = withTiming(newTime / INITIAL_TIME, {
+          // Update progress ring
+          const exerciseDuration = calculateExerciseDuration(currentExercise);
+          progress.value = withTiming(newTime / exerciseDuration, {
             duration: 1000,
             easing: Easing.linear,
           });
           return newTime;
         });
+        setTotalTimeElapsed(prev => prev + 1);
+        // Rough calorie calculation (based on MET value of moderate exercise)
+        setCaloriesBurned(prev => prev + 0.1); // ~360 calories per hour
       }, 1000);
-    } else if (timeLeft === 0) {
-      handleTimerComplete();
     }
 
     return () => clearInterval(interval);
-  }, [isPaused, timeLeft, progress, handleTimerComplete]);
+  }, [isPaused, timeLeft, currentExercise, progress, calculateExerciseDuration]);
+
+  // Handle exercise completion
+  useEffect(() => {
+    if (timeLeft === 0 && currentExercise) {
+      if (currentExerciseIndex + 1 < totalExercises) {
+        // Move to next exercise
+        setCurrentExerciseIndex(prev => prev + 1);
+      } else {
+        // Workout complete
+        void handleWorkoutComplete();
+      }
+    }
+  }, [timeLeft, currentExercise, currentExerciseIndex, totalExercises]);
+
+  const handleWorkoutComplete = async () => {
+    if (!workoutData || !workoutId) return;
+
+    try {
+      // Track workout progress
+      await trackProgressMutation.mutateAsync({
+        userId: 1, // Replace with actual user ID from auth
+        workoutId,
+        durationMinutes: Math.ceil(totalTimeElapsed / 60),
+        caloriesBurned: Math.round(caloriesBurned),
+      });
+
+      // Navigate to completion screen
+      router.push({
+        pathname: '/(modals)/workout-complete',
+        params: {
+          workoutId: workoutId.toString(),
+          workoutTitle: workoutData.title,
+          duration: Math.ceil(totalTimeElapsed / 60).toString(),
+          calories: Math.round(caloriesBurned).toString(),
+          moves: totalExercises.toString(),
+        }
+      });
+    } catch (error) {
+      console.error('Failed to track workout progress:', error);
+    }
+  };
 
   const animatedProps = useAnimatedProps(() => ({
     strokeDashoffset: CIRCLE_LENGTH * (1 - progress.value),
@@ -118,20 +143,33 @@ export default function WorkoutStartScreen() {
   };
 
   const handleNext = () => {
-    handleTimerComplete();
+    if (currentExerciseIndex + 1 < totalExercises) {
+      setCurrentExerciseIndex(prev => prev + 1);
+    } else {
+      handleWorkoutComplete();
+    }
   };
 
   const handlePrevious = () => {
-    if (currentExercise > 1) {
-      setCurrentExercise(prev => prev - 1);
+    if (currentExerciseIndex > 0) {
+      setCurrentExerciseIndex(prev => prev - 1);
     }
-    resetTimer();
   };
 
-  // Format the workout type display
-  const formatWorkoutType = () => {
-    return workoutTitle.toUpperCase();
+  // Format time as MM:SS
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
+
+  if (!workoutData || !currentExercise) {
+    return (
+      <SafeAreaView className="flex-1 bg-white items-center justify-center">
+        <Text className="font-inter text-gray-500">Loading workout...</Text>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-white">
@@ -142,9 +180,13 @@ export default function WorkoutStartScreen() {
         <Pressable onPress={handleBack} className="p-2">
           <Ionicons name="arrow-back" size={24} color="black" />
         </Pressable>
-        <Text className="text-base font-inter-medium">Move {currentExercise} of {totalExercises}</Text>
+        <Text className="text-base font-inter-medium">
+          Exercise {currentExerciseIndex + 1} of {totalExercises}
+        </Text>
         <View className="bg-pink-100 px-3 py-1 rounded-full">
-          <Text className="text-pink-600 font-inter-medium">{formatWorkoutType()}</Text>
+          <Text className="text-pink-600 font-inter-medium">
+            {workoutData.title.toUpperCase()}
+          </Text>
         </View>
       </View>
 
@@ -181,10 +223,13 @@ export default function WorkoutStartScreen() {
           {/* Content inside the circle */}
           <View className="absolute items-center px-8">
             <Text className="text-xl font-inter-bold mb-2 text-center">
-              {exerciseName}
+              {currentExercise.name}
+            </Text>
+            <Text className="text-gray-600 text-center text-sm mb-4">
+              {currentExercise.sets} sets × {currentExercise.reps} reps
             </Text>
             <Text className="text-gray-600 text-center text-sm mb-8">
-              Keep your core tight and maintain proper form
+              {currentExercise.restSeconds}s rest between sets
             </Text>
             
             {/* Timer */}
@@ -192,10 +237,28 @@ export default function WorkoutStartScreen() {
               {formatTime(timeLeft)}
             </Text>
             
+            {nextExercise && (
             <Text className="text-gray-500 text-sm">
-              Up Next: {nextExerciseName}
+                Up Next: {nextExercise.name}
             </Text>
+            )}
           </View>
+        </View>
+      </View>
+
+      {/* Stats */}
+      <View className="flex-row justify-around px-6 mb-8">
+        <View className="items-center">
+          <Text className="font-inter-bold text-2xl text-black">
+            {Math.round(caloriesBurned)}
+          </Text>
+          <Text className="font-inter text-sm text-gray-500">Cal Burned</Text>
+        </View>
+        <View className="items-center">
+          <Text className="font-inter-bold text-2xl text-black">
+            {formatTime(totalTimeElapsed)}
+          </Text>
+          <Text className="font-inter text-sm text-gray-500">Duration</Text>
         </View>
       </View>
 
@@ -204,8 +267,13 @@ export default function WorkoutStartScreen() {
         <Pressable 
           onPress={handlePrevious}
           className="w-16 h-16 rounded-full bg-gray-100 items-center justify-center"
+          disabled={currentExerciseIndex === 0}
         >
-          <Ionicons name="play-skip-back" size={24} color="black" />
+          <Ionicons 
+            name="play-skip-back" 
+            size={24} 
+            color={currentExerciseIndex === 0 ? "#9CA3AF" : "black"} 
+          />
         </Pressable>
         
         <Pressable 
