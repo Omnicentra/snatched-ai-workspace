@@ -1,0 +1,1 @@
+ALTER TABLE "meal_schedule" ADD COLUMN "completed_at" timestamp with time zone;

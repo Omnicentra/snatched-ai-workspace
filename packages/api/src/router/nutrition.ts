@@ -157,6 +157,22 @@ const createNewRecipe = async (s3: S3Client, meal: Meal) => {
   return recipe;
 };
 
+const mealLogSchema = z.object({
+  id: z.number(),
+  mealType: z.string(),
+  scheduledTime: z.string(),
+  completedAt: z.string().nullable(),
+  recipe: z.object({
+    id: z.number(),
+    title: z.string(),
+    imageUrl: z.string().nullable(),
+    calories: z.number(),
+    proteinGrams: z.number(),
+    carbsGrams: z.number(),
+    fatsGrams: z.number(),
+  }),
+});
+
 // TODO: Take diet into consideration
 export const nutritionRouter = {
   generateMealPlan: protectedProcedure
@@ -611,11 +627,53 @@ export const nutritionRouter = {
         .update(mealSchedule)
         .set({
           completed: !currentMeal.completed,
+          completedAt: !currentMeal.completed ? new Date().toISOString() : null,
           updatedAt: new Date().toISOString(),
         })
         .where(eq(mealSchedule.id, input.mealScheduleId))
         .returning();
 
       return updatedMeal;
+    }),
+
+  getRecentlyLoggedMeals: protectedProcedure
+    .output(z.array(mealLogSchema))
+    .query(async ({ ctx }) => {
+      const [dbUser] = await db
+        .select()
+        .from(user)
+        .where(eq(user.email, ctx.session.user.email))
+        .execute();
+
+      if (!dbUser) {
+        throw new Error("User not found");
+      }
+
+      // Get meals from the past 24 hours
+      const oneDayAgo = new Date();
+      oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+
+      const recentMeals = await db
+        .select({
+          id: mealSchedule.id,
+          mealType: mealSchedule.mealType,
+          scheduledTime: mealSchedule.scheduledTime,
+          completedAt: mealSchedule.updatedAt,
+          recipe: recipes,
+        })
+        .from(mealSchedule)
+        .innerJoin(recipes, eq(mealSchedule.recipeId, recipes.id))
+        .innerJoin(mealPlans, eq(mealSchedule.mealPlanId, mealPlans.id))
+        .where(
+          and(
+            eq(mealPlans.userId, dbUser.id),
+            eq(mealSchedule.completed, true),
+            sql`${mealSchedule.updatedAt} >= ${oneDayAgo.toISOString()}::timestamp`,
+          ),
+        )
+        .orderBy(sql`${mealSchedule.updatedAt} DESC`)
+        .execute();
+
+      return recentMeals;
     }),
 } satisfies TRPCRouterRecord;

@@ -456,6 +456,10 @@ export const mealSchedule = pgTable(
     mealType: varchar("meal_type", { length: 20 }).notNull(),
     scheduledTime: time("scheduled_time").notNull(),
     completed: boolean().default(false),
+    completedAt: timestamp("completed_at", {
+      withTimezone: true,
+      mode: "string",
+    }),
     createdAt: timestamp("created_at", {
       withTimezone: true,
       mode: "string",

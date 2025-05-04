@@ -27,6 +27,36 @@ export const slugify = (str: string) => {
     .replace(/[^\w-]+/g, "");
 };
 
+/**
+ * Formats a PostgreSQL timestamp with timezone to 24-hour time format (HH:mm)
+ * @param timestamp PostgreSQL timestamp string (e.g. "2025-05-04 11:54:44+00")
+ * @returns Formatted time string (e.g. "11:54") or empty string if timestamp is null/invalid
+ */
+export const formatPostgresTimestamp = (timestamp: string | null | undefined): string => {
+  if (!timestamp) return "";
+  
+  try {
+    // Convert PostgreSQL timestamp to ISO format by adding colon to timezone offset
+    const isoTimestamp = timestamp.replace(/\+(\d{2})$/, "+$1:00");
+    const date = new Date(isoTimestamp);
+    
+    // Validate the date is valid before formatting
+    if (isNaN(date.getTime())) {
+      console.error("Invalid date from timestamp:", timestamp);
+      return "";
+    }
+    
+    return new Intl.DateTimeFormat("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).format(date);
+  } catch (error) {
+    console.error("Error formatting timestamp:", error);
+    return "";
+  }
+};
+
 export interface BodyRatingResponse {
   imageRejected: boolean;
   imageRejectionReason: string | null;

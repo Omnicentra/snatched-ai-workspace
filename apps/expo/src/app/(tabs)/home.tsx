@@ -1,21 +1,22 @@
 import logo from "@/assets/images/logo-dark.png";
 import { ProgressRing } from "@/components/core";
 import { PedometerCard } from "@/components/core/PedometerCard";
+import { onboardingStore$ } from "@/stores/onboarding.store";
+import { api } from "@/utils/api";
+import { authClient } from "@/utils/auth";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { use$ } from "@legendapp/state/react";
+import * as Sentry from "@sentry/react-native";
 import Constants from "expo-constants";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import * as Progress from "react-native-progress";
-import { onboardingStore$ } from "@/stores/onboarding.store";
-import { nutritionStore$ } from "@/stores/nutrition.store";
-import { use$ } from "@legendapp/state/react";
-import * as Sentry from "@sentry/react-native";
-import { authClient } from "@/utils/auth";
-import { api } from "@/utils/api";
+import { formatPostgresTimestamp } from "@omc/validators";
+
 type IconName = keyof typeof Ionicons.glyphMap;
 
 // Nutrition Stats Card Component
@@ -119,40 +120,34 @@ const NutritionStats = () => {
 // Recently Logged Component
 const RecentlyLogged = () => {
   const router = useRouter();
-  const loggedMeals = use$(nutritionStore$.loggedMeals);
-  
-  // Get today's meals
-  // const today = new Date().toISOString().split('T')[0];
-  const todaysMeals = Object.entries(loggedMeals).sort((a, b) => new Date(b[1].loggedAt).getTime() - new Date(a[1].loggedAt).getTime());
+  const { data: recentMeals = [] } = api.nutrition.getRecentlyLoggedMeals.useQuery();
+
   return (
     <View className="mb-8 rounded-3xl bg-white p-6 shadow-sm">
       <Text className="font-inter-bold mb-1 text-lg text-black">
         Recently logged
       </Text>
-      {todaysMeals.length > 0 ? (
+      {recentMeals.length > 0 ? (
         <View>
-          {todaysMeals.map(([id, meal]) => (
-            <View key={id} className="mt-4 flex-row items-center justify-between">
+          {recentMeals.map((meal) => (
+            <View key={meal.id} className="mt-4 flex-row items-center justify-between">
               <View className="flex-row items-center">
                 <View className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-gray-100">
                   <Ionicons name="restaurant-outline" size={20} color="#1F2937" />
                 </View>
                 <View>
                   <Text className="font-inter-medium text-base text-black">
-                    {meal.mealName}
+                    {meal.recipe.title}
                   </Text>
                   <Text className="font-inter text-sm text-gray-500">
-                    {new Date(meal.loggedAt).toLocaleTimeString([], { 
-                      hour: '2-digit', 
-                      minute: '2-digit' 
-                    })}
+                    {formatPostgresTimestamp(meal.completedAt)}
                   </Text>
                 </View>
               </View>
               <Pressable 
                 className="h-8 w-8 items-center justify-center rounded-full bg-gray-100"
                 onPress={() => {
-                  router.push(`/(modals)/recipe-detail?mealId=${id}`);
+                  router.push(`/(modals)/recipe-detail?recipeId=${meal.recipe.id}`);
                 }}
               >
                 <Ionicons name="chevron-forward" size={20} color="#1F2937" />
@@ -163,10 +158,10 @@ const RecentlyLogged = () => {
       ) : (
         <View className="items-center py-4">
           <Text className="font-inter-medium mb-2 text-base text-black">
-            You haven't uploaded any food
+            You haven't logged any meals today
           </Text>
           <Text className="font-inter mb-4 text-center text-sm text-gray-500">
-            Start tracking today's meals by taking a quick picture.
+            Start tracking today's meals by marking them as completed.
           </Text>
           <Pressable 
             onPress={() => router.push("/(tabs)/nutrition")} 
@@ -245,16 +240,14 @@ export default function HomeScreen() {
   monday.setDate(today.getDate() + mondayOffset);
   
   // Generate week dates starting from Monday
-  const dayLetters = ['M', 'T', 'W', 'T', 'F', 'S', 'S'] as ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-  const weekDates = Array.from({ length: 7 }, (_, index) => {
-    const date = new Date(monday);
-    date.setDate(monday.getDate() + index);
-    return {
-      letter: dayLetters[index % 7],
-      number: date.getDate(),
-      fullDate: date
-    };
-  });
+  const dayLetters = ['M', 'T', 'W', 'T', 'F', 'S', 'S'] as const;
+  type DayLetter = typeof dayLetters[number];
+  
+  const weekDates = Array.from({ length: 7 }, (_, index) => ({
+    letter: dayLetters[index % 7] as DayLetter,
+    number: new Date(monday.getTime() + index * 24 * 60 * 60 * 1000).getDate(),
+    fullDate: new Date(monday.getTime() + index * 24 * 60 * 60 * 1000)
+  }));
 
   // Find the index of today in our week array
   const todayIndex = weekDates.findIndex(
