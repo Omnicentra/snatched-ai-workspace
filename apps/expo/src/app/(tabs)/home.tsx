@@ -12,7 +12,7 @@ import { useRouter } from "expo-router";
 import Constants from "expo-constants";
 import { StatusBar } from "expo-status-bar";
 import * as Sentry from "@sentry/react-native";
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
 // Day Pill Component
@@ -78,6 +78,20 @@ export default function HomeScreen() {
   
   const monday = new Date(today);
   monday.setDate(today.getDate() + mondayOffset);
+
+  // Calculate journey progress
+  const journeyProgress = useMemo(() => {
+    if (!session?.user.createdAt) return { week: 1, day: 1 };
+    
+    const startDate = new Date(session.user.createdAt);
+    const diffTime = Math.abs(new Date().getTime() - startDate.getTime());
+    const totalDays = Math.ceil(diffTime / (24 * 60 * 60 * 1000));
+    
+    return {
+      week: Math.ceil(totalDays / 7),
+      day: totalDays % 7 || 7
+    };
+  }, [session?.user.createdAt]);
   
   // Generate week dates starting from Monday
   const dayLetters = ['M', 'T', 'W', 'T', 'F', 'S', 'S'] as const;
@@ -167,7 +181,7 @@ export default function HomeScreen() {
             Hey, {session?.user.name.split(" ")[0]}!
           </Text>
           <Text className="font-inter mt-1 text-base text-gray-600">
-            Week 2, Day 3 of your journey
+            Week {journeyProgress.week}, Day {journeyProgress.day} of your journey
           </Text>
         </View>
       </View>

@@ -2,14 +2,20 @@ import { ProgressRing } from "@/components/core";
 import { onboardingStore$ } from "@/stores/onboarding.store";
 import { Ionicons } from "@expo/vector-icons";
 import { use$ } from "@legendapp/state/react";
-import { useRouter } from "expo-router";
 import React from "react";
-import { Pressable, Text, View } from "react-native";
+import { Alert, Pressable, Text, View } from "react-native";
 import type { IconName } from "@/types";
 
 export const NutritionStats = () => {
-  const router = useRouter();
   const bodyRating = use$(onboardingStore$.bodyRating);
+
+  const handleTransformationPreview = () => {
+    Alert.alert(
+      "Coming Soon!",
+      "We're working hard to bring you AI-powered transformation previews. Stay tuned for this exciting feature!",
+      [{ text: "Can't Wait!", style: "default" }]
+    );
+  };
 
   // Calculate the overall snatched score as an average of all metrics
   const snatchedScore = Math.round(
@@ -57,12 +63,20 @@ export const NutritionStats = () => {
             </View>
           </View>
           <Pressable 
-            className="flex-row items-center rounded-full bg-pink-50 px-4 py-2"
-            onPress={() => router.push("/(modals)/transformation-preview")}
+            className="flex-row items-center rounded-full bg-gray-100 px-4 py-2"
+            onPress={handleTransformationPreview}
           >
-            <Ionicons name="image" size={18} color="#F472B6" />
-            <Text className="font-inter-medium ml-2 text-sm text-pink-500">
-              See Snatched Transformation
+            <View className="relative">
+              <Ionicons name="image" size={18} color="#6B7280" />
+              <View className="absolute -right-1 -top-1">
+                <View className="h-3 w-3 items-center justify-center rounded-full bg-yellow-400">
+                  <Text className="font-inter-bold text-[6px] text-white">!</Text>
+                </View>
+              </View>
+            </View>
+            <Text className="font-inter-medium ml-2 text-sm text-gray-500">
+              Transformation Preview
+              <Text className="text-green-500"> • Coming Soon</Text>
             </Text>
           </Pressable>
         </View>
