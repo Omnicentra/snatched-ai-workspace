@@ -26,6 +26,7 @@
     "@omc/db": "workspace:*",
     "@omc/validators": "workspace:*",
     "@trpc/server": "catalog:",
+    "openai": "^4.97.0",
     "sharp": "^0.34.1",
     "superjson": "2.2.2",
     "uuid": "^11.1.0",

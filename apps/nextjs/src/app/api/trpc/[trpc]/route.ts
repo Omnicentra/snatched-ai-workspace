@@ -1,8 +1,8 @@
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 
 import { appRouter, createTRPCContext } from "@omc/api";
-import { auth } from "@omc/auth";
 import type { NextRequest } from "next/server";
+import { s3Client } from "~/server/s3";
 
 export const runtime = "nodejs";
 
@@ -26,9 +26,6 @@ export const OPTIONS = () => {
 };
 
 const handler = async (req: NextRequest) => {
-  // const session = await auth.api.getSession({
-  //   headers: req.headers,
-  // })
   const response = await fetchRequestHandler({
     endpoint: "/api/trpc",
     router: appRouter,
@@ -36,6 +33,7 @@ const handler = async (req: NextRequest) => {
     createContext: () =>
       createTRPCContext({
         headers: req.headers,
+        s3: s3Client,
       }),
     onError({ error, path }) {
       console.error(`>>> tRPC Error on '${path}'`, error);

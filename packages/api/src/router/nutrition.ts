@@ -1,6 +1,10 @@
-import { GoogleGenAI, Type } from "@google/genai";
+import type { S3Client } from "@aws-sdk/client-s3";
 import type { TRPCRouterRecord } from "@trpc/server";
-import { eq, and, sql, asc } from "drizzle-orm";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { GoogleGenAI, Type } from "@google/genai";
+import { and, asc, eq, sql } from "drizzle-orm";
+import { createSelectSchema } from "drizzle-zod";
+import OpenAI from "openai";
 import { z } from "zod";
 
 import { db } from "@omc/db/client";
@@ -10,12 +14,15 @@ import {
   recipeIngredients,
   recipeInstructions,
   recipes,
-  user
+  user,
 } from "@omc/db/schema";
-import { createSelectSchema } from "drizzle-zod";
+
 import { protectedProcedure, publicProcedure } from "../trpc";
+import { slugify } from "@omc/validators";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY });
+
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 const ingredientSchema = z.object({
   name: z.string(),
@@ -70,7 +77,39 @@ type Meal = z.infer<typeof mealSchema>;
 
 type MealPlan = z.infer<typeof mealPlanSchema>;
 
-const createNewRecipe = async (meal: Meal) => {
+const generateAndUploadImage = async (
+  s3: S3Client,
+  recipeName: string,
+): Promise<string> => {
+  const img = await openai.images.generate({
+    model: "gpt-image-1",
+    prompt: `${recipeName}`,
+    n: 1,
+    size: "1024x1024",
+  });
+
+  if (!img.data?.[0] || img.data.length === 0) {
+    throw new Error("No image data returned from OpenAI");
+  }
+
+  const imageBuffer = Buffer.from(img.data[0].b64_json ?? "", "base64");
+  const fileKey = `recipes/${slugify(recipeName)}.png`;
+
+  const putCommand = new PutObjectCommand({
+    Bucket: "snatched-ai-bucket",
+    Key: fileKey,
+    Body: imageBuffer,
+    ContentType: "image/png",
+  });
+
+  await s3.send(putCommand);
+
+  return `https://snatched-ai-bucket.s3.amazonaws.com/${fileKey}`;
+};
+
+const createNewRecipe = async (s3: S3Client, meal: Meal) => {
+  const imageUrl = await generateAndUploadImage(s3, meal.name);
+
   // Insert recipe
   const [recipe] = await db
     .insert(recipes)
@@ -83,6 +122,7 @@ const createNewRecipe = async (meal: Meal) => {
       proteinGrams: meal.protein,
       carbsGrams: meal.carbs,
       fatsGrams: meal.fat,
+      imageUrl, // Add the image URL to the recipe
     })
     .returning({ id: recipes.id });
 
@@ -119,9 +159,9 @@ const createNewRecipe = async (meal: Meal) => {
 
 // TODO: Take diet into consideration
 export const nutritionRouter = {
-  getMealPlan: protectedProcedure
+  generateMealPlan: protectedProcedure
     .output(createSelectSchema(mealPlans))
-    .query(async ({ ctx }) => {
+    .mutation(async ({ ctx }) => {
       const [dbUser] = await db
         .select()
         .from(user)
@@ -132,9 +172,24 @@ export const nutritionRouter = {
       }
       const response = await ai.models.generateContent({
         model: "gemini-2.0-flash",
-        contents:
-          "Generate a daily meal plan with category breakfast, lunch, and dinner (and optionally snacks). For each meal, provide: time, calories, protein (g), carbs (g), fat (g), meal name, ingredients list (with amounts and units), and step-by-step cooking instructions. Make it realistic and healthy. Also return the target calories, protein, carbs, and fat for the day.",
+        contents: `
+          Generate a daily meal plan with category breakfast, lunch, and dinner (and optionally snacks).
+          For each meal, provide:
+          - time
+          - calories
+          - protein (g)
+          - carbs (g) 
+          - fat (g)
+          - meal name
+          - meal
+          - ingredients list (with amounts and units)
+          - step-by-step cooking instructions
+
+          Make it realistic and healthy.
+          Also return the target calories, protein, carbs, and fat for the day.
+        `,
         config: {
+          temperature: 0.5,
           responseMimeType: "application/json",
           responseSchema: {
             type: Type.OBJECT,
@@ -184,7 +239,6 @@ export const nutritionRouter = {
                     "carbs",
                     "fat",
                     "name",
-                    "imageUrl",
                     "ingredients",
                     "instructions",
                   ],
@@ -213,14 +267,17 @@ export const nutritionRouter = {
       const genMealPlan = JSON.parse(response.text) as MealPlan;
 
       // Create meal plan entry
-      const [dbMealPlan] = await db.insert(mealPlans).values({
-        userId: dbUser.id,
-        date: new Date().toISOString(),
-        targetCalories: genMealPlan.targetCalories,
-        targetProtein: genMealPlan.targetProtein,
-        targetCarbs: genMealPlan.targetCarbs,
-        targetFats: genMealPlan.targetFat,
-      }).returning();
+      const [dbMealPlan] = await db
+        .insert(mealPlans)
+        .values({
+          userId: dbUser.id,
+          date: new Date().toISOString(),
+          targetCalories: genMealPlan.targetCalories,
+          targetProtein: genMealPlan.targetProtein,
+          targetCarbs: genMealPlan.targetCarbs,
+          targetFats: genMealPlan.targetFat,
+        })
+        .returning();
 
       if (!dbMealPlan) {
         throw new Error("Failed to insert meal plan");
@@ -228,7 +285,7 @@ export const nutritionRouter = {
 
       const existingRecipes = await db.select().from(recipes).execute();
 
-      const mealsWithIds = await Promise.all(
+      await Promise.all(
         genMealPlan.meals.map(async (meal) => {
           // Check if a similar recipe already exists using Gemini
           const similarityResponse = await ai.models.generateContent({
@@ -266,13 +323,28 @@ export const nutritionRouter = {
           if (similarRecipeId) {
             // Use existing recipe
             recipe = existingRecipes.find((r) => r.id === similarRecipeId);
-
-            console.log("Found existing recipe:", recipe);
-            // Fallback to creating a new recipe if the found recipe ID doesn't exist
-            recipe ??= await createNewRecipe(meal);
+            if (recipe) {
+              console.log("Found existing recipe:", recipe);
+              // Check if the recipe has an image
+              if (!recipe.imageUrl) {
+                // Generate and upload image
+                const imageUrl = await generateAndUploadImage(
+                  ctx.s3,
+                  meal.name,
+                );
+                // Update the recipe with the new image URL
+                await db
+                  .update(recipes)
+                  .set({ imageUrl })
+                  .where(eq(recipes.id, recipe.id));
+              }
+            } else {
+              // Fallback to creating a new recipe if the found recipe ID doesn't exist
+              recipe = await createNewRecipe(ctx.s3, meal);
+            }
           } else {
-            //   Create new recipe
-            recipe = await createNewRecipe(meal);
+            // Fallback to creating a new recipe if the found recipe ID doesn't exist
+            recipe = await createNewRecipe(ctx.s3, meal);
           }
 
           // Create meal schedule entry
@@ -284,13 +356,6 @@ export const nutritionRouter = {
             completed: false,
           });
 
-          // await db.insert(userRecipes).values({
-          //   userId: dbUser.id,
-          //   recipeId: recipe.id,
-          //   isFavorite: false,
-          //   createdAt: new Date().toISOString(),
-          // });
-
           return {
             ...meal,
             id: recipe.id,
@@ -298,10 +363,8 @@ export const nutritionRouter = {
         }),
       );
 
-      mealsWithIds.forEach((meal) => { console.log(JSON.stringify(meal, null, 2)) });
       return dbMealPlan;
     }),
-
   getAllRecipes: publicProcedure
     .output(z.array(recipeSchema))
     .query(async () => {
@@ -404,35 +467,43 @@ export const nutritionRouter = {
     }),
 
   getTodaysMealPlan: protectedProcedure
-    .output(z.object({
-      mealPlan: z.object({
-        id: z.number(),
-        targetCalories: z.number(),
-        targetProtein: z.number(),
-        targetCarbs: z.number(),
-        targetFats: z.number(),
-      }),
-      meals: z.array(z.object({
-        id: z.number(),
-        mealType: z.string(),
-        scheduledTime: z.string(),
-        completed: z.boolean().default(false),
-        recipe: recipeSchema.extend({
-          ingredients: z.array(z.object({
-            id: z.number(),
-            ingredientName: z.string(),
-            amount: z.string(),
-            unit: z.string(),
-            orderIndex: z.number(),
-          })),
-          instructions: z.array(z.object({
-            id: z.number(),
-            stepNumber: z.number(),
-            instruction: z.string(),
-          })),
+    .output(
+      z.object({
+        mealPlan: z.object({
+          id: z.number(),
+          targetCalories: z.number(),
+          targetProtein: z.number(),
+          targetCarbs: z.number(),
+          targetFats: z.number(),
         }),
-      })),
-    }))
+        meals: z.array(
+          z.object({
+            id: z.number(),
+            mealType: z.string(),
+            scheduledTime: z.string(),
+            completed: z.boolean().default(false),
+            recipe: recipeSchema.extend({
+              ingredients: z.array(
+                z.object({
+                  id: z.number(),
+                  ingredientName: z.string(),
+                  amount: z.string(),
+                  unit: z.string(),
+                  orderIndex: z.number(),
+                }),
+              ),
+              instructions: z.array(
+                z.object({
+                  id: z.number(),
+                  stepNumber: z.number(),
+                  instruction: z.string(),
+                }),
+              ),
+            }),
+          }),
+        ),
+      }),
+    )
     .query(async ({ ctx }) => {
       const [dbUser] = await db
         .select()
@@ -445,15 +516,15 @@ export const nutritionRouter = {
       }
 
       // Get today's meal plan
-      const today = new Date().toISOString().split('T')[0];
+      const today = new Date().toISOString().split("T")[0];
       const [todaysMealPlan] = await db
         .select()
         .from(mealPlans)
         .where(
           and(
             eq(mealPlans.userId, dbUser.id),
-            sql`${mealPlans.date} = ${today}::date`
-          )
+            sql`${mealPlans.date} = ${today}::date`,
+          ),
         )
         .execute();
 
@@ -502,7 +573,7 @@ export const nutritionRouter = {
               instructions,
             },
           };
-        })
+        }),
       );
 
       return {
@@ -518,9 +589,11 @@ export const nutritionRouter = {
     }),
 
   toggleMealCompletion: protectedProcedure
-    .input(z.object({
-      mealScheduleId: z.number(),
-    }))
+    .input(
+      z.object({
+        mealScheduleId: z.number(),
+      }),
+    )
     .mutation(async ({ input }) => {
       // Get current meal schedule
       const [currentMeal] = await db

@@ -7,14 +7,15 @@ import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import * as Progress from "react-native-progress";
 import { onboardingStore$ } from "@/stores/onboarding.store";
 import { nutritionStore$ } from "@/stores/nutrition.store";
 import { use$ } from "@legendapp/state/react";
 import * as Sentry from "@sentry/react-native";
-
+import { authClient } from "@/utils/auth";
+import { api } from "@/utils/api";
 type IconName = keyof typeof Ionicons.glyphMap;
 
 // Nutrition Stats Card Component
@@ -123,9 +124,6 @@ const RecentlyLogged = () => {
   // Get today's meals
   // const today = new Date().toISOString().split('T')[0];
   const todaysMeals = Object.entries(loggedMeals).sort((a, b) => new Date(b[1].loggedAt).getTime() - new Date(a[1].loggedAt).getTime());
-
-    console.log(JSON.stringify(todaysMeals, null, 2));
-
   return (
     <View className="mb-8 rounded-3xl bg-white p-6 shadow-sm">
       <Text className="font-inter-bold mb-1 text-lg text-black">
@@ -236,7 +234,7 @@ const DayPill = ({
 
 export default function HomeScreen() {
   const router = useRouter();
-  const userName = "Suzie";
+  const { data: session } = authClient.useSession();
   
   // Get current date and calculate the Monday of current week
   const today = new Date();
@@ -333,7 +331,7 @@ export default function HomeScreen() {
         {/* User Welcome Section */}
         <View className="mt-8">
           <Text className="font-inter-bold text-3xl text-gray-900">
-            Hey, {userName}!
+            Hey, {session?.user.name.split(" ")[0]}!
           </Text>
           <Text className="font-inter mt-1 text-base text-gray-600">
             Week 2, Day 3 of your journey

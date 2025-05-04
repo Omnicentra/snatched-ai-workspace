@@ -48,7 +48,7 @@ Sentry.init({
   replaysOnErrorSampleRate: 1,
   sendDefaultPii: true,
   // uncomment the line below to enable Spotlight (https://spotlightjs.com)
-  // spotlight: __DEV__,
+  spotlight: __DEV__,
 });
 
 export {

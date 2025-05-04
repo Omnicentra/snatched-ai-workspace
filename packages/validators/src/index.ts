@@ -20,6 +20,13 @@ export const prettyPrint = (obj: string | object | number) => {
   console.log("");
 };
 
+export const slugify = (str: string) => {
+  return str
+    .toLowerCase()
+    .replace(/ /g, "-")
+    .replace(/[^\w-]+/g, "");
+};
+
 export interface BodyRatingResponse {
   imageRejected: boolean;
   imageRejectionReason: string | null;

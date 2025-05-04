@@ -11,7 +11,7 @@ import superjson from "superjson";
 import { ZodError } from "zod";
 import { db } from "@omc/db/client";
 import { auth } from "@omc/auth";
-
+import type { S3Client } from "@aws-sdk/client-s3";
 /**
  * 1. CONTEXT
  *
@@ -26,6 +26,7 @@ import { auth } from "@omc/auth";
  */
 export const createTRPCContext = async (opts: {
   headers: Headers;
+  s3: S3Client;
 }) => {
   const session = await auth.api.getSession({
     headers: opts.headers,
@@ -33,6 +34,7 @@ export const createTRPCContext = async (opts: {
   return {
     session,
     db,
+    s3: opts.s3,
     headers: opts.headers,
   };
 };

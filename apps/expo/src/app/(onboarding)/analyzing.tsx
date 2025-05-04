@@ -1,3 +1,13 @@
+import Silhouette from "@/assets/images/logo2.png";
+import { CircleProgress } from "@/components/core/CircleProgress";
+import { onboardingStore$ } from "@/stores/onboarding.store";
+import { api } from "@/utils/api";
+import { use$ } from "@legendapp/state/react";
+import Constants from "expo-constants";
+import * as Haptics from "expo-haptics";
+import { Image } from "expo-image";
+import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { Text, View } from "react-native";
 import Animated, {
@@ -7,17 +17,6 @@ import Animated, {
   withSequence,
   withTiming,
 } from "react-native-reanimated";
-import Constants from "expo-constants";
-import * as Haptics from "expo-haptics";
-import { Image } from "expo-image";
-import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
-import Silhouette from "@/assets/images/logo2.png";
-import { CircleProgress } from "@/components/core/CircleProgress";
-import { onboardingStore$ } from "@/stores/onboarding.store";
-import { api } from "@/utils/api";
-import { authClient } from "@/utils/auth";
-import { use$ } from "@legendapp/state/react";
 
 import { prettyPrint } from "@omc/validators";
 
@@ -58,7 +57,6 @@ export default function AnalyzingScreen() {
   const router = useRouter();
   const [progress, setProgress] = useState(0);
   const [currentStatusIndex, setCurrentStatusIndex] = useState(0);
-  const { data: session } = authClient.useSession();
 
   const { mutate: getBodyRating } = api.user.bodyRating.useMutation({
     onSuccess: (data) => {
@@ -70,8 +68,13 @@ export default function AnalyzingScreen() {
     },
   });
 
-  const { data: mealPlan } = api.nutrition.getMealPlan.useQuery(undefined, {
-    enabled: !!session?.user,
+  const { mutate: generateMealPlan } = api.nutrition.generateMealPlan.useMutation({
+    onSuccess: (data) => {
+      prettyPrint(JSON.stringify(data, null, 2));
+    },
+    onError: (error) => {
+      console.error(error);
+    },
   });
 
   const frontImageKey = use$(onboardingStore$.onboarding.frontViewPhoto);
@@ -88,6 +91,7 @@ export default function AnalyzingScreen() {
       },
       desiredBodyShape,
     });
+    generateMealPlan()
 
     // Status update animation
     const statusInterval = setInterval(() => {
@@ -116,10 +120,6 @@ export default function AnalyzingScreen() {
       clearInterval(progressInterval);
     };
   }, [router]);
-
-  useEffect(() => {
-    console.log(JSON.stringify(mealPlan, null, 2));
-  }, [mealPlan]);
 
   return (
     <LinearGradient

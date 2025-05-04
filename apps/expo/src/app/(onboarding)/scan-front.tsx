@@ -23,6 +23,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { getOrCreateDeviceId } from '@/utils/device-id';
 import { onboardingStore$ } from '@/stores/onboarding.store';
 import { api } from '@/utils/api';
+import * as Sentry from '@sentry/react-native';
 
 // Reusable Progress Bar (Import or define as before using View)
 const ProgressBar = ({ progress }: { progress: number }) => (
@@ -127,11 +128,19 @@ export default function ScanFrontScreen() {
         headers: {
           'Content-Type': blob.type,
         },
-      });
-      
+      });  
       if (!uploadResponse.ok) {
+        Sentry.captureException(new Error(`Upload failed with status: ${uploadResponse.status}`));
         throw new Error(`Upload failed with status: ${uploadResponse.status}`);
       }
+
+      Sentry.captureEvent({
+        message: `Upload response: ${uploadResponse.status}`,
+        level: 'info',
+        extra: {
+          ...uploadResponse
+        },
+      });
 
       return true;
     } catch (error) {
