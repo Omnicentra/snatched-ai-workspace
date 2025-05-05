@@ -15,6 +15,7 @@ function getAppConfig() {
             host: "painfully-classic-egret.ngrok-free.app",
           },
         ],
+        associatedDomains: ["applinks:painfully-classic-egret.ngrok-free.app"],
       };
     case "preview":
       return {
@@ -28,6 +29,7 @@ function getAppConfig() {
             host: "snatched-ai-dev-oh2uj.ondigitalocean.app",
           },
         ],
+        associatedDomains: ["applinks:snatched-ai-dev-oh2uj.ondigitalocean.app"],
       };
     case "production":
     default:
@@ -42,18 +44,19 @@ function getAppConfig() {
             host: "snatchedai.com",
           },
         ],
+        associatedDomains: ["applinks:snatchedai.com"],
       };
   }
 }
 
-const { name, scheme, androidPackage, iosBundleIdentifier, intentFilters } =
+const { name, scheme, androidPackage, iosBundleIdentifier, intentFilters, associatedDomains } =
   getAppConfig();
 
 const createConfig = ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name,
   slug: "snatched-ai",
-  version: "1.0.6",
+  version: "1.0.7",
   orientation: "portrait",
   icon: "./assets/icon.png",
   scheme,
@@ -72,11 +75,7 @@ const createConfig = ({ config }: ConfigContext): ExpoConfig => ({
     config: {
       usesNonExemptEncryption: false,
     },
-    associatedDomains: [
-      "applinks:painfully-classic-egret.ngrok-free.app",
-      "applinks:snatched-ai-dev-oh2uj.ondigitalocean.app",
-      "applinks:snatchedai.com",
-    ],
+    associatedDomains: associatedDomains,
     entitlements: {
       "com.apple.developer.applesignin": ["Default"],
     },

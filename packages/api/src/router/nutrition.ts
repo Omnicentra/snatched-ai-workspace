@@ -65,7 +65,7 @@ const recipeSchema = z.object({
   updatedAt: z.string().nullable(),
 });
 
-const mealPlanSchema = z.object({
+const _mealPlanSchema = z.object({
   meals: z.array(mealSchema),
   targetCalories: z.number(),
   targetProtein: z.number(),
@@ -75,7 +75,7 @@ const mealPlanSchema = z.object({
 
 type Meal = z.infer<typeof mealSchema>;
 
-type MealPlan = z.infer<typeof mealPlanSchema>;
+type MealPlan = z.infer<typeof _mealPlanSchema>;
 
 const generateAndUploadImage = async (
   s3: S3Client,
@@ -124,7 +124,7 @@ const createNewRecipe = async (s3: S3Client, meal: Meal) => {
       fatsGrams: meal.fat,
       imageUrl, // Add the image URL to the recipe
     })
-    .returning({ id: recipes.id });
+    .returning();
 
   if (!recipe) {
     throw new Error("Failed to insert recipe");
@@ -173,114 +173,194 @@ const mealLogSchema = z.object({
   }),
 });
 
-// TODO: Take diet into consideration
+// Helper function to generate meal plan using Gemini
+async function generateMealPlanWithGemini(): Promise<MealPlan> {
+  const response = await ai.models.generateContent({
+    model: "gemini-2.0-flash",
+    contents: `
+      Generate a daily meal plan with category breakfast, lunch, and dinner (and optionally snacks).
+      For each meal, provide:
+      - time
+      - calories
+      - protein (g)
+      - carbs (g) 
+      - fat (g)
+      - meal name
+      - meal
+      - ingredients list (with amounts and units)
+      - step-by-step cooking instructions
+
+      Make it realistic and healthy.
+      Also return the target calories, protein, carbs, and fat for the day.
+    `,
+    config: {
+      temperature: 0.5,
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          meals: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                category: { type: Type.STRING },
+                time: { type: Type.STRING },
+                calories: { type: Type.NUMBER },
+                protein: { type: Type.NUMBER },
+                carbs: { type: Type.NUMBER },
+                fat: { type: Type.NUMBER },
+                name: { type: Type.STRING },
+                imageUrl: { type: Type.STRING },
+                ingredients: {
+                  type: Type.ARRAY,
+                  items: {
+                    type: Type.OBJECT,
+                    properties: {
+                      name: { type: Type.STRING },
+                      amount: { type: Type.NUMBER },
+                      unit: { type: Type.STRING },
+                    },
+                    required: ["name", "amount", "unit"],
+                  },
+                },
+                instructions: {
+                  type: Type.ARRAY,
+                  items: {
+                    type: Type.OBJECT,
+                    properties: {
+                      stepNumber: { type: Type.NUMBER },
+                      instruction: { type: Type.STRING },
+                    },
+                    required: ["stepNumber", "instruction"],
+                  },
+                },
+              },
+              required: [
+                "category",
+                "time",
+                "calories",
+                "protein",
+                "carbs",
+                "fat",
+                "name",
+                "ingredients",
+                "instructions",
+              ],
+            },
+          },
+          targetCalories: { type: Type.NUMBER },
+          targetProtein: { type: Type.NUMBER },
+          targetCarbs: { type: Type.NUMBER },
+          targetFat: { type: Type.NUMBER },
+        },
+        required: [
+          "meals",
+          "targetCalories",
+          "targetProtein",
+          "targetCarbs",
+          "targetFat",
+        ],
+      },
+    },
+  });
+
+  if (!response.text) {
+    throw new Error("No response from Gemini");
+  }
+
+  return JSON.parse(response.text) as MealPlan;
+}
+
+// Helper function to check recipe similarity using Gemini
+async function findSimilarRecipe(
+  mealName: string,
+  existingRecipes: (typeof recipes.$inferSelect)[],
+): Promise<number | null> {
+  const similarityResponse = await ai.models.generateContent({
+    model: "gemini-2.0-flash",
+    contents: `Compare this meal title: "${mealName}" with these existing recipe titles and IDs: ${existingRecipes.map((r) => `"Title: ${r.title}" (ID: ${r.id})`).join(", ")}. 
+    If the meal is very similar to any existing recipe, return the ID of that recipe. If not similar, return null.
+    Respond with just the ID number or null, nothing else.`,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          id: {
+            type: Type.NUMBER,
+            nullable: true,
+          },
+        },
+      },
+    },
+  });
+
+  try {
+    const responseData = JSON.parse(similarityResponse.text ?? "{}") as {
+      id?: number | null;
+    };
+    return responseData.id ?? null;
+  } catch (error) {
+    console.error("Failed to parse similarity response:", error);
+    return null;
+  }
+}
+
+// Helper function to create or update recipe
+async function getOrCreateRecipe(
+  s3: S3Client,
+  meal: MealPlan["meals"][number],
+  existingRecipes: (typeof recipes.$inferSelect)[],
+): Promise<typeof recipes.$inferSelect> {
+  const similarRecipeId = await findSimilarRecipe(meal.name, existingRecipes);
+
+  if (similarRecipeId) {
+    const existingRecipe = existingRecipes.find((r) => r.id === similarRecipeId);
+    if (existingRecipe) {
+      console.log("Found existing recipe:", existingRecipe);
+      // Check if the recipe needs an image
+      if (!existingRecipe.imageUrl) {
+        const imageUrl = await generateAndUploadImage(s3, meal.name);
+        const [updatedRecipe] = await db
+          .update(recipes)
+          .set({ imageUrl })
+          .where(eq(recipes.id, existingRecipe.id))
+          .returning();
+          
+        if (!updatedRecipe) {
+          console.error("Failed to update recipe with image, using existing recipe");
+          return existingRecipe;
+        }
+        return updatedRecipe;
+      }
+      return existingRecipe;
+    }
+  }
+
+  // Create new recipe
+  const newRecipe = await createNewRecipe(s3, meal);
+  return newRecipe;
+}
+
+// Main procedure
 export const nutritionRouter = {
   generateMealPlan: protectedProcedure
     .output(createSelectSchema(mealPlans))
     .mutation(async ({ ctx }) => {
+      // Get user
       const [dbUser] = await db
         .select()
         .from(user)
         .where(eq(user.email, ctx.session.user.email))
         .execute();
+      
       if (!dbUser) {
         throw new Error("User not found");
       }
-      const response = await ai.models.generateContent({
-        model: "gemini-2.0-flash",
-        contents: `
-          Generate a daily meal plan with category breakfast, lunch, and dinner (and optionally snacks).
-          For each meal, provide:
-          - time
-          - calories
-          - protein (g)
-          - carbs (g) 
-          - fat (g)
-          - meal name
-          - meal
-          - ingredients list (with amounts and units)
-          - step-by-step cooking instructions
 
-          Make it realistic and healthy.
-          Also return the target calories, protein, carbs, and fat for the day.
-        `,
-        config: {
-          temperature: 0.5,
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              meals: {
-                type: Type.ARRAY,
-                items: {
-                  type: Type.OBJECT,
-                  properties: {
-                    category: { type: Type.STRING },
-                    time: { type: Type.STRING },
-                    calories: { type: Type.NUMBER },
-                    protein: { type: Type.NUMBER },
-                    carbs: { type: Type.NUMBER },
-                    fat: { type: Type.NUMBER },
-                    name: { type: Type.STRING },
-                    imageUrl: { type: Type.STRING },
-                    ingredients: {
-                      type: Type.ARRAY,
-                      items: {
-                        type: Type.OBJECT,
-                        properties: {
-                          name: { type: Type.STRING },
-                          amount: { type: Type.NUMBER },
-                          unit: { type: Type.STRING },
-                        },
-                        required: ["name", "amount", "unit"],
-                      },
-                    },
-                    instructions: {
-                      type: Type.ARRAY,
-                      items: {
-                        type: Type.OBJECT,
-                        properties: {
-                          stepNumber: { type: Type.NUMBER },
-                          instruction: { type: Type.STRING },
-                        },
-                        required: ["stepNumber", "instruction"],
-                      },
-                    },
-                  },
-                  required: [
-                    "category",
-                    "time",
-                    "calories",
-                    "protein",
-                    "carbs",
-                    "fat",
-                    "name",
-                    "ingredients",
-                    "instructions",
-                  ],
-                },
-              },
-              targetCalories: { type: Type.NUMBER },
-              targetProtein: { type: Type.NUMBER },
-              targetCarbs: { type: Type.NUMBER },
-              targetFat: { type: Type.NUMBER },
-            },
-            required: [
-              "meals",
-              "targetCalories",
-              "targetProtein",
-              "targetCarbs",
-              "targetFat",
-            ],
-          },
-        },
-      });
-
-      if (!response.text) {
-        throw new Error("No response from Gemini");
-      }
-
-      const genMealPlan = JSON.parse(response.text) as MealPlan;
+      // Generate meal plan
+      const genMealPlan = await generateMealPlanWithGemini();
 
       // Create meal plan entry
       const [dbMealPlan] = await db
@@ -299,69 +379,14 @@ export const nutritionRouter = {
         throw new Error("Failed to insert meal plan");
       }
 
+      // Get existing recipes for similarity check
       const existingRecipes = await db.select().from(recipes).execute();
 
+      // Process each meal
       await Promise.all(
         genMealPlan.meals.map(async (meal) => {
-          // Check if a similar recipe already exists using Gemini
-          const similarityResponse = await ai.models.generateContent({
-            model: "gemini-2.0-flash",
-            contents: `Compare this meal title: "${meal.name}" with these existing recipe titles and IDs: ${existingRecipes.map((r) => `"Title: ${r.title}" (ID: ${r.id})`).join(", ")}. 
-            If the meal is very similar to any existing recipe, return the ID of that recipe. If not similar, return null.
-            Respond with just the ID number or null, nothing else.`,
-            config: {
-              responseMimeType: "application/json",
-              responseSchema: {
-                type: Type.OBJECT,
-                properties: {
-                  id: {
-                    type: Type.NUMBER,
-                    nullable: true,
-                  },
-                },
-              },
-            },
-          });
-
-          // Parse the response safely
-          let similarRecipeId: number | null = null;
-          try {
-            const responseData = JSON.parse(
-              similarityResponse.text ?? "{}",
-            ) as { id?: number | null };
-            similarRecipeId = responseData.id ?? null;
-          } catch (error) {
-            console.error("Failed to parse similarity response:", error);
-          }
-
-          let recipe;
-
-          if (similarRecipeId) {
-            // Use existing recipe
-            recipe = existingRecipes.find((r) => r.id === similarRecipeId);
-            if (recipe) {
-              console.log("Found existing recipe:", recipe);
-              // Check if the recipe has an image
-              if (!recipe.imageUrl) {
-                // Generate and upload image
-                const imageUrl = await generateAndUploadImage(
-                  ctx.s3,
-                  meal.name,
-                );
-                // Update the recipe with the new image URL
-                await db
-                  .update(recipes)
-                  .set({ imageUrl })
-                  .where(eq(recipes.id, recipe.id));
-              }
-            } else {
-              // Fallback to creating a new recipe if the found recipe ID doesn't exist
-              recipe = await createNewRecipe(ctx.s3, meal);
-            }
-          } else {
-            // Fallback to creating a new recipe if the found recipe ID doesn't exist
-            recipe = await createNewRecipe(ctx.s3, meal);
-          }
+          // Get or create recipe
+          const recipe = await getOrCreateRecipe(ctx.s3, meal, existingRecipes);
 
           // Create meal schedule entry
           await db.insert(mealSchedule).values({

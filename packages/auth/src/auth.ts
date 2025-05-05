@@ -69,6 +69,9 @@ export const config = {
     "snatched-ai-preview://",
     "snatched-ai-dev://",
     "https://appleid.apple.com",
+    "https://snatchedai.com",
+    "https://snatched-ai-dev-oh2uj.ondigitalocean.app",
+    "https://painfully-classic-egret.ngrok-free.app",
   ],
 } satisfies BetterAuthOptions;
 

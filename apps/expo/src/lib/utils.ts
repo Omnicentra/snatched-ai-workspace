@@ -7,6 +7,8 @@ export const appVariant = String(Constants.expoConfig?.extra?.eas?.appVariant) |
 
 export const ngrokUrl = String(Constants.expoConfig?.extra?.eas?.ngrokUrl)
 
+export const scheme = String(Constants.expoConfig?.scheme)
+
 export const revenuecatProjectAppleApiKey = String(Constants.expoConfig?.extra?.eas?.revenuecatProjectAppleApiKey)
 export const revenuecatProjectGoogleApiKey = String(Constants.expoConfig?.extra?.eas?.revenuecatProjectGoogleApiKey)
 

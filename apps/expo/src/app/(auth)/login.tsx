@@ -15,6 +15,7 @@ import { StyledButton } from "@/components/core";
 import { BubbleLetter } from "@/components/core/BubbleLetter";
 import { authClient } from "@/utils/auth";
 import { Ionicons } from "@expo/vector-icons";
+import { scheme } from "@/lib/utils";
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -37,18 +38,24 @@ export default function LoginScreen() {
     setIsLoading(true);
     try {
       await authClient.signIn.social(
-        { provider: "apple", callbackURL: "/(tabs)/home" },
+        { 
+          provider: "apple",
+          callbackURL: `${scheme}:///(tabs)/home`
+        },
         {
           onError: (ctx) => {
-            Alert.alert(ctx.error.message);
+            console.error("Apple sign in error:", ctx.error);
+            Alert.alert("Sign In Failed", ctx.error.message);
           },
         },
       );
     } catch (error) {
       if (error instanceof Error) {
-        Alert.alert("Apple Sign In Failed", error.message);
+        console.error("Apple sign in failed:", error.message);
+        Alert.alert("Sign In Failed", error.message);
       } else {
-        Alert.alert("Apple Sign In Failed", "An unknown error occurred.");
+        console.error("An unknown error occurred during sign in:", error);
+        Alert.alert("Sign In Failed", "An unknown error occurred.");
       }
     } finally {
       setIsLoading(false);
@@ -59,18 +66,24 @@ export default function LoginScreen() {
     setIsLoading(true);
     try {
       await authClient.signIn.social(
-        { provider: "google", callbackURL: "/(tabs)/home" },
+        { 
+          provider: "google",
+          callbackURL: `${scheme}:///(tabs)/home`
+        },
         {
           onError: (ctx) => {
-            Alert.alert("Google Sign In Failed", ctx.error.message);
+            console.error("Google sign in error:", ctx.error);
+            Alert.alert("Sign In Failed", ctx.error.message);
           },
         },
       );
     } catch (error) {
       if (error instanceof Error) {
-        Alert.alert("Google Sign In Failed", error.message);
+        console.error("Google sign in failed:", error.message);
+        Alert.alert("Sign In Failed", error.message);
       } else {
-        Alert.alert("Google Sign In Failed", "An unknown error occurred.");
+        console.error("An unknown error occurred during sign in:", error);
+        Alert.alert("Sign In Failed", "An unknown error occurred.");
       }
     } finally {
       setIsLoading(false);

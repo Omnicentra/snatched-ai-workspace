@@ -24,6 +24,15 @@ import { getOrCreateDeviceId } from '@/utils/device-id';
 import { onboardingStore$ } from '@/stores/onboarding.store';
 import { api } from '@/utils/api';
 import * as Sentry from '@sentry/react-native';
+import Animated, { 
+  useAnimatedStyle, 
+  withRepeat, 
+  withTiming, 
+  withSequence,
+  withDelay
+} from 'react-native-reanimated';
+
+const AnimatedIcon = Animated.createAnimatedComponent(MaterialCommunityIcons);
 
 // Reusable Progress Bar (Import or define as before using View)
 const ProgressBar = ({ progress }: { progress: number }) => (
@@ -73,6 +82,41 @@ const ControlButton = ({ onPress, icon }: { onPress: () => void; icon: React.Rea
     {icon}
   </Pressable>
 )
+
+// Loading animation components
+function LoadingDot({ delay }: { delay: number }) {
+  const dotStyle = useAnimatedStyle(() => ({
+    opacity: withRepeat(
+      withSequence(
+        withDelay(delay,
+          withTiming(0.2, { duration: 500 })
+        ),
+        withTiming(1, { duration: 500 })
+      ),
+      -1,
+      true
+    )
+  }));
+
+  return (
+    <AnimatedIcon
+      name="circle"
+      size={12}
+      color="white"
+      style={dotStyle}
+    />
+  );
+}
+
+function LoadingDots() {
+  return (
+    <View className="flex-row gap-x-2">
+      {[0, 1, 2].map((i) => (
+        <LoadingDot key={i} delay={i * 200} />
+      ))}
+    </View>
+  );
+}
 
 export default function ScanFrontScreen() {
   const router = useRouter()
@@ -390,7 +434,7 @@ export default function ScanFrontScreen() {
                 className="items-center justify-center overflow-hidden rounded-xl p-6"
               >
                 <Text className="mb-4 font-inter-semibold text-white">Uploading Image</Text>
-                <MaterialCommunityIcons name="upload" size={32} color="white" />
+                <LoadingDots />
               </BlurView>
             </View>
           )}

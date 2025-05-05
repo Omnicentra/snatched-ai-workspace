@@ -13,6 +13,7 @@ import { OnboardingHeader, StyledButton } from "@/components/core";
 import { authClient } from "@/utils/auth";
 import { Ionicons } from "@expo/vector-icons";
 import Purchases from "react-native-purchases";
+import { scheme } from "@/lib/utils";
 
 export default function SignupScreen() {
   const router = useRouter();
@@ -31,30 +32,25 @@ export default function SignupScreen() {
   const handleAppleSignIn = async () => {
     setIsLoading(true);
     try {
-      const result = await authClient.signIn.social(
-        { provider: "apple" },
+      await authClient.signIn.social(
+        { 
+          provider: "apple",
+          callbackURL: `${scheme}:///analyzing`
+        },
         {
-          onRequest: (_ctx) => {
-            // Handled by isLoading state
-          },
-          onSuccess: (_ctx) => {
-            // router.push("/(onboarding)/analyzing");
-            setIsLoading(false);
-          },
           onError: (ctx) => {
-            Alert.alert(ctx.error.message);
-            setIsLoading(false);
+            console.error("Apple sign in error:", ctx.error);
+            Alert.alert("Sign In Failed", ctx.error.message);
           },
         },
       );
-      console.log("Apple Sign In Result:", JSON.stringify(result, null, 2));
     } catch (error) {
       if (error instanceof Error) {
         console.error("Apple sign in failed:", error.message);
-        Alert.alert("Apple Sign In Failed", error.message);
+        Alert.alert("Sign In Failed", error.message);
       } else {
-        console.error("An unknown error occurred during Apple sign in:", error);
-        Alert.alert("Apple Sign In Failed", "An unknown error occurred.");
+        console.error("An unknown error occurred during sign in:", error);
+        Alert.alert("Sign In Failed", "An unknown error occurred.");
       }
     } finally {
       setIsLoading(false);
@@ -64,34 +60,25 @@ export default function SignupScreen() {
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     try {
-      const result = await authClient.signIn.social(
-        { provider: "google" },
+      await authClient.signIn.social(
+        { 
+          provider: "google",
+          callbackURL: `${scheme}:///analyzing`
+        },
         {
-          onRequest: (_ctx) => {
-            // Handled by isLoading state
-          },
-          onSuccess: (_ctx) => {
-            // router.push("/(onboarding)/analyzing");
-            setIsLoading(false);
-          },
           onError: (ctx) => {
-            Alert.alert("Google Sign In Failed", ctx.error.message);
-            setIsLoading(false);
+            console.error("Google sign in error:", ctx.error);
+            Alert.alert("Sign In Failed", ctx.error.message);
           },
         },
       );
-      console.log("Google Sign In Result:", JSON.stringify(result, null, 2));
-      // The success case is handled by the onSuccess callback now
     } catch (error) {
       if (error instanceof Error) {
         console.error("Google sign in failed:", error.message);
-        Alert.alert("Google Sign In Failed", error.message);
+        Alert.alert("Sign In Failed", error.message);
       } else {
-        console.error(
-          "An unknown error occurred during Google sign in:",
-          error,
-        );
-        Alert.alert("Google Sign In Failed", "An unknown error occurred.");
+        console.error("An unknown error occurred during sign in:", error);
+        Alert.alert("Sign In Failed", "An unknown error occurred.");
       }
     } finally {
       setIsLoading(false);

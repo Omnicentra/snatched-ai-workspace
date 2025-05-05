@@ -177,7 +177,7 @@ export default function HomeScreen() {
 
         {/* User Welcome Section */}
         <View className="mt-8">
-          <Text className="font-inter-bold text-3xl text-gray-900">
+          <Text className="font-inter-bold text-3xl text-gray-900" numberOfLines={1} ellipsizeMode="tail">
             Hey, {session?.user.name.split(" ")[0]}!
           </Text>
           <Text className="font-inter mt-1 text-base text-gray-600">
