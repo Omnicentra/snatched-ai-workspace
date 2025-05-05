@@ -9,6 +9,7 @@ function getAppConfig() {
         scheme: "snatched-ai-dev",
         androidPackage: "com.omnicentra.snatched_ai_dev",
         iosBundleIdentifier: "com.omnicentra.snatched-ai-dev",
+        icon: "./assets/icon.png",
         intentFilters: [
           {
             scheme: "https",
@@ -23,6 +24,7 @@ function getAppConfig() {
         scheme: "snatched-ai-preview",
         androidPackage: "com.omnicentra.snatched_ai_preview",
         iosBundleIdentifier: "com.omnicentra.snatched-ai-preview",
+        icon: "./assets/icon-preview.png",
         intentFilters: [
           {
             scheme: "https",
@@ -38,6 +40,7 @@ function getAppConfig() {
         scheme: "snatched-ai",
         androidPackage: "com.omnicentra.snatched_ai",
         iosBundleIdentifier: "com.omnicentra.snatched-ai",
+        icon: "./assets/icon.png",
         intentFilters: [
           {
             scheme: "https",
@@ -49,7 +52,7 @@ function getAppConfig() {
   }
 }
 
-const { name, scheme, androidPackage, iosBundleIdentifier, intentFilters, associatedDomains } =
+const { name, scheme, androidPackage, iosBundleIdentifier, intentFilters, associatedDomains, icon } =
   getAppConfig();
 
 const createConfig = ({ config }: ConfigContext): ExpoConfig => ({
@@ -58,7 +61,7 @@ const createConfig = ({ config }: ConfigContext): ExpoConfig => ({
   slug: "snatched-ai",
   version: "1.0.7",
   orientation: "portrait",
-  icon: "./assets/icon.png",
+  icon,
   scheme,
   userInterfaceStyle: "automatic",
   newArchEnabled: true,
