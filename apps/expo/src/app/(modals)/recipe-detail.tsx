@@ -9,16 +9,18 @@ import {
   View,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { nutritionStore$ } from "@/stores/nutrition.store";
+import { StatusBar } from "expo-status-bar";
 import { api } from "@/utils/api";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { use$ } from "@legendapp/state/react";
+
+import { formatPostgresTimestamp } from "@omc/validators";
 
 const RecipeDetailScreen = () => {
   const router = useRouter();
   const params = useLocalSearchParams();
   const mealId = Number(params.mealId);
-  const nutrition = use$(nutritionStore$);
+  const utils = api.useUtils();
+
   const { data: recipe, isLoading } = api.nutrition.getRecipeById.useQuery(
     {
       id: mealId,
@@ -27,15 +29,32 @@ const RecipeDetailScreen = () => {
       enabled: !isNaN(mealId),
     },
   );
-  const loggedMeal = nutrition.loggedMeals[mealId.toString()];
-  const isLogged = !!loggedMeal?.loggedAt;
+
+  const { data: mealStatus, isLoading: isLoadingStatus } =
+    api.nutrition.getTodaysMealPlan.useQuery();
+  const { mutate: toggleMealCompletion } =
+    api.nutrition.toggleMealCompletion.useMutation({
+      onSuccess: () => {
+        void utils.nutrition.getTodaysMealPlan.invalidate();
+      },
+      onError: (error) => {
+        console.error("Failed to toggle meal completion:", error);
+      },
+    });
+
+  // Find the meal schedule entry for this recipe
+  const mealSchedule = mealStatus?.meals.find(
+    (meal) => meal.recipe.id === mealId,
+  );
+  const isLogged = mealSchedule?.completed ?? false;
+  const loggedAt = mealSchedule?.completedAt;
 
   // Animation values
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
 
   const handleLogMeal = () => {
-    if (!recipe) return;
+    if (!recipe || !mealSchedule) return;
 
     // Start animation sequence
     Animated.parallel([
@@ -62,30 +81,9 @@ const RecipeDetailScreen = () => {
         useNativeDriver: true,
       }),
     ]).start(() => {
-      const currentMeals = nutritionStore$.loggedMeals.get();
-      
-      if (isLogged) {
-        // Remove the meal
-        const updatedMeals = { ...currentMeals };
-        const mealKeyToRemove = Object.entries(updatedMeals).find(
-          ([_, meal]) => meal.mealId === mealId.toString()
-        )?.[0];
-        
-        if (mealKeyToRemove) {
-          delete updatedMeals[mealKeyToRemove];
-          nutritionStore$.loggedMeals.set(updatedMeals);
-        }
-      } else {
-        // Add the meal
-        nutritionStore$.loggedMeals.set({
-          ...currentMeals,
-          [mealId.toString()]: {
-            loggedAt: new Date().toISOString(),
-            mealId: mealId.toString(),
-            mealName: recipe.title,
-          }
-        });
-      }
+      toggleMealCompletion({
+        mealScheduleId: mealSchedule.id,
+      });
     });
   };
 
@@ -94,7 +92,7 @@ const RecipeDetailScreen = () => {
     outputRange: ["0deg", "360deg"],
   });
 
-  if (isLoading) {
+  if (isLoading || isLoadingStatus) {
     return (
       <View className="flex-1 items-center justify-center bg-background">
         <ActivityIndicator size="large" color="#EC4899" />
@@ -116,7 +114,7 @@ const RecipeDetailScreen = () => {
   }
 
   const defaultImage =
-    "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80";
+    "https://images.unsplash.com/photo-1495521821757-a1efb6729352?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80";
 
   // Get meal time based on recipe title/category
   const getMealTime = () => {
@@ -148,6 +146,7 @@ const RecipeDetailScreen = () => {
 
   return (
     <ScrollView className="flex-1 bg-background">
+      <StatusBar style="dark" hidden={true} />
       {/* Header Image */}
       <View className="relative h-[200px]">
         <Image
@@ -162,51 +161,47 @@ const RecipeDetailScreen = () => {
           >
             <Ionicons name="arrow-back" size={24} color="white" />
           </Pressable>
-          <Animated.View
-            style={{
-              transform: [
-                { scale: scaleAnim },
-                { rotate: spin },
-              ],
-            }}
-          >
-            <Pressable
-              onPress={handleLogMeal}
-              className={`h-10 w-10 items-center justify-center rounded-full ${
-                isLogged ? "bg-green-500" : "bg-pink-500"
-              }`}
+          {mealSchedule && (
+            <Animated.View
+              style={{
+                transform: [{ scale: scaleAnim }, { rotate: spin }],
+              }}
             >
-              {isLogged ? (
-                <Ionicons name="checkmark" size={24} color="white" />
-              ) : (
-                <MaterialCommunityIcons name="plus" size={24} color="white" />
-              )}
-            </Pressable>
-          </Animated.View>
+              <Pressable
+                onPress={handleLogMeal}
+                className={`h-10 w-10 items-center justify-center rounded-full ${
+                  isLogged ? "bg-green-500" : "bg-pink-500"
+                }`}
+              >
+                {isLogged ? (
+                  <Ionicons name="checkmark" size={24} color="white" />
+                ) : (
+                  <MaterialCommunityIcons name="plus" size={24} color="white" />
+                )}
+              </Pressable>
+            </Animated.View>
+          )}
         </View>
       </View>
 
       <ScrollView className="flex-1 px-6">
         {/* Title and Status */}
         <View className="py-4">
-          <View className="flex-row items-center justify-between">
-            <Text className="font-inter-bold text-2xl text-black">
-              {recipe.title}
+          <Text className="font-inter-bold text-2xl text-black">
+            {recipe.title}
+          </Text>
+          <View className="flex-row items-center">
+            <Text className="font-inter-medium mt-1 text-gray-500">
+              {getMealTime()}
             </Text>
-            {isLogged && (
-              <View className="rounded-full bg-green-100 px-3 py-1">
+            {isLogged && loggedAt && (
+              <View className="absolute right-0 rounded-full bg-green-100 px-3 py-1">
                 <Text className="font-inter-medium text-sm text-green-700">
-                  Logged at {new Date(loggedMeal.loggedAt).toLocaleTimeString([], {
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })}
+                  Logged at {formatPostgresTimestamp(loggedAt)}
                 </Text>
               </View>
             )}
           </View>
-          <Text className="font-inter-medium mt-1 text-gray-500">
-            {getMealTime()}
-          </Text>
         </View>
 
         {/* Nutrition Info */}

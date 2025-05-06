@@ -121,6 +121,7 @@ export default function HomeScreen() {
     setRefreshing(true);
     void Promise.all([
       utils.nutrition.getTodaysMealPlan.invalidate(),
+      utils.nutrition.getRecentlyLoggedMeals.invalidate(),
       utils.workout.getCurrentWeekPlan.invalidate(),
     ]).finally(() => {
       setRefreshing(false);

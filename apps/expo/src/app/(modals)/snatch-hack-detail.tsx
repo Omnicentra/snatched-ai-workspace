@@ -7,20 +7,26 @@ import {
   Text,
   View
 } from 'react-native'
-import { useRouter } from 'expo-router'
+import { useLocalSearchParams, useRouter } from 'expo-router'
 import { LinearGradient } from 'expo-linear-gradient'
-import { Entypo, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons' // Example icons
+import { Entypo, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'
 import { StyledButton } from '@/components/core'
+import { snatchHackStore$ } from '@/stores/snatch-hack.store'
+import { use$ } from '@legendapp/state/react'
+import { SNATCH_HACKS } from '@/constants/snatch-hacks'
+import type { SnatchHackBenefit } from '@/types'
 
 // Reusable Component for Instructions/Benefits
 const ListItem = ({
   index,
   text,
-  isInstruction = true
+  isInstruction = true,
+  icon
 }: {
   index: number
   text: string
   isInstruction?: boolean
+  icon?: SnatchHackBenefit
 }) => (
   <View className="mb-3 flex-row items-start">
     {isInstruction ? (
@@ -29,20 +35,15 @@ const ListItem = ({
           {index + 1}
         </Text>
       </View>
-    ) : (
+    ) : icon ? (
       <View className="mr-3 h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-pink-100">
-        {/* Choose icon based on benefit index or pass icon prop */}
-        {index === 0 && (
-          <Ionicons name="water-outline" size={16} color="black" />
-        )}
-        {index === 1 && (
-          <MaterialCommunityIcons name="stomach" size={16} color="black" />
-        )}
-        {index === 2 && (
-          <Ionicons name="battery-charging-outline" size={16} color="black" />
+        {icon.iconType === 'material-community' ? (
+          <MaterialCommunityIcons name={icon.iconName} size={16} color="black" />
+        ) : (
+          <Ionicons name={icon.iconName} size={16} color="black" />
         )}
       </View>
-    )}
+    ) : null}
     <Text
       className={`flex-1 font-inter text-sm text-black ${!isInstruction ? 'pt-1.5' : ''}`}
     >
@@ -53,44 +54,44 @@ const ListItem = ({
 
 export default function SnatchHackDetailScreen() {
   const router = useRouter()
-  // const { hackId } = useLocalSearchParams(); // Get hack details if needed
-
-  const ingredients = [
-    {
-      name: 'Warm Water',
-      icon: <Ionicons name="water-outline" size={20} color="black" />
-    },
-    {
-      name: 'Lemon',
-      icon: (
-        <MaterialCommunityIcons
-          name="food-apple-outline"
-          size={20}
-          color="black"
-        />
-      )
-    }, // Placeholder icon
-    {
-      name: 'Pink Salt',
-      icon: <Ionicons name="flask-outline" size={20} color="black" />
-    } // Placeholder icon
-  ]
-  const instructions = [
-    'Heat 8oz of water until warm (not boiling)',
-    'Squeeze half a lemon into the water',
-    'Add a small pinch of pink Himalayan salt',
-    'Drink first thing in the morning on an empty stomach'
-  ]
-  const benefits = [
-    'Hydrates your body after overnight fasting',
-    'Stimulates digestion and reduces bloating',
-    'Provides electrolytes for better hydration'
-  ]
+  const params = useLocalSearchParams()
+  const hackId = Number(params.id)
+  const hack = SNATCH_HACKS.find(h => h.id === hackId)
+  
+  // Get today's date as string (YYYY-MM-DD)
+  const today = new Date().toISOString().split('T')[0]
+  
+  // Get completion status from store
+  const snatchHackStore = use$(snatchHackStore$)
+  const completedHacks = snatchHackStore.completedHacks || {}
+  const todaysHack = completedHacks[today]
+  const isCompleted = todaysHack?.hackId === hackId
 
   const handleMarkComplete = () => {
-    console.log('Snatch Hack marked complete')
+    if (!hack) return;
+
+    if (isCompleted) {
+      // Remove completion status
+      const updatedHacks = { ...completedHacks }
+      if (today in updatedHacks) {
+        delete updatedHacks[today]
+      }
+      snatchHackStore$.completedHacks.set(updatedHacks)
+    } else {
+      // Add completion status
+      snatchHackStore$.completedHacks.set({
+        ...completedHacks,
+        [today]: {
+          completedAt: new Date().toISOString(),
+          hackId: hack.id,
+          date: today
+        }
+      })
+    }
     router.back()
   }
+
+  if (!hack) return null;
 
   return (
     <SafeAreaView style={{ flex: 1 }} className="bg-white">
@@ -103,7 +104,7 @@ export default function SnatchHackDetailScreen() {
       </View>
 
       {/* Info Section */}
-      <LinearGradient colors={['#f472b6', '#F6ADCE']} style={{ padding: 20 }}>
+      <LinearGradient colors={[hack.color, '#F6ADCE']} style={{ padding: 20 }}>
         <View className="mb-3 flex-row items-center self-start rounded-full bg-white/20 px-2 pr-4">
           <Entypo name="dot-single" size={24} color="yellow" />
           <Text className="font-inter-medium text-xs text-white">
@@ -111,11 +112,10 @@ export default function SnatchHackDetailScreen() {
           </Text>
         </View>
         <Text className="mb-2 font-inter-bold text-2xl text-white">
-          Morning Debloat Trick
+          {hack.title}
         </Text>
         <Text className="font-inter text-sm text-white">
-          Start your day with this simple hack to reduce bloating and feel
-          lighter instantly.
+          {hack.description}
         </Text>
       </LinearGradient>
 
@@ -131,48 +131,41 @@ export default function SnatchHackDetailScreen() {
           />
         </View>
 
-        {/* Ingredients */}
-        <Text className="mb-4 font-inter-medium text-black">
-          What You'll Need:
-        </Text>
-        <View className="mb-6 flex-row justify-around">
-          {ingredients.map((item, index) => (
-            <View key={index} className="items-center">
-              <View
-                className={`mb-2 flex h-16 w-16 items-center justify-center rounded-full ${index === 0 ? 'bg-yellow-100' : index === 1 ? 'bg-green-100' : 'bg-pink-100'}`}
-              >
-                {item.icon}
-              </View>
-              <Text className="font-inter text-xs text-black">{item.name}</Text>
-            </View>
-          ))}
-        </View>
-
         {/* Instructions */}
-        <Text className="mb-4 font-inter-medium text-black">Instructions:</Text>
-        <View className="mb-6">
-          {instructions.map((text, index) => (
-            <ListItem
-              key={index}
-              index={index}
-              text={text}
-              isInstruction={true}
-            />
-          ))}
-        </View>
+        {hack.instructions && hack.instructions.length > 0 && (
+          <>
+            <Text className="mb-4 font-inter-medium text-black">Instructions:</Text>
+            <View className="mb-6">
+              {hack.instructions.map((instruction, index) => (
+                <ListItem
+                  key={index}
+                  index={index}
+                  text={instruction}
+                  isInstruction={true}
+                />
+              ))}
+            </View>
+          </>
+        )}
 
         {/* Benefits */}
-        <Text className="mb-4 font-inter-medium text-black">Benefits:</Text>
-        <View className="mb-6">
-          {benefits.map((text, index) => (
-            <ListItem
-              key={index}
-              index={index}
-              text={text}
-              isInstruction={false}
-            />
-          ))}
-        </View>
+        {hack.benefits && hack.benefits.length > 0 && (
+          <>
+            <Text className="mb-4 font-inter-medium text-black">Benefits:</Text>
+            <View className="mb-6">
+              {hack.benefits.map((benefit, index) => (
+                <ListItem
+                  key={index}
+                  index={index}
+                  text={benefit.text}
+                  isInstruction={false}
+                  icon={benefit}
+                />
+              ))}
+            </View>
+          </>
+        )}
+
         {/* Padding at bottom */}
         <View className="h-6" />
       </ScrollView>
@@ -180,9 +173,9 @@ export default function SnatchHackDetailScreen() {
       {/* Footer Button */}
       <View className="border-t border-gray-100 p-6">
         <StyledButton
-          title="Mark as Completed"
+          title={isCompleted ? "Mark as Incomplete" : "Mark as Completed"}
           onPress={handleMarkComplete}
-          variant="primary"
+          variant={isCompleted ? "secondary" : "primary"}
         />
       </View>
     </SafeAreaView>

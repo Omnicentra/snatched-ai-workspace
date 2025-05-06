@@ -63,7 +63,7 @@ const createConfig = ({ config }: ConfigContext): ExpoConfig => ({
   orientation: "portrait",
   icon,
   scheme,
-  userInterfaceStyle: "automatic",
+  userInterfaceStyle: "light",
   newArchEnabled: true,
   platforms: ["ios", "android"],
   splash: {
@@ -82,6 +82,9 @@ const createConfig = ({ config }: ConfigContext): ExpoConfig => ({
     entitlements: {
       "com.apple.developer.applesignin": ["Default"],
     },
+  },
+  androidStatusBar: {
+    barStyle: 'dark-content'
   },
   android: {
     adaptiveIcon: {

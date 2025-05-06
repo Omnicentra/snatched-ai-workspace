@@ -264,6 +264,9 @@ importers:
       react-native-screens:
         specifier: ~4.4.0
         version: 4.4.0(react-native@0.76.9(@babel/core@7.27.1)(@babel/preset-env@7.27.1(@babel/core@7.27.1))(@types/react@18.3.20)(bufferutil@4.0.9)(react@18.3.1))(react@18.3.1)
+      react-native-share:
+        specifier: ^12.0.10
+        version: 12.0.10
       react-native-svg:
         specifier: 15.8.0
         version: 15.8.0(react-native@0.76.9(@babel/core@7.27.1)(@babel/preset-env@7.27.1(@babel/core@7.27.1))(@types/react@18.3.20)(bufferutil@4.0.9)(react@18.3.1))(react@18.3.1)
@@ -8385,6 +8388,10 @@ packages:
     peerDependencies:
       react: '*'
       react-native: '*'
+
+  react-native-share@12.0.10:
+    resolution: {integrity: sha512-WSIc1r6qYLrSzFHt3+TftyTai+29XHiI2Prkb+O3zDzjimKbpqnUnMUEukQ6cIR9V7vwWHJ/nC0hdUCoRp7Fnw==}
+    engines: {node: '>=16'}
 
   react-native-svg@15.8.0:
     resolution: {integrity: sha512-KHJzKpgOjwj1qeZzsBjxNdoIgv2zNCO9fVcoq2TEhTRsVV5DGTZ9JzUZwybd7q4giT/H3RdtqC3u44dWdO0Ffw==}
@@ -18770,6 +18777,8 @@ snapshots:
       react-freeze: 1.0.4(react@18.3.1)
       react-native: 0.76.9(@babel/core@7.27.1)(@babel/preset-env@7.27.1(@babel/core@7.27.1))(@types/react@18.3.20)(bufferutil@4.0.9)(react@18.3.1)
       warn-once: 0.1.1
+
+  react-native-share@12.0.10: {}
 
   react-native-svg@15.8.0(react-native@0.76.9(@babel/core@7.27.1)(@babel/preset-env@7.27.1(@babel/core@7.27.1))(@types/react@18.3.20)(bufferutil@4.0.9)(react@18.3.1))(react@18.3.1):
     dependencies:

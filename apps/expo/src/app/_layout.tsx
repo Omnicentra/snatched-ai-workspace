@@ -110,7 +110,7 @@ function RootLayout() {
   return (
     <TRPCProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <StatusBar style="auto" translucent={true} />
+        <StatusBar style="dark" translucent={true} />
         <Stack screenOptions={{ headerShown: false }}>
           {/* The `app/index.tsx` will handle redirection logic */}
           <Stack.Screen name="index" />
