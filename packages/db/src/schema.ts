@@ -933,7 +933,7 @@ export const workoutPlans = pgTable(
     startDate: date("start_date").notNull(),
     endDate: date("end_date").notNull(),
     targetCaloriesBurn: integer("target_calories_burn"),
-    status: varchar("status", { length: 20 }).default("active").notNull(),
+    status: varchar("status", { enum: ["active", "completed", "cancelled"] }).default("active").notNull(),
     createdAt: timestamp("created_at", {
       withTimezone: true,
       mode: "string",

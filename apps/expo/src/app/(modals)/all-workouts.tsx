@@ -111,7 +111,7 @@ export default function AllWorkoutsScreen() {
   const [searchQuery, setSearchQuery] = useState('')
 
   // Fetch workouts using tRPC
-  const { data: workoutsData, isLoading: isLoadingWorkouts } = api.workout.getWorkouts.useQuery()
+  const { data: workoutsData, isLoading: isLoadingWorkouts, refetch, isRefetching } = api.workout.getWorkouts.useQuery()
   
   // Get the categories from API data
   const { data: categoriesData, isLoading: isLoadingCategories } = api.workout.getWorkoutCategories.useQuery()
@@ -216,6 +216,10 @@ export default function AllWorkoutsScreen() {
           </View>
 
           <FlatList
+            onRefresh={() => {
+              void refetch()
+            }}
+            refreshing={isRefetching}
             data={sortedWorkouts}
             keyExtractor={(item) => `workout-${item.id}`}
             renderItem={({ item }) => (

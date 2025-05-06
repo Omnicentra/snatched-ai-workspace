@@ -404,8 +404,13 @@ export default function ScanSideScreen() {
 
           {/* Bottom Controls */}
           <View
-            className="absolute bottom-0 left-0 right-0 z-20 flex-row items-center justify-center gap-x-8 pb-10"
-            style={{ elevation: 10 }}
+            className="absolute bottom-0 left-0 right-0 z-50 flex-row items-center justify-center gap-x-8 pb-10"
+            style={{ 
+              elevation: 10,
+              zIndex: 50,
+              position: 'absolute',
+              bottom: 0
+            }}
           >
             {capturedImage ? (
               <>

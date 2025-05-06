@@ -1,22 +1,22 @@
 // app/(tabs)/workouts.tsx
-import React, { useState } from 'react'
-import {
-  View,
-  Text,
-  ScrollView,
-  Pressable,
-  TextInput,
-  Image,
-  ActivityIndicator
-} from 'react-native'
-import { useRouter } from 'expo-router'
+import { MilestoneModal } from '@/app/(modals)/milestone-modal'
+import { StyledButton } from '@/components/core'
+import type { RouterOutputs } from '@/utils/api'
+import { api } from '@/utils/api'
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'
 import Constants from 'expo-constants'
 import { LinearGradient } from 'expo-linear-gradient'
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'
-import { MilestoneModal } from '@/app/(modals)/milestone-modal'
-import { api } from '@/utils/api'
-import type { RouterOutputs } from '@/utils/api'
-import { StyledButton } from '@/components/core'
+import { useRouter } from 'expo-router'
+import React, { useState } from 'react'
+import {
+  ActivityIndicator,
+  Image,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  Text,
+  View
+} from 'react-native'
 
 // Define types for workout data (prefixed with _ since they're only used for type checking)
 type _WorkoutCategory = RouterOutputs['workout']['getWorkoutCategories'][number]
@@ -248,7 +248,7 @@ export default function WorkoutLibraryScreen() {
   const [showMilestone, setShowMilestone] = useState(false)
   
   // Fetch workouts using tRPC
-  const { data: workoutsData, isLoading } = api.workout.getWorkouts.useQuery()
+  const { data: workoutsData, isLoading, isRefetching, refetch } = api.workout.getWorkouts.useQuery()
   
   // Get the categories from API data
   const { data: categoriesData } = api.workout.getWorkoutCategories.useQuery()
@@ -325,7 +325,7 @@ export default function WorkoutLibraryScreen() {
       </View>
 
       {/* Workout Lists */}
-      <ScrollView className="flex-1 px-6">
+      <ScrollView className="flex-1 px-6" refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}>
         {/* Search and Filter */}
         {/* <View className="relative mb-6">
           <TextInput

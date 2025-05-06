@@ -13,7 +13,8 @@ import Constants from "expo-constants";
 import { StatusBar } from "expo-status-bar";
 import * as Sentry from "@sentry/react-native";
 import React, { useState, useMemo } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
+import { api } from "@/utils/api";
 
 // Day Pill Component
 const DayPill = ({
@@ -69,6 +70,7 @@ const DayPill = ({
 
 export default function HomeScreen() {
   const router = useRouter();
+  const utils = api.useUtils();
   const { data: session } = authClient.useSession();
   
   // Get current date and calculate the Monday of current week
@@ -113,6 +115,17 @@ export default function HomeScreen() {
   
   // Set active day to today's index, defaulting to 0 (Monday) if somehow not found
   const [activeDayIndex, setActiveDayIndex] = useState(Math.max(0, todayIndex));
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    void Promise.all([
+      utils.nutrition.getTodaysMealPlan.invalidate(),
+      utils.workout.getCurrentWeekPlan.invalidate(),
+    ]).finally(() => {
+      setRefreshing(false);
+    });
+  };
 
   return (
     <LinearGradient
@@ -187,7 +200,7 @@ export default function HomeScreen() {
       </View>
 
       {/* Main Content */}
-      <ScrollView className="flex-1 px-6">
+      <ScrollView className="flex-1 px-6" refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}>
         {/* Nutrition Stats */}
         <NutritionStats />
 

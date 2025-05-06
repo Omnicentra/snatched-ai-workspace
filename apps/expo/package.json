@@ -16,6 +16,8 @@
     "typecheck": "tsc --noEmit",
     "eas:local:ios": "eas build --profile ios-simulator --platform ios --local",
     "eas:local:android": "eas build --profile development --platform android --local",
+    "eas:preview:ios": "eas build --profile preview --platform ios",
+    "eas:preview:android": "eas build --profile preview --platform android",
     "eas:prod:ios": "eas build --profile production --platform ios",
     "eas:prod:android": "eas build --profile production --platform android"
   },

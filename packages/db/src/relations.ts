@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { user, bodyMeasurements, fitnessBlockers, foodCravings, previousExperiences, workoutCategories, workouts, healthConditions, bodyConsiderations, userWorkoutProgress, fitnessGoals, workoutExercises, exercises, recipes, recipeIngredients, mealPlans, mealSchedule, userMilestoneProgress, milestoneLevels, recipeInstructions, userRecipes } from "./schema";
+import { user, bodyMeasurements, fitnessBlockers, foodCravings, previousExperiences, workoutCategories, workouts, healthConditions, bodyConsiderations, userWorkoutProgress, fitnessGoals, workoutExercises, exercises, recipes, recipeIngredients, mealPlans, mealSchedule, userMilestoneProgress, milestoneLevels, recipeInstructions, userRecipes, recipeCategories, session, account, workoutPlans, workoutPlanDays } from "./schema";
 
 export const bodyMeasurementsRelations = relations(bodyMeasurements, ({one}) => ({
 	user: one(user, {
@@ -20,6 +20,9 @@ export const userRelations = relations(user, ({many}) => ({
 	userMilestoneProgresses: many(userMilestoneProgress),
 	mealPlans: many(mealPlans),
 	userRecipes: many(userRecipes),
+	sessions: many(session),
+	accounts: many(account),
+	workoutPlans: many(workoutPlans),
 }));
 
 export const fitnessBlockersRelations = relations(fitnessBlockers, ({one}) => ({
@@ -166,5 +169,42 @@ export const userRecipesRelations = relations(userRecipes, ({one}) => ({
 	recipe: one(recipes, {
 		fields: [userRecipes.recipeId],
 		references: [recipes.id]
+	}),
+}));
+
+export const workoutPlansRelations = relations(workoutPlans, ({one, many}) => ({
+	user: one(user, {
+		fields: [workoutPlans.userId],
+		references: [user.id]
+	}),
+	workoutPlanDays: many(workoutPlanDays),
+}));
+
+export const workoutPlanDaysRelations = relations(workoutPlanDays, ({one}) => ({
+	workoutPlan: one(workoutPlans, {
+		fields: [workoutPlanDays.planId],
+		references: [workoutPlans.id]
+	}),
+	workout: one(workouts, {
+		fields: [workoutPlanDays.workoutId],
+		references: [workouts.id]
+	}),
+}));
+
+export const recipeCategoriesRelations = relations(recipeCategories, ({many}) => ({
+	recipes: many(recipes),
+}));
+
+export const sessionRelations = relations(session, ({one}) => ({
+	user: one(user, {
+		fields: [session.userId],
+		references: [user.id]
+	}),
+}));
+
+export const accountRelations = relations(account, ({one}) => ({
+	user: one(user, {
+		fields: [account.userId],
+		references: [user.id]
 	}),
 }));

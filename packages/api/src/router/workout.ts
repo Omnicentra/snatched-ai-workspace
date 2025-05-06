@@ -18,8 +18,14 @@ import {
 } from "@omc/db/schema";
 
 import { adminProcedure, protectedProcedure, publicProcedure } from "../trpc";
+import { prettyPrint, slugify } from "@omc/validators";
+import type { S3Client } from "@aws-sdk/client-s3";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { OpenAI } from "openai";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY });
+
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 const exerciseSchema = z.object({
   name: z.string(),
@@ -35,6 +41,7 @@ const workoutSchema = z.object({
   durationMinutes: z.number(),
   difficultyLevel: z.string(),
   caloriesBurn: z.number(),
+  categoryId: z.number(),
   exercises: z.array(exerciseSchema),
 });
 
@@ -50,51 +57,71 @@ const _weeklyPlanSchema = z.object({
 
 type WeeklyPlan = z.infer<typeof _weeklyPlanSchema>;
 type Workout = z.infer<typeof workoutSchema>;
+type Exercise = z.infer<typeof exerciseSchema>;
 
-// Helper function to create a new workout with exercises
-async function createNewWorkout(workout: Workout) {
-  const [insertedWorkout] = await db
-    .insert(workouts)
-    .values({
-      title: workout.title,
-      description: workout.description,
-      durationMinutes: workout.durationMinutes,
-      difficultyLevel: workout.difficultyLevel,
-      caloriesBurn: workout.caloriesBurn,
-    })
-    .returning();
+const generateAndUploadImage = async (s3: S3Client, workoutName: string): Promise<string> => {
+  const img = await openai.images.generate({
+    model: "gpt-image-1",
+    prompt: `Thumbnail image for ${workoutName}. The image should be a high-quality, professional-looking thumbnail for a workout video with no text or watermarks. Prefer a female model.`,
+    n: 1,
+    size: "1024x1024",
+  });
 
-  if (!insertedWorkout) {
-    throw new Error("Failed to insert workout");
+  if (!img.data?.[0] || img.data.length === 0) {
+    throw new Error("No image data returned from OpenAI");
   }
 
-  // Insert exercises
-  await Promise.all(
-    workout.exercises.map(async (exercise, index) => {
-      const [insertedExercise] = await db
-        .insert(exercisesTable)
-        .values({
-          name: exercise.name,
-          targetMuscles: exercise.targetMuscles,
-        })
-        .returning();
+  const imageBuffer = Buffer.from(img.data[0].b64_json ?? "", "base64");
+  const fileKey = `workouts/${slugify(workoutName)}.png`;
 
-      if (!insertedExercise) {
-        throw new Error(`Failed to insert exercise ${exercise.name}`);
-      }
+  const putCommand = new PutObjectCommand({
+    Bucket: "snatched-ai-bucket",
+    Key: fileKey,
+    Body: imageBuffer,
+    ContentType: "image/png",
+  });
 
-      await db.insert(workoutExercises).values({
-        workoutId: insertedWorkout.id,
-        exerciseId: insertedExercise.id,
-        sets: exercise.sets,
-        reps: exercise.reps,
-        restSeconds: exercise.restSeconds,
-        orderIndex: index + 1,
-      });
-    }),
-  );
+  await s3.send(putCommand);
 
-  return insertedWorkout;
+  return `https://snatched-ai-bucket.s3.amazonaws.com/${fileKey}`;
+};
+
+// Helper function to check exercise similarity using Gemini
+async function checkExerciseSimilarity(exercise: Exercise, existingExercises: (typeof exercisesTable.$inferSelect)[]) {
+  const similarityResponse = await ai.models.generateContent({
+    model: "gemini-2.0-flash",
+    contents: `Compare this exercise:
+    Title: "${exercise.name}"
+    Target Muscles: "${exercise.targetMuscles}"
+
+    With these existing exercises:
+    ${existingExercises.map((e) => `ID: ${e.id} Title: "${e.name}" Target Muscles: "${e.targetMuscles}"`).join("\n")}
+
+    If the exercise is very similar, return the ID of the existing exercise. If not similar, return null.
+    Respond with just the ID number or null, nothing else.`,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          id: {
+            type: Type.NUMBER,
+            nullable: true,
+          },
+        },
+      },
+    },
+  });
+
+  try {
+    const responseData = JSON.parse(similarityResponse.text ?? "{}") as {
+      id?: number | null;
+    };
+    return responseData.id ?? null;
+  } catch (error) {
+    console.error("Failed to parse similarity response:", error);
+    return null;
+  }
 }
 
 // Helper function to check workout similarity using Gemini
@@ -107,9 +134,7 @@ async function findSimilarWorkout(
     contents: `Compare this workout:
 Title: "${workout.title}"
 Description: "${workout.description}"
-Duration: ${workout.durationMinutes} minutes
 Difficulty: ${workout.difficultyLevel}
-Exercises: ${workout.exercises.map((e) => e.name).join(", ")}
 
 With these existing workouts:
 ${existingWorkouts
@@ -118,12 +143,11 @@ ${existingWorkouts
 ID: ${w.id}
 Title: "${w.title}"
 Description: "${w.description}"
-Duration: ${w.durationMinutes} minutes
 Difficulty: ${w.difficultyLevel}`,
   )
   .join("\n")}
 
-If the workout is very similar to any existing workout (similar exercises, duration, and difficulty), return the ID of that workout. If not similar, return null.
+If the workout is very similar to any existing workout (similar title, description and difficulty), return the ID of that workout. If not similar, return null.
 Respond with just the ID number or null, nothing else.`,
     config: {
       responseMimeType: "application/json",
@@ -150,6 +174,71 @@ Respond with just the ID number or null, nothing else.`,
   }
 }
 
+// Helper function to create a new workout with exercises
+async function createNewWorkout(s3: S3Client, workout: Workout) {
+  const imageUrl = await generateAndUploadImage(s3, workout.title);
+  
+  const [insertedWorkout] = await db
+    .insert(workouts)
+    .values({
+      title: workout.title,
+      description: workout.description,
+      durationMinutes: workout.durationMinutes,
+      difficultyLevel: workout.difficultyLevel,
+      caloriesBurn: workout.caloriesBurn,
+      categoryId: workout.categoryId,
+      imageUrl
+    })
+    .returning();
+
+  if (!insertedWorkout) {
+    throw new Error("Failed to insert workout");
+  }
+
+  const existingExercises = await db.select().from(exercisesTable).execute();
+
+  // Insert exercises
+  await Promise.all(
+    workout.exercises.map(async (exercise, index) => {
+      // Check if a similar exercise already exists
+      const similarExerciseId = await checkExerciseSimilarity(exercise, existingExercises);
+      if (similarExerciseId) {
+        await db.insert(workoutExercises).values({
+          workoutId: insertedWorkout.id,
+          exerciseId: similarExerciseId,
+          sets: exercise.sets,
+          reps: exercise.reps,
+          restSeconds: exercise.restSeconds,
+          orderIndex: index + 1,
+        });
+      } else {
+        const [insertedExercise] = await db
+          .insert(exercisesTable)
+          .values({
+            name: exercise.name,
+            targetMuscles: exercise.targetMuscles,
+          })
+          .returning();
+
+        if (!insertedExercise) {
+          throw new Error(`Failed to insert exercise ${exercise.name}`);
+        }
+
+        await db.insert(workoutExercises).values({
+          workoutId: insertedWorkout.id,
+          exerciseId: insertedExercise.id,
+          sets: exercise.sets,
+          reps: exercise.reps,
+          restSeconds: exercise.restSeconds,
+          orderIndex: index + 1,
+        });
+      }
+    }),
+  );
+
+  return insertedWorkout;
+}
+
 export const workoutRouter = {
   getWorkouts: publicProcedure.query(async () => {
     const workouts = await db.query.workouts.findMany();
@@ -160,58 +249,6 @@ export const workoutRouter = {
     const categories = await db.query.workoutCategories.findMany();
     return categories;
   }),
-
-  getExercises: publicProcedure
-    .input(
-      z.object({
-        limit: z.number().min(1).max(100).optional().default(50),
-        offset: z.number().min(0).optional().default(0),
-        searchTerm: z.string().optional(),
-      }),
-    )
-    .query(async ({ input }) => {
-      try {
-        const { limit, offset, searchTerm } = input;
-
-        let exerciseQuery;
-
-        if (searchTerm) {
-          const searchPattern = `%${searchTerm.toLowerCase()}%`;
-          exerciseQuery = await db.query.exercises.findMany({
-            limit,
-            offset,
-            where: (exercises) =>
-              sql`LOWER(${exercises.name}) LIKE ${searchPattern} OR LOWER(${exercises.targetMuscles}) LIKE ${searchPattern}`,
-          });
-        } else {
-          exerciseQuery = await db.query.exercises.findMany({
-            limit,
-            offset,
-          });
-        }
-
-        const countResult = await db
-          .select({ count: sql`COUNT(*)` })
-          .from(exercisesTable);
-        const totalCount = Number(countResult[0]?.count ?? 0);
-
-        return {
-          exercises: exerciseQuery,
-          pagination: {
-            total: totalCount,
-            offset,
-            limit,
-            hasMore: offset + exerciseQuery.length < totalCount,
-          },
-        };
-      } catch (error) {
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to fetch exercises",
-          cause: error,
-        });
-      }
-    }),
 
   getWorkoutWithExercises: publicProcedure
     .input(
@@ -260,6 +297,7 @@ export const workoutRouter = {
         exercises: exercisesWithDetails,
       };
     }),
+
   insertWorkout: adminProcedure
     .input(
       z.object({
@@ -307,169 +345,6 @@ export const workoutRouter = {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Failed to insert workout",
-          cause: error,
-        });
-      }
-    }),
-
-  insertWorkoutExercise: adminProcedure
-    .input(
-      z.object({
-        workoutId: z.number(),
-        exerciseId: z.number(),
-        sets: z.number().min(1),
-        reps: z.number().min(1),
-        restSeconds: z.number().min(0),
-        orderIndex: z.number().min(1).optional(),
-      }),
-    )
-    .mutation(async ({ input }) => {
-      try {
-        const workout = await db.query.workouts.findFirst({
-          where: eq(workouts.id, input.workoutId),
-        });
-
-        if (!workout) {
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: `Workout with ID ${input.workoutId} not found`,
-          });
-        }
-
-        const exercise = await db.query.exercises.findFirst({
-          where: eq(exercisesTable.id, input.exerciseId),
-        });
-
-        if (!exercise) {
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: `Exercise with ID ${input.exerciseId} not found`,
-          });
-        }
-
-        let orderIndex = input.orderIndex;
-        if (!orderIndex) {
-          const maxOrderIndex = await db.query.workoutExercises.findFirst({
-            where: eq(workoutExercises.workoutId, input.workoutId),
-            orderBy: [desc(workoutExercises.orderIndex)],
-          });
-          orderIndex = maxOrderIndex ? maxOrderIndex.orderIndex + 1 : 1;
-        }
-
-        const [insertedWorkoutExercise] = await db
-          .insert(workoutExercises)
-          .values({
-            workoutId: input.workoutId,
-            exerciseId: input.exerciseId,
-            sets: input.sets,
-            reps: input.reps,
-            restSeconds: input.restSeconds,
-            orderIndex: orderIndex,
-          })
-          .returning();
-
-        return insertedWorkoutExercise;
-      } catch (error) {
-        if (error instanceof TRPCError) {
-          throw error;
-        }
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to insert workout exercise",
-          cause: error,
-        });
-      }
-    }),
-
-  insertBulkWorkoutExercises: adminProcedure
-    .input(
-      z.object({
-        workoutId: z.number(),
-        exercises: z.array(
-          z.object({
-            exerciseId: z.number(),
-            sets: z.number().min(1),
-            reps: z.number().min(1),
-            restSeconds: z.number().min(0),
-            orderIndex: z.number().min(1).optional(),
-          }),
-        ),
-        replaceExisting: z.boolean().default(false),
-      }),
-    )
-    .mutation(async ({ input }) => {
-      try {
-        const workout = await db.query.workouts.findFirst({
-          where: eq(workouts.id, input.workoutId),
-        });
-
-        if (!workout) {
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: `Workout with ID ${input.workoutId} not found`,
-          });
-        }
-
-        if (input.replaceExisting) {
-          await db
-            .delete(workoutExercises)
-            .where(eq(workoutExercises.workoutId, input.workoutId));
-        }
-
-        let maxOrderIndex = 0;
-        if (input.exercises.some((e) => !e.orderIndex)) {
-          const highestOrderExercise =
-            await db.query.workoutExercises.findFirst({
-              where: eq(workoutExercises.workoutId, input.workoutId),
-              orderBy: [desc(workoutExercises.orderIndex)],
-            });
-          maxOrderIndex = highestOrderExercise?.orderIndex ?? 0;
-        }
-
-        const insertedExercises = await Promise.all(
-          input.exercises.map(async (exerciseInput, index) => {
-            const exercise = await db.query.exercises.findFirst({
-              where: eq(exercisesTable.id, exerciseInput.exerciseId),
-            });
-
-            if (!exercise) {
-              throw new TRPCError({
-                code: "NOT_FOUND",
-                message: `Exercise with ID ${exerciseInput.exerciseId} not found`,
-              });
-            }
-
-            const orderIndex =
-              exerciseInput.orderIndex ?? maxOrderIndex + index + 1;
-
-            const [insertedWorkoutExercise] = await db
-              .insert(workoutExercises)
-              .values({
-                workoutId: input.workoutId,
-                exerciseId: exerciseInput.exerciseId,
-                sets: exerciseInput.sets,
-                reps: exerciseInput.reps,
-                restSeconds: exerciseInput.restSeconds,
-                orderIndex: orderIndex,
-              })
-              .returning();
-
-            return insertedWorkoutExercise;
-          }),
-        );
-
-        return {
-          workoutId: input.workoutId,
-          insertedCount: insertedExercises.length,
-          exercises: insertedExercises,
-        };
-      } catch (error) {
-        if (error instanceof TRPCError) {
-          throw error;
-        }
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to insert workout exercises",
           cause: error,
         });
       }
@@ -652,6 +527,7 @@ export const workoutRouter = {
             - duration (minutes)
             - difficulty level (beginner/intermediate/advanced)
             - calories burn estimate
+            - categoryId (1 - Full Body, 2 - Lower Body, 3 - Upper Body, 4 - Core, 5 - HIIT, 6 - Cardio)
             - exercises (3-5 per workout)
               - name
               - target muscles
@@ -698,6 +574,7 @@ export const workoutRouter = {
                         durationMinutes: { type: Type.NUMBER },
                         difficultyLevel: { type: Type.STRING },
                         caloriesBurn: { type: Type.NUMBER },
+                        categoryId: { type: Type.NUMBER },
                         exercises: {
                           type: Type.ARRAY,
                           items: {
@@ -725,6 +602,7 @@ export const workoutRouter = {
                         "durationMinutes",
                         "difficultyLevel",
                         "caloriesBurn",
+                        "categoryId",
                         "exercises",
                       ],
                     },
@@ -769,37 +647,36 @@ export const workoutRouter = {
       }
 
       // Create workouts and plan days
-      const workoutsWithIds = await Promise.all(
-        weeklyPlan.workouts.map(async ({ dayNumber, workout }) => {
-          // Check for similar existing workout
-          const similarWorkoutId = await findSimilarWorkout(
-            workout,
-            existingWorkouts,
-          );
+      const workoutsWithIds = [];
+      for (const { dayNumber, workout } of weeklyPlan.workouts) {
+        // Check for similar existing workout
+        const similarWorkoutId = await findSimilarWorkout(
+          workout,
+          existingWorkouts,
+        );
 
-          // Get or create workout
-          const insertedWorkout = similarWorkoutId
-            ? (existingWorkouts.find((w) => w.id === similarWorkoutId) ??
-              (await createNewWorkout(workout)))
-            : await createNewWorkout(workout);
+        // Get or create workout
+        const insertedWorkout = similarWorkoutId
+          ? (existingWorkouts.find((w) => w.id === similarWorkoutId) ??
+            (await createNewWorkout(ctx.s3, workout)))
+          : await createNewWorkout(ctx.s3, workout);
 
-          // Create plan day entry
-          await db.insert(workoutPlanDays).values({
-            planId: workoutPlan.id,
-            workoutId: insertedWorkout.id,
-            dayNumber,
-            completed: false,
-          });
+        // Create plan day entry
+        await db.insert(workoutPlanDays).values({
+          planId: workoutPlan.id,
+          workoutId: insertedWorkout.id,
+          dayNumber,
+          completed: false,
+        });
 
-          return {
-            dayNumber,
-            workout: {
-              ...workout,
-              id: insertedWorkout.id,
-            },
-          };
-        }),
-      );
+        workoutsWithIds.push({
+          dayNumber,
+          workout: {
+            ...workout,
+            id: insertedWorkout.id,
+          },
+        });
+      }
 
       return {
         id: workoutPlan.id,
@@ -854,24 +731,24 @@ export const workoutRouter = {
     // Get exercises for each workout
     const workoutsWithExercises = await Promise.all(
       planDays.map(async (day) => {
-        const exercises = await db.query.workoutExercises.findMany({
+        const workoutExercisesList = await db.query.workoutExercises.findMany({
           where: eq(workoutExercises.workoutId, day.workout.id),
           orderBy: [desc(workoutExercises.orderIndex)],
         });
 
         const exercisesWithDetails = await Promise.all(
-          exercises.map(async (workoutExercise) => {
-            const exercise = await db.query.exercises.findFirst({
+          workoutExercisesList.map(async (workoutExercise) => {
+            const exerciseDetails = await db.query.exercises.findFirst({
               where: eq(exercisesTable.id, workoutExercise.exerciseId),
             });
 
             return {
               ...workoutExercise,
-              name: exercise?.name ?? "Unknown Exercise",
-              description: exercise?.description,
-              targetMuscles: exercise?.targetMuscles,
-              imageUrl: exercise?.imageUrl,
-              videoUrl: exercise?.videoUrl,
+              name: exerciseDetails?.name ?? "Unknown Exercise",
+              description: exerciseDetails?.description,
+              targetMuscles: exerciseDetails?.targetMuscles,
+              imageUrl: exerciseDetails?.imageUrl,
+              videoUrl: exerciseDetails?.videoUrl,
             };
           }),
         );
@@ -887,6 +764,8 @@ export const workoutRouter = {
         };
       }),
     );
+
+    prettyPrint(currentPlan);
 
     return {
       id: currentPlan.id,
