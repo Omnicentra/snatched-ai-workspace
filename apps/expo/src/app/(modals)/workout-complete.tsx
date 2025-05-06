@@ -4,6 +4,10 @@ import { useRouter, useLocalSearchParams } from 'expo-router'
 import React, { useState } from 'react'
 import { Pressable, Text, View, ActivityIndicator } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import Share from 'react-native-share'
+import { api } from '@/utils/api'
+import { cooldownWorkoutId } from '@/lib/utils'
+import { authClient } from '@/utils/auth'
 
 interface WorkoutStats {
   minutes: number
@@ -18,7 +22,7 @@ export default function WorkoutCompleteScreen() {
   const [saveInProgress, setSaveInProgress] = useState(false)
   
   // Get parameters from URL
-  const _workoutId = typeof params.workoutId === 'string' ? parseInt(params.workoutId, 10) : undefined
+  const workoutId = typeof params.workoutId === 'string' ? parseInt(params.workoutId, 10) : undefined
   const workoutTitle = params.workoutTitle as string || 'Workout'
   
   // Get workout stats from parameters or use defaults
@@ -28,18 +32,32 @@ export default function WorkoutCompleteScreen() {
     moves: typeof params.moves === 'string' ? parseInt(params.moves, 10) : 6,
     streak: 1 // Hardcoded for now, would come from user progress data
   }
+
+  // Mutation for tracking workout progress
+  const trackProgressMutation = api.workout.trackWorkoutProgress.useMutation()
   
   const handleStartCooldown = () => {
-    // Navigate to cooldown workout
-    router.push('/(modals)/workout-start')
+    // Navigate to cooldown workout using the cooldownWorkoutId
+    router.push({
+      pathname: '/(modals)/workout-start',
+      params: {
+        workoutId: cooldownWorkoutId
+      }
+    })
   }
 
   const handleSaveProgress = async () => {
+    if (!workoutId) return
+
     try {
       setSaveInProgress(true)
       
-      // Simulate API delay for saving workout progress
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      // Track workout progress in the database
+      await trackProgressMutation.mutateAsync({
+        workoutId,
+        durationMinutes: stats.minutes,
+        caloriesBurned: stats.calories
+      })
       
       // Success - go back to workouts screen
       router.push('/(tabs)/workouts')
@@ -50,8 +68,22 @@ export default function WorkoutCompleteScreen() {
     }
   }
 
-  const handleShareProgress = () => {
-    // Share progress logic would go here
+  const handleShareProgress = async () => {
+    try {
+      const message = `🏋️‍♀️ Just completed ${workoutTitle}!\n\n` +
+        `💪 ${stats.minutes} minutes\n` +
+        `🔥 ${stats.calories} calories burned\n` +
+        `🎯 ${stats.moves} exercises completed\n` +
+        `🔄 ${stats.streak} day streak\n\n` +
+        `💪 Join me on my fitness journey with Snatched AI!`
+
+      await Share.open({
+        message,
+        title: 'Share Workout Progress',
+      })
+    } catch (error) {
+      console.error('Error sharing progress:', error)
+    }
   }
 
   return (

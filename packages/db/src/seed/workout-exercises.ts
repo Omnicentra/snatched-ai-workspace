@@ -145,6 +145,16 @@ export async function seedWorkoutExercises() {
           { name: 'High Knees', sets: 3, reps: 20, restSeconds: 20, orderIndex: 4 },
           { name: 'Push-ups', sets: 3, reps: 10, restSeconds: 20, orderIndex: 5 }
         ]
+      },
+      // Post-Workout Cooldown
+      {
+        workoutTitle: 'Post-Workout Cooldown',
+        exercises: [
+          { name: 'Light Walking', sets: 1, reps: 1, restSeconds: 0, orderIndex: 1 },
+          { name: 'Standing Forward Bend', sets: 2, reps: 1, restSeconds: 15, orderIndex: 2 },
+          { name: "Child's Pose", sets: 2, reps: 1, restSeconds: 15, orderIndex: 3 },
+          { name: 'Deep Breathing', sets: 3, reps: 5, restSeconds: 10, orderIndex: 4 }
+        ]
       }
     ]
 

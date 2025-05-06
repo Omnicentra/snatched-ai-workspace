@@ -21,7 +21,8 @@
       "developmentClient": true,
       "distribution": "internal",
       "env": {
-        "APP_VARIANT": "development"
+        "APP_VARIANT": "development",
+        "COOLDOWN_WORKOUT_ID": "47"
       },
       "channel": "development"
     },
@@ -33,7 +34,8 @@
         "simulator": true
       },
       "env": {
-        "APP_VARIANT": "development"
+        "APP_VARIANT": "development",
+        "COOLDOWN_WORKOUT_ID": "47"
       },
       "channel": "development"
     },
@@ -42,7 +44,8 @@
       "channel": "preview",
       "distribution": "internal",
       "env": {
-        "APP_VARIANT": "preview"
+        "APP_VARIANT": "preview",
+        "COOLDOWN_WORKOUT_ID": "47"
       }
     },
     "production": {
@@ -50,7 +53,8 @@
       "autoIncrement": true,
       "channel": "production",
       "env": {
-        "APP_VARIANT": "production"
+        "APP_VARIANT": "production",
+        "COOLDOWN_WORKOUT_ID": "25"
       }
     }
   },

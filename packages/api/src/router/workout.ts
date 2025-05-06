@@ -350,19 +350,18 @@ export const workoutRouter = {
       }
     }),
 
-  trackWorkoutProgress: publicProcedure
+  trackWorkoutProgress: protectedProcedure
     .input(
       z.object({
-        userId: z.number(),
         workoutId: z.number(),
         durationMinutes: z.number().min(1),
         caloriesBurned: z.number().optional(),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       try {
-        const { userId, workoutId, durationMinutes, caloriesBurned } = input;
-
+        const { workoutId, durationMinutes, caloriesBurned } = input;
+        const { user } = ctx.session;
         // Check if workout exists
         const workout = await db.query.workouts.findFirst({
           where: eq(workouts.id, workoutId),
@@ -379,7 +378,7 @@ export const workoutRouter = {
         const [progressRecord] = await db
           .insert(userWorkoutProgress)
           .values({
-            userId,
+            userId: Number(user.id),
             workoutId,
             completedAt: new Date().toISOString(),
             durationMinutes,
