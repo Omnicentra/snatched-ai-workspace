@@ -360,10 +360,10 @@ export default function ScanBackScreen() {
 
           {/* Preview Image Layer */}
           {capturedImage && (
-            <View className="absolute inset-0 z-10">
+            <View className="absolute inset-0 z-10 pointer-events-none">
               <Image
                 source={{ uri: capturedImage }}
-                style={StyleSheet.absoluteFill}
+                style={[StyleSheet.absoluteFill, { transform: [{ scaleX: -1 }] }]}
                 contentFit="cover"
               />
             </View>

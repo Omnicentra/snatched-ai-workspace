@@ -126,7 +126,7 @@ export default function ScanFrontScreen() {
     MediaLibrary.usePermissions()
   const cameraRef = useRef<CameraView>(null)
   const [countdown, setCountdown] = useState<number | null>(null)
-  const [capturedImage, setCapturedImage] = useState<string | null>(null)
+  const [capturedImage, setCapturedImage] = useState<string | null>("https://camo.githubusercontent.com/c2fd2f94aa55544327fc8ed8901aedb2eec8e3535243452b43646eb8086efe1a/68747470733a2f2f796176757a63656c696b65722e6769746875622e696f2f73616d706c652d696d616765732f696d6167652d34342e6a7067")
   const [isUploading, setIsUploading] = useState(false)
   const countdownRef = useRef<NodeJS.Timeout>()
   
@@ -267,6 +267,7 @@ export default function ScanFrontScreen() {
   }
 
   const handleContinue = () => {
+    console.log('handleContinue', capturedImage)
     if (capturedImage) {
       void handlePhotoUpload(capturedImage, 'image/jpeg');
     }
@@ -416,10 +417,10 @@ export default function ScanFrontScreen() {
 
           {/* Preview Image */}
           {capturedImage && (
-            <View className="absolute inset-0 z-10">
+            <View className="absolute inset-0 z-10 pointer-events-none">
               <Image
                 source={{ uri: capturedImage }}
-                style={StyleSheet.absoluteFill}
+                style={[StyleSheet.absoluteFill, { transform: [{ scaleX: -1 }] }]}
                 contentFit="cover"
               />
             </View>
