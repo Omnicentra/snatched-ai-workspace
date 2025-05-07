@@ -12,6 +12,8 @@ const s3Client = new S3Client({
   region: "us-east-1"
 });
 
+export { s3Client };
+
 const BUCKET_NAME = "snatched-ai-bucket";
 
 const ai = new GoogleGenAI({ apiKey: env.GOOGLE_API_KEY });
@@ -31,7 +33,7 @@ async function optimizeImage(buffer: Buffer): Promise<Buffer> {
     .toBuffer();
 }
 
-async function getImageFromS3(key: string): Promise<Buffer> {
+export async function getImageFromS3(key: string): Promise<Buffer> {
   const command = new GetObjectCommand({
     Bucket: BUCKET_NAME,
     Key: key,
@@ -161,6 +163,128 @@ export async function analyzeBodyImages(
     return result;
   } catch (error) {
     console.error("Error analyzing body images:", error);
+    throw error;
+  }
+}
+
+export interface FaceCoordinates {
+  ymin: number;
+  xmin: number;
+  ymax: number;
+  xmax: number;
+}
+
+export interface FaceDetectionResult {
+  coordinates: FaceCoordinates;
+  imageBuffer: Buffer;
+}
+
+export async function detectFace(imageKey: string): Promise<FaceDetectionResult> {
+  try {
+    const imageBuffer = await getImageFromS3(imageKey);
+    const base64ImageData = imageBuffer.toString('base64');
+
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash-preview-04-17",
+      contents: createUserContent([
+        "Detect the face in this image. Return the bounding box coordinates that include the entire face from the top of the head to the chin, and from ear to ear. The face should be centered in the frame. The box_2d should be [ymin, xmin, ymax, xmax] normalized to 0-1000.",
+        {
+          inlineData: {
+            mimeType: 'image/jpeg',
+            data: base64ImageData,
+          },
+        },
+      ]),
+      config: {
+        responseMimeType: 'application/json',
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            box_2d: { 
+              type: Type.ARRAY,
+              items: { type: Type.NUMBER }
+            }
+          }
+        }
+      }
+    });
+
+    if (!response.text) {
+      throw new Error("No response text from Gemini");
+    }
+
+    interface GeminiResponse {
+      box_2d: [number, number, number, number];
+    }
+
+    const result = JSON.parse(response.text) as GeminiResponse;
+    let [ymin, xmin, ymax, xmax] = result.box_2d;
+
+
+    // Ensure coordinates are properly ordered
+    if (xmax < xmin) {
+      [xmin, xmax] = [xmax, xmin];
+    }
+    if (ymax < ymin) {
+      [ymin, ymax] = [ymax, ymin];
+    }
+
+    // Validate coordinate ranges
+    if (xmin < 0 || xmax > 1000 || ymin < 0 || ymax > 1000) {
+      throw new Error("Invalid coordinate ranges from Gemini");
+    }
+
+    // Convert normalized coordinates (0-1000) to pixel coordinates
+    const image = await sharp(imageBuffer).metadata();
+    if (!image.width || !image.height) {
+      throw new Error("Could not get image dimensions");
+    }
+
+
+    // Convert normalized coordinates (0-1000) to pixel coordinates
+    const convertedCoordinates = {
+      ymin: (ymin / 1000) * image.height,
+      xmin: (xmin / 1000) * image.width,
+      ymax: (ymax / 1000) * image.height,
+      xmax: (xmax / 1000) * image.width,
+    };
+
+    // Calculate face center and dimensions
+    const faceWidth = convertedCoordinates.xmax - convertedCoordinates.xmin;
+    const faceHeight = convertedCoordinates.ymax - convertedCoordinates.ymin;
+
+    // Validate face dimensions
+    if (faceWidth <= 0 || faceHeight <= 0) {
+      throw new Error("Invalid face dimensions detected");
+    }
+
+    // Calculate the horizontal center of the face
+    const faceCenterX = convertedCoordinates.xmin + (faceWidth / 2);
+
+    // Add generous padding around the face
+    const padding = {
+      x: faceWidth * 0.5,  // 50% padding on each side
+      y: {
+        top: faceHeight * 0.8,  // 80% padding above
+        bottom: faceHeight * 0.3  // 30% padding below
+      }
+    };
+
+    // Calculate the crop coordinates with padding
+    const bufferedCoordinates = {
+      xmin: Math.max(0, faceCenterX - (faceWidth / 2) - padding.x),
+      ymin: Math.max(0, convertedCoordinates.ymin - padding.y.top),
+      xmax: Math.min(image.width, faceCenterX + (faceWidth / 2) + padding.x),
+      ymax: Math.min(image.height, convertedCoordinates.ymax + padding.y.bottom),
+    };
+
+
+    return {
+      coordinates: bufferedCoordinates,
+      imageBuffer
+    };
+  } catch (error) {
+    console.error("Error detecting face:", error);
     throw error;
   }
 } 
