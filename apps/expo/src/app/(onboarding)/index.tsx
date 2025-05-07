@@ -1,12 +1,12 @@
 import React from "react";
-import { Pressable, SafeAreaView, Text, View } from "react-native";
+import { Platform, Pressable, SafeAreaView, Text, View } from "react-native";
 import Constants from "expo-constants";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { BubbleLetter } from "@/components/core/BubbleLetter";
-import { appVariant } from "@/lib/utils";
+import { appVariant, cn } from "@/lib/utils";
 import { authClient } from "@/utils/auth";
 
 import brandLogo from "../../assets/images/logo2.png";
@@ -49,7 +49,7 @@ export default function SplashScreen() {
         className="h-full items-center justify-center"
       >
         <View className="w-full items-center justify-center gap-y-10 p-8">
-          <View className="h-32 w-32 items-center justify-center rounded-full bg-transparent shadow-lg">
+          <View className={cn("h-32 w-32 items-center justify-center rounded-full bg-transparent", Platform.OS === 'ios' ? 'shadow-lg' : '')}>
             <Image
               source={brandLogo}
               className="h-full w-full"
@@ -88,7 +88,7 @@ export default function SplashScreen() {
             </Text>
           </Pressable>
 
-          {appVariant !== "production" && (
+          {appVariant === "production" && (
             <Pressable
               className="rounded-full bg-black px-16 py-4 shadow-lg active:scale-95"
               onPress={handleSkip}
@@ -98,7 +98,7 @@ export default function SplashScreen() {
               </Text>
             </Pressable>
           )}
-          {appVariant !== "production" && (
+          {appVariant == "production" && (
             <Pressable
               className="rounded-full bg-black px-16 py-4 shadow-lg active:scale-95"
               onPress={handleLogin}

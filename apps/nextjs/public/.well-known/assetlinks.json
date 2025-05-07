@@ -18,6 +18,15 @@
           "DA:B1:4C:2C:35:F7:3B:F7:45:CC:90:66:2F:33:3E:EB:74:FF:50:10:22:92:4E:B5:62:BE:8C:42:CD:63:63:14"
         ]
       }
+    },
+    {
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.omnicentra.snatched_ai",
+        "sha256_cert_fingerprints":
+          ["E4:40:B0:69:E9:8E:20:3B:77:BC:93:C2:D6:18:8B:61:8A:67:BE:E6:86:A6:DC:89:A4:68:5B:9A:16:03:84:1D"]
+      }
     }
   ]
   
