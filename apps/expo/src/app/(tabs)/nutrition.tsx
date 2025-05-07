@@ -212,10 +212,12 @@ const MealCard = ({
 export default function NutritionPlanScreen() {
   const router = useRouter();
   const [showMilestone, setShowMilestone] = useState(false);
+  const utils = api.useUtils();
   const { data: mealPlanData, isLoading: isLoadingMealPlan, refetch } = api.nutrition.getTodaysMealPlan.useQuery();
   const { mutate: toggleMealCompletion } = api.nutrition.toggleMealCompletion.useMutation({
     onSuccess: () => {
       void refetch();
+      void utils.nutrition.getRecentlyLoggedMeals.invalidate();
     },
     onError: (error) => {
       console.error("Failed to toggle meal completion:", error);

@@ -124,7 +124,22 @@ export default function SnatchHackDetailScreen() {
         <View className="mb-6 overflow-hidden rounded-2xl shadow-lg">
           <Image
             source={{
-              uri: 'https://images.unsplash.com/photo-1546241072-48010ad2862c?ixlib=rb-1.2.1&auto=format&fit=crop&w=400&q=80'
+              uri: (() => {
+                switch (hack.id) {
+                  case 1: // Posture Check
+                    return 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80';
+                  case 2: // Water Intake
+                    return 'https://images.unsplash.com/photo-1548839140-29a749e1cf4d?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80';
+                  case 3: // Mindful Eating
+                    return 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80';
+                  case 4: // Active Breaks
+                    return 'https://images.unsplash.com/photo-1599058917765-a780eda07a3e?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80';
+                  case 5: // Sleep Prep
+                    return 'https://images.unsplash.com/photo-1511295742362-92c96b1cf484?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80';
+                  default:
+                    return 'https://images.unsplash.com/photo-1546241072-48010ad2862c?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80';
+                }
+              })()
             }}
             className="h-48 w-full"
             resizeMode="cover"
