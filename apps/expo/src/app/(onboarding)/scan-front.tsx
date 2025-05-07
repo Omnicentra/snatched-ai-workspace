@@ -267,6 +267,7 @@ export default function ScanFrontScreen() {
   }
 
   const handleContinue = () => {
+    console.log('handleContinue', capturedImage)
     if (capturedImage) {
       void handlePhotoUpload(capturedImage, 'image/jpeg');
     }
@@ -416,10 +417,10 @@ export default function ScanFrontScreen() {
 
           {/* Preview Image */}
           {capturedImage && (
-            <View className="absolute inset-0 z-10">
+            <View className="absolute inset-0 z-10 pointer-events-none">
               <Image
                 source={{ uri: capturedImage }}
-                style={StyleSheet.absoluteFill}
+                style={[StyleSheet.absoluteFill, { transform: [{ scaleX: -1 }] }]}
                 contentFit="cover"
               />
             </View>
@@ -440,7 +441,15 @@ export default function ScanFrontScreen() {
           )}
 
           {/* Bottom Controls */}
-          <View className="absolute bottom-0 right-0 left-0 z-20 flex-row items-center justify-center gap-x-8 pb-10" style={{ elevation: 10 }}>
+          <View 
+            className="absolute bottom-0 right-0 left-0 z-50 flex-row items-center justify-center gap-x-8 pb-10" 
+            style={{ 
+              elevation: 10,
+              zIndex: 50,
+              position: 'absolute',
+              bottom: 0
+            }}
+          >
             {capturedImage ? (
               <>
                 <CameraButton onPress={handleRetake} isRetake />

@@ -4,10 +4,13 @@ import React, { useMemo } from "react";
 import { Pressable, Text, View } from "react-native";
 import { SNATCH_HACKS } from "../../constants/snatch-hacks";
 import { authClient } from "../../utils/auth";
+import { snatchHackStore$ } from "@/stores/snatch-hack.store";
+import { use$ } from "@legendapp/state/react";
 
 export const SnatchHackCard = () => {
   const router = useRouter();
   const { data: session } = authClient.useSession();
+  const snatchHackStore = use$(snatchHackStore$);
 
   // Get today's date as a string to use as a seed
   const today = new Date().toISOString().split('T')[0];
@@ -24,6 +27,7 @@ export const SnatchHackCard = () => {
 
   const todaysHackIndex = today ? getRandomHackForDay(today) : 0;
   const todaysHack = SNATCH_HACKS[todaysHackIndex];
+  const isCompleted = snatchHackStore.completedHacks[today]?.hackId === todaysHack?.id;
 
   // Calculate which day of the journey we're on using user's creation date
   const journeyDay = useMemo(() => {
@@ -62,12 +66,25 @@ export const SnatchHackCard = () => {
       </View>
       <View className="flex-row items-start gap-x-4">
         <View className={`flex h-12 w-12 items-center justify-center rounded-full ${todaysHack.bgColor}`}>
-          <Ionicons name={todaysHack.icon} size={24} color={todaysHack.color} />
+          {isCompleted ? (
+            <Ionicons name="checkmark-circle" size={24} color={todaysHack.color} />
+          ) : (
+            <Ionicons name={todaysHack.icon} size={24} color={todaysHack.color} />
+          )}
         </View>
         <View className="flex-1">
-          <Text className="font-inter-medium mb-2 text-base text-black">
-            {todaysHack.title}
-          </Text>
+          <View className="flex-row items-center justify-between">
+            <Text className="font-inter-medium mb-2 text-base text-black">
+              {todaysHack.title}
+            </Text>
+            {isCompleted && (
+              <View className="rounded-full bg-green-100 px-2 py-1">
+                <Text className="font-inter-medium text-xs text-green-700">
+                  Completed
+                </Text>
+              </View>
+            )}
+          </View>
           <Text className="font-inter text-sm leading-6 text-gray-500">
             {todaysHack.description}
           </Text>

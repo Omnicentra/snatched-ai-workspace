@@ -523,6 +523,7 @@ export const nutritionRouter = {
             mealType: z.string(),
             scheduledTime: z.string(),
             completed: z.boolean().default(false),
+            completedAt: z.string().nullable(),
             recipe: recipeSchema.extend({
               ingredients: z.array(
                 z.object({
@@ -580,6 +581,7 @@ export const nutritionRouter = {
           mealType: mealSchedule.mealType,
           scheduledTime: mealSchedule.scheduledTime,
           completed: mealSchedule.completed,
+          completedAt: mealSchedule.completedAt,
           recipe: recipes,
         })
         .from(mealSchedule)

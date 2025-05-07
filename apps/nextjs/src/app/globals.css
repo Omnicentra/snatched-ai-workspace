@@ -326,3 +326,25 @@
     text-align: center;
     vertical-align: middle;
 }
+
+/* TEST BORDER CLASSES */
+
+.test1 {
+    border: 1px solid red;
+}
+
+.test2 {
+    border: 1.5px solid blue;
+}
+
+.test3 {
+    border: 2px solid green;
+}
+
+.test4 {
+    border: 2.5px solid yellow;
+}
+
+.test5 {
+    border: 3px solid orange;
+}

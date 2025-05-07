@@ -63,7 +63,7 @@ const createConfig = ({ config }: ConfigContext): ExpoConfig => ({
   orientation: "portrait",
   icon,
   scheme,
-  userInterfaceStyle: "automatic",
+  userInterfaceStyle: "light",
   newArchEnabled: true,
   platforms: ["ios", "android"],
   splash: {
@@ -83,12 +83,14 @@ const createConfig = ({ config }: ConfigContext): ExpoConfig => ({
       "com.apple.developer.applesignin": ["Default"],
     },
   },
+  androidStatusBar: {
+    barStyle: 'dark-content'
+  },
   android: {
     adaptiveIcon: {
       foregroundImage: "./assets/adaptive-icon.png",
       backgroundColor: "#ffffff",
     },
-    versionCode: 2,
     package: androidPackage,
     permissions: [
       "android.permission.READ_EXTERNAL_STORAGE",
@@ -157,6 +159,23 @@ const createConfig = ({ config }: ConfigContext): ExpoConfig => ({
       {
         motionPermission: "Allow SnatchedAI to access your device motion. This helps us analyze your body shape, track your progress over time, and provide personalized fitness recommendations.",
       }
+    ],
+    [
+      "react-native-share",
+      {
+        "ios": [
+          "fb",
+          "instagram",
+          "twitter",
+          "tiktoksharesdk",
+        ],
+        "android": [
+          "com.facebook.katana",
+          "com.instagram.android",
+          "com.twitter.android",
+          "com.zhiliaoapp.musically",
+        ]
+      }
     ]
   ],
   experiments: {
@@ -176,6 +195,7 @@ const createConfig = ({ config }: ConfigContext): ExpoConfig => ({
       projectId: "8bcf08a2-4cad-4b0d-a2c0-197528f19cc7",
       appVariant: process.env.APP_VARIANT,
       ngrokUrl: process.env.NGROK_URL,
+      cooldownWorkoutId: process.env.COOLDOWN_WORKOUT_ID,
       revenuecatProjectAppleApiKey: "appl_ihLfvNYWzXDhzMTPQoGLwVGsJKF",
       revenuecatProjectGoogleApiKey: "goog_zymKRJSOYmVtSusuckLwdQuXgIk"
     },

@@ -21,7 +21,7 @@ export default function SignupScreen() {
   const { data: session } = authClient.useSession();
 
   useEffect(() => {
-    console.log(JSON.stringify(session, null, 2));
+    console.log("session", session);
     if (session?.user) {
       void Purchases.logIn(session.user.email).then(() => {
         router.push("/(onboarding)/analyzing");
@@ -35,9 +35,13 @@ export default function SignupScreen() {
       await authClient.signIn.social(
         { 
           provider: "apple",
-          callbackURL: `${scheme}:///analyzing`
+          callbackURL: `${scheme}:///(onboarding)/analyzing`
         },
         {
+          onSuccess: (ctx) => {
+            console.log("Apple sign in success:");
+            console.log(JSON.stringify(ctx, null, 2));
+          },
           onError: (ctx) => {
             console.error("Apple sign in error:", ctx.error);
             Alert.alert("Sign In Failed", ctx.error.message);
@@ -63,9 +67,14 @@ export default function SignupScreen() {
       await authClient.signIn.social(
         { 
           provider: "google",
-          callbackURL: `${scheme}:///analyzing`
+          callbackURL: `${scheme}:///(onboarding)/analyzing`
         },
+        
         {
+          onSuccess: (ctx) => {
+            console.log("Google sign in success:");
+            console.log(JSON.stringify(ctx, null, 2));
+          },
           onError: (ctx) => {
             console.error("Google sign in error:", ctx.error);
             Alert.alert("Sign In Failed", ctx.error.message);

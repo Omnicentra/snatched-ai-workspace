@@ -199,6 +199,36 @@ export async function seedExercises() {
         imageUrl: 'https://images.unsplash.com/photo-1599058945522-28d584b6f0ff',
         videoUrl: 'https://example.com/videos/jump-rope',
       },
+
+      // Cooldown Exercises
+      {
+        name: 'Light Walking',
+        description: 'A gentle walking exercise to gradually lower heart rate and begin recovery.',
+        targetMuscles: 'Full Body',
+        imageUrl: 'https://images.unsplash.com/photo-1476480862126-209bfaa8edc8',
+        videoUrl: 'https://example.com/videos/light-walking',
+      },
+      {
+        name: 'Standing Forward Bend',
+        description: 'A stretching exercise that targets the hamstrings and lower back, promoting flexibility and relaxation.',
+        targetMuscles: 'Hamstrings, Lower Back',
+        imageUrl: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b',
+        videoUrl: 'https://example.com/videos/standing-forward-bend',
+      },
+      {
+        name: "Child's Pose",
+        description: 'A restorative yoga pose that stretches the back and promotes relaxation.',
+        targetMuscles: 'Back, Shoulders',
+        imageUrl: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b',
+        videoUrl: 'https://example.com/videos/childs-pose',
+      },
+      {
+        name: 'Deep Breathing',
+        description: 'Controlled breathing exercise to reduce heart rate and promote recovery.',
+        targetMuscles: 'Core',
+        imageUrl: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b',
+        videoUrl: 'https://example.com/videos/deep-breathing',
+      },
     ]
 
     // Insert exercises one by one

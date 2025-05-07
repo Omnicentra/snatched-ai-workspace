@@ -120,6 +120,18 @@ export async function seedWorkouts() {
         imageUrl: 'https://images.unsplash.com/photo-1601422407692-ec4eeec1d9b3',
         categoryId: categoryMap.get('HIIT'),
       },
+
+      // Cooldown Workout
+      {
+        title: 'Post-Workout Cooldown',
+        description: 'A gentle cooldown routine to help your body recover. Includes light movement, stretching, and breathing exercises to promote recovery and relaxation.',
+        durationMinutes: 10,
+        difficultyLevel: 'beginner',
+        caloriesBurn: 50,
+        rating: '4.8',
+        imageUrl: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b',
+        categoryId: categoryMap.get('Full Body'), // Assuming Full Body category exists
+      },
     ]
 
     // Insert workouts one by one

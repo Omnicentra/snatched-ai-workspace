@@ -146,7 +146,7 @@ export default function WorkoutStartScreen() {
     if (currentExerciseIndex + 1 < totalExercises) {
       setCurrentExerciseIndex(prev => prev + 1);
     } else {
-      handleWorkoutComplete();
+      void handleWorkoutComplete();
     }
   };
 

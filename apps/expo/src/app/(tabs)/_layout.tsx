@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
 import { Platform } from "react-native";
+import { Image } from "expo-image";
 import { Tabs } from "expo-router";
 import { api } from "@/utils/api";
 import { authClient } from "@/utils/auth";
@@ -9,32 +10,66 @@ import * as Sentry from "@sentry/react-native";
 export default function TabLayout() {
   const { data: session } = authClient.useSession();
   // Get the workouts from API data
-  api.workout.getWorkouts.useQuery()
+  const { data: workoutData } = api.workout.getWorkouts.useQuery();
   // Get the categories from API data
-  api.workout.getWorkoutCategories.useQuery()
-  const { error: mealPlanError } = api.nutrition.getTodaysMealPlan.useQuery(
-    undefined,
-    {
+  api.workout.getWorkoutCategories.useQuery();
+  const {
+    data: mealPlanData,
+    error: mealPlanError,
+    refetch: refetchMealPlan,
+  } = api.nutrition.getTodaysMealPlan.useQuery(undefined, {
+    enabled: !!session?.user,
+    retry: false,
+  });
+  const { data: currentWeekPlan, isFetched } =
+    api.workout.getCurrentWeekPlan.useQuery(undefined, {
       enabled: !!session?.user,
       retry: false,
-    },
-  );
+    });
   const { mutate: generateMealPlan } =
     api.nutrition.generateMealPlan.useMutation({
       onSuccess: () => {
-        console.log("Meal plan generated");
+        void refetchMealPlan()
       },
       onError: (error) => {
         console.error(error);
       },
     });
+  const { mutate: generateWorkoutPlan } =
+    api.workout.generateWeeklyPlan.useMutation({
+      onSuccess: () => {
+        console.log("Workout plan generated");
+      },
+    });
+
+  useEffect(() => {
+    if (workoutData) {
+      workoutData.forEach((workout) => {
+        if (workout.imageUrl) {
+          void Image.prefetch(workout.imageUrl);
+        }
+      });
+    }
+  }, [workoutData]);
+
+  useEffect(() => {
+    if (!currentWeekPlan && isFetched) {
+      generateWorkoutPlan();
+    }
+  }, [currentWeekPlan, isFetched,]);
 
   useEffect(() => {
     if (mealPlanError) {
       generateMealPlan();
       Sentry.captureException(mealPlanError);
+    } else if (mealPlanData) {
+      mealPlanData.meals.forEach((meal) => {
+        if (meal.recipe.imageUrl) {
+          void Image.prefetch(meal.recipe.imageUrl);
+        }
+      });
     }
-  }, [mealPlanError]);
+  }, [mealPlanError, mealPlanData]);
 
   return (
     <Tabs

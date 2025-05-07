@@ -73,7 +73,7 @@ export function PedometerCard() {
         <View className="items-center justify-center py-4">
           <Ionicons name="warning-outline" size={24} color="#EF4444" />
           <Text className="font-inter mt-2 text-center text-sm text-gray-500">
-            {error || 'Pedometer is not available on this device'}
+            {error ?? 'Pedometer is not available on this device'}
           </Text>
         </View>
       </View>
