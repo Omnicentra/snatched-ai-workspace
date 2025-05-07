@@ -5,7 +5,7 @@ import Constants from "expo-constants";
  * Extend this function when going to production by
  * setting the baseUrl to your production API URL.
  */
-export const getBaseUrl = () => {
+export const getBaseUrl = (isNgrok = false) => {
   /**
    * Gets the IP address of your host-machine. If it cannot automatically find it,
    * you'll have to manually set it. NOTE: Port 3000 should work for most but confirm
@@ -19,7 +19,7 @@ export const getBaseUrl = () => {
   console.log("localhost", localhost);
   console.log("ngrokUrl", ngrokUrl);
   if (localhost) {
-    if (localhost.includes("ngrok")) {
+    if (localhost.includes("ngrok") || isNgrok) {
       return ngrokUrl;
     } else {
       return `http://${localhost}:3000`;

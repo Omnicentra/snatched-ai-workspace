@@ -91,7 +91,6 @@ const createConfig = ({ config }: ConfigContext): ExpoConfig => ({
       foregroundImage: "./assets/adaptive-icon.png",
       backgroundColor: "#ffffff",
     },
-    versionCode: 2,
     package: androidPackage,
     permissions: [
       "android.permission.READ_EXTERNAL_STORAGE",

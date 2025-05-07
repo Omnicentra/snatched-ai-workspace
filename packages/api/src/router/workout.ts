@@ -183,7 +183,7 @@ async function createNewWorkout(s3: S3Client, workout: Workout) {
     .values({
       title: workout.title,
       description: workout.description,
-      durationMinutes: workout.durationMinutes,
+      durationMinutes: workout.durationMinutes || 30,
       difficultyLevel: workout.difficultyLevel,
       caloriesBurn: workout.caloriesBurn,
       categoryId: workout.categoryId,
@@ -523,7 +523,7 @@ export const workoutRouter = {
           - Workout details:
             - title
             - description
-            - duration (minutes)
+            - duration (minutes) - at least 5 minutes
             - difficulty level (beginner/intermediate/advanced)
             - calories burn estimate
             - categoryId (1 - Full Body, 2 - Lower Body, 3 - Upper Body, 4 - Core, 5 - HIIT, 6 - Cardio)
