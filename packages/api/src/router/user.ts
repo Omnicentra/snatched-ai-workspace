@@ -7,6 +7,8 @@ import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "../trpc";
 import { images } from "../utils/benchmark-images";
 import { analyzeBodyImages, validateUploadedImage } from "../utils/gemini";
+import { detectFace } from "../utils/gemini";
+import { transformImage } from "../utils/openai";
 import type { ImageScansKey } from "../utils/types";
 
 type BodyShapeEnum = keyof typeof images;
@@ -95,6 +97,35 @@ export const userRouter = createTRPCRouter({
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Failed to generate upload URL",
+        });
+      }
+    }),
+
+  imageTransformation: publicProcedure
+    .input(
+      z.object({
+        imageKeys: z.object({
+          front: z.string(),
+        }),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const { imageKeys } = input;
+      try {
+        // Get face coordinates and image buffer from Gemini
+        const { coordinates, imageBuffer } = await detectFace(imageKeys.front);
+        
+        // Transform image using OpenAI
+        const transformedImageKey = await transformImage(imageBuffer, coordinates);
+        
+        return {
+          transformedImageKey,
+        };
+      } catch (error) {
+        console.error(error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to transform image",
         });
       }
     }),
