@@ -1,21 +1,21 @@
 // app/(onboarding)/results.tsx
-import { onboardingStore$ } from '@/stores/onboarding.store';
+import { transformationStore$ } from '@/stores/transformation.store';
 import { use$ } from '@legendapp/state/react';
 import Constants from 'expo-constants';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useRef } from 'react'; // Import useRef and useEffect
+import React, { useEffect, useRef } from 'react';
 import {
   Dimensions,
   SafeAreaView,
   ScrollView,
   Text,
   View
-} from 'react-native'; // Import Dimensions
-import ConfettiCannon from 'react-native-confetti-cannon'; // Import ConfettiCannon
+} from 'react-native';
+import ConfettiCannon from 'react-native-confetti-cannon';
 import Svg, { Path } from 'react-native-svg';
 
-import { StyledButton } from '@/components/core'; // Assuming correct path
+import { StyledButton } from '@/components/core';
 
 // --- GoalTimelineGraph component remains the same ---
 const GoalTimelineGraph = () => {
@@ -70,7 +70,7 @@ const { width: screenWidth } = Dimensions.get('window') // Get screen width
 export default function ResultsScreen() {
   const router = useRouter()
   const confettiRef = useRef<ConfettiCannon>(null) // Create a ref for the confetti cannon
-  const bodyRating = use$(onboardingStore$.bodyRating);
+  const bodyRating = use$(transformationStore$.bodyRating);
   const searchParams = useLocalSearchParams<{ unlocked?: string }>();
   const isUnlocked = searchParams.unlocked === 'true';
 

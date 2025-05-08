@@ -7,6 +7,8 @@ export const unused = z.string().describe(
   `,
 );
 
+export const sleep = async (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 export const prettyPrint = (obj: string | object | number) => {
   console.log("");
   if (typeof obj === "string") {

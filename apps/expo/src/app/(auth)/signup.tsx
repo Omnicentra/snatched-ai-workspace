@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   Linking,
+  Platform,
   Pressable,
   ScrollView,
   Text,
@@ -15,21 +16,38 @@ import { StyledButton } from "@/components/core";
 import { BubbleLetter } from "@/components/core/BubbleLetter";
 import { authClient } from "@/utils/auth";
 import { Ionicons } from "@expo/vector-icons";
+import { getOrCreateDeviceId } from "@/utils/device-id";
+import { api } from "@/utils/api";
+import * as Device from "expo-device";
 
 export default function SignupScreen() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const { data: session } = authClient.useSession();
+  const { mutate: createUserDevice } = api.userDevices.create.useMutation();
 
   useEffect(() => {
     if (session?.user) {
-      void Purchases.logIn(session.user.email).then((info) => {
-        if (info.customerInfo.activeSubscriptions.length > 0) {
-          router.push("/(tabs)/home");
-        } else {
-          router.push("/(onboarding)/paywall");
+      void (async () => {
+        try {
+          const deviceId = await getOrCreateDeviceId();
+          createUserDevice({
+            userId: session.user.id,
+            deviceId,
+            deviceName: Device.deviceName,
+            deviceType: Platform.OS,
+          });
+          
+          const info = await Purchases.logIn(session.user.email);
+          if (info.customerInfo.activeSubscriptions.length > 0) {
+            router.push("/(tabs)/home");
+          } else {
+            router.push("/(onboarding)/paywall");
+          }
+        } catch (error) {
+          console.error("Failed to associate device:", error);
         }
-      });
+      })();
     }
   }, [session, router]);
 

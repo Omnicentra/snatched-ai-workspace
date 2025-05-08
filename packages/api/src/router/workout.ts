@@ -520,22 +520,28 @@ export const workoutRouter = {
       }),
     )
     .mutation(async ({ ctx }) => {
-      // Get user and their fitness goals
-      const [dbUser] = await db
-        .select()
-        .from(user)
-        .where(eq(user.email, ctx.session.user.email))
-        .execute();
-
-      if (!dbUser) {
-        throw new Error("User not found");
-      }
-
+      // Get fitness goals
+      const userId = Number(ctx.session.user.id);
+      
       const [fitnessGoal] = await db
         .select()
         .from(fitnessGoals)
-        .where(eq(fitnessGoals.userId, dbUser.id))
+        .where(eq(fitnessGoals.userId, userId))
         .execute();
+
+      // check if the user has an active workout plan
+      const [activeWorkoutPlan] = await db
+        .select()
+        .from(workoutPlans)
+        .where(and(
+          eq(workoutPlans.userId, userId),
+          eq(workoutPlans.status, "active"),
+        ))
+        .execute(); 
+
+      if (activeWorkoutPlan) {
+        throw new Error("User already has an active workout plan");
+      }
 
       // Generate weekly workout plan using Gemini
       const response = await ai.models.generateContent({

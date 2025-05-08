@@ -26,8 +26,9 @@ import { Feather, Ionicons } from "@expo/vector-icons";
 import { appVariant } from "@/lib/utils";
 import { api } from "@/utils/api";
 import { use$ } from "@legendapp/state/react";
-import { onboardingStore$ } from "@/stores/onboarding.store";
+import { transformationStore$ } from "@/stores/transformation.store";
 import * as Sentry from '@sentry/react-native';
+import { onboardingStore$ } from "@/stores/onboarding.store";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CAROUSEL_ITEM_WIDTH = SCREEN_WIDTH - 40;
@@ -682,7 +683,8 @@ export default function PaywallScreen() {
   const [plans, setPlans] = useState<Record<string, Plan>>({});
   const { mutate: imageTransformation } = api.user.imageTransformation.useMutation({
     onSuccess: (data) => {
-      onboardingStore$.transformedImageKey.set(data.transformedImageKey);
+      transformationStore$.currentImage.set(data.currentImageUri);
+      transformationStore$.snatchedImage.set(data.transformedImageUri);
     },
     onError: (error) => {
       console.error(error);

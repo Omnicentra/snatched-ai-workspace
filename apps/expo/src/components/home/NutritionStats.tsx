@@ -1,5 +1,5 @@
 import { ProgressRing } from "@/components/core";
-import { onboardingStore$ } from "@/stores/onboarding.store";
+import { transformationStore$ } from "@/stores/transformation.store";
 import type { IconName } from "@/types";
 import { Ionicons } from "@expo/vector-icons";
 import { use$ } from "@legendapp/state/react";
@@ -8,7 +8,9 @@ import React from "react";
 import { Pressable, Text, View } from "react-native";
 
 export const NutritionStats = () => {
-  const bodyRating = use$(onboardingStore$.bodyRating);
+  const bodyRating = use$(transformationStore$.bodyRating);
+  const currentImage = use$(transformationStore$.currentImage);
+  const snatchedImage = use$(transformationStore$.snatchedImage);
   const router = useRouter();
 
   // const handleTransformationPreview = () => {
@@ -65,13 +67,13 @@ export const NutritionStats = () => {
             <ProgressRing
               size={160}
               strokeWidth={12}
-              progress={bodyRating.currentSnatchedScore / 100}
+              progress={(bodyRating.currentSnatchedScore ?? 0) / 100}
               bgColor="#F3F4F6"
               progressColor="#F472B6"
             />
             <View className="absolute inset-0 items-center justify-center">
               <Text className="font-inter-bold text-4xl text-black">
-                {bodyRating.currentSnatchedScore}
+                {bodyRating.currentSnatchedScore ?? 0}
               </Text>
               <Text className="font-inter mt-1 text-sm text-gray-500">
                 Snatched Score
@@ -79,11 +81,26 @@ export const NutritionStats = () => {
             </View>
           </View>
           <Pressable
-            className="flex-row items-center rounded-full bg-pink-50 px-4 py-2"
+            className={`flex-row items-center rounded-full px-4 py-2 ${
+              !currentImage || !snatchedImage
+                ? "bg-gray-100"
+                : "bg-pink-50"
+            }`}
             onPress={() => router.push("/(modals)/transformation-preview")}
+            disabled={!currentImage || !snatchedImage}
           >
-            <Ionicons name="image" size={18} color="#F472B6" />
-            <Text className="font-inter-medium ml-2 text-sm text-pink-500">
+            <Ionicons 
+              name="image" 
+              size={18} 
+              color={!currentImage || !snatchedImage ? "#9CA3AF" : "#F472B6"} 
+            />
+            <Text 
+              className={`font-inter-medium ml-2 text-sm ${
+                !currentImage || !snatchedImage
+                  ? "text-gray-400"
+                  : "text-pink-500"
+              }`}
+            >
               See Snatched Transformation
             </Text>
           </Pressable>

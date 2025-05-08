@@ -1,6 +1,7 @@
 import Silhouette from "@/assets/images/logo2.png";
 import { CircleProgress } from "@/components/core/CircleProgress";
 import { onboardingStore$ } from "@/stores/onboarding.store";
+import { transformationStore$ } from "@/stores/transformation.store";
 import { api } from "@/utils/api";
 import { use$ } from "@legendapp/state/react";
 import Constants from "expo-constants";
@@ -61,7 +62,7 @@ export default function AnalyzingScreen() {
   const { mutate: getBodyRating } = api.user.bodyRating.useMutation({
     onSuccess: (data) => {
       prettyPrint(JSON.stringify(data, null, 2));
-      onboardingStore$.bodyRating.set(data);
+      transformationStore$.bodyRating.set(data);
     },
     onError: (error) => {
       console.error(error);
@@ -122,7 +123,7 @@ export default function AnalyzingScreen() {
         }
         return nextProgress;
       });
-    }, 120);
+    }, 150);
 
     return () => {
       clearInterval(statusInterval);

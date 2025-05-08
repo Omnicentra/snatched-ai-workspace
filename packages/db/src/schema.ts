@@ -14,9 +14,11 @@ import {
   timestamp,
   unique,
   varchar,
+  primaryKey,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+
 
 export const bodyMeasurements = pgTable(
   "body_measurements",
@@ -792,23 +794,6 @@ export const recipeCategories = pgTable(
   (table) => [unique("recipe_categories_name_key").on(table.name)],
 );
 
-export const createRecipeSchema = createInsertSchema(recipes, {
-  title: z.string().min(1).max(100),
-  description: z.string().max(1000),
-  servings: z.number().min(1).max(100),
-  prepTimeMinutes: z.number().min(1).max(1000),
-  calories: z.number().min(1).max(1000),
-  proteinGrams: z.number().min(1).max(1000),
-  carbsGrams: z.number().min(1).max(1000),
-  fatsGrams: z.number().min(1).max(1000),
-  imageUrl: z.string().max(1000).optional(),
-  rating: z.string().optional(),
-  reviewCount: z.number().min(1).max(1000),
-}).omit({
-  createdAt: true,
-  updatedAt: true,
-});
-
 export const session = pgTable(
   "session",
   {
@@ -892,6 +877,39 @@ export const account = pgTable(
     }),
     unique("account_provider_account").on(table.providerId, table.accountId),
   ],
+);
+
+export const userDevices = pgTable(
+  "user_devices",
+  {
+    userId: integer("user_id").notNull(),
+    deviceId: varchar({ length: 255 }).notNull(),
+    deviceName: varchar({ length: 100 }),
+    deviceType: varchar({ length: 50 }),
+    lastActiveAt: timestamp("last_active_at", {
+      withTimezone: true,
+      mode: "string",
+    }).default(sql`CURRENT_TIMESTAMP`),
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+      mode: "string",
+    }).default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: timestamp("updated_at", {
+      withTimezone: true,
+      mode: "string",
+    }).default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.userId, table.deviceId] }),
+    userIdx: index("idx_user_devices_user").on(table.userId),
+    deviceIdx: index("idx_user_devices_device").on(table.deviceId),
+    userFk: foreignKey({
+      columns: [table.userId],
+      foreignColumns: [user.id],
+      name: "user_devices_user_id_fkey",
+    }),
+    deviceUnique: unique("user_devices_device_id_key").on(table.deviceId),
+  }),
 );
 
 export const verification = pgTable(
@@ -1007,3 +1025,20 @@ export const workoutPlanDays = pgTable(
     ),
   ],
 );
+
+export const createRecipeSchema = createInsertSchema(recipes, {
+  title: z.string().min(1).max(100),
+  description: z.string().max(1000),
+  servings: z.number().min(1).max(100),
+  prepTimeMinutes: z.number().min(1).max(1000),
+  calories: z.number().min(1).max(1000),
+  proteinGrams: z.number().min(1).max(1000),
+  carbsGrams: z.number().min(1).max(1000),
+  fatsGrams: z.number().min(1).max(1000),
+  imageUrl: z.string().max(1000).optional(),
+  rating: z.string().optional(),
+  reviewCount: z.number().min(1).max(1000),
+}).omit({
+  createdAt: true,
+  updatedAt: true,
+});

@@ -165,6 +165,9 @@ importers:
       expo-dev-client:
         specifier: 5.0.20
         version: 5.0.20(expo@52.0.46(@babel/core@7.27.1)(@babel/preset-env@7.27.1(@babel/core@7.27.1))(@expo/metro-runtime@4.0.1(react-native@0.76.9(@babel/core@7.27.1)(@babel/preset-env@7.27.1(@babel/core@7.27.1))(@types/react@18.3.20)(bufferutil@4.0.9)(react@18.3.1)))(bufferutil@4.0.9)(react-native@0.76.9(@babel/core@7.27.1)(@babel/preset-env@7.27.1(@babel/core@7.27.1))(@types/react@18.3.20)(bufferutil@4.0.9)(react@18.3.1))(react@18.3.1))
+      expo-device:
+        specifier: ~7.0.3
+        version: 7.0.3(expo@52.0.46(@babel/core@7.27.1)(@babel/preset-env@7.27.1(@babel/core@7.27.1))(@expo/metro-runtime@4.0.1(react-native@0.76.9(@babel/core@7.27.1)(@babel/preset-env@7.27.1(@babel/core@7.27.1))(@types/react@18.3.20)(bufferutil@4.0.9)(react@18.3.1)))(bufferutil@4.0.9)(react-native@0.76.9(@babel/core@7.27.1)(@babel/preset-env@7.27.1(@babel/core@7.27.1))(@types/react@18.3.20)(bufferutil@4.0.9)(react@18.3.1))(react@18.3.1))
       expo-font:
         specifier: ~13.0.4
         version: 13.0.4(expo@52.0.46(@babel/core@7.27.1)(@babel/preset-env@7.27.1(@babel/core@7.27.1))(@expo/metro-runtime@4.0.1(react-native@0.76.9(@babel/core@7.27.1)(@babel/preset-env@7.27.1(@babel/core@7.27.1))(@types/react@18.3.20)(bufferutil@4.0.9)(react@18.3.1)))(bufferutil@4.0.9)(react-native@0.76.9(@babel/core@7.27.1)(@babel/preset-env@7.27.1(@babel/core@7.27.1))(@types/react@18.3.20)(bufferutil@4.0.9)(react@18.3.1))(react@18.3.1))(react@18.3.1)
@@ -5899,6 +5902,11 @@ packages:
     peerDependencies:
       expo: '*'
 
+  expo-device@7.0.3:
+    resolution: {integrity: sha512-uNGhDYmpDj/3GySWZmRiYSt52Phdim11p0pXfgpCq/nMks0+UPZwl3D0vin5N8/gpVe5yzb13GYuFxiVoDyniw==}
+    peerDependencies:
+      expo: '*'
+
   expo-eas-client@0.13.3:
     resolution: {integrity: sha512-t+1F1tiDocSot8iSnrn/CjTUMvVvPV2DpafSVcticpbSzMGybEN7wcamO1t18fK7WxGXpZE9gxtd80qwv/LLqQ==}
 
@@ -9391,6 +9399,10 @@ packages:
   typescript@5.8.3:
     resolution: {integrity: sha512-p1diW6TqL9L07nNxvRMM7hMMw4c5XOo/1ibL4aAIGmSAt9slTE1Xgw5KWuof2uTOvCg9BY7ZRi+GaF+7sfgPeQ==}
     engines: {node: '>=14.17'}
+    hasBin: true
+
+  ua-parser-js@0.7.40:
+    resolution: {integrity: sha512-us1E3K+3jJppDBa3Tl0L3MOJiGhe1C6P0+nIvQAFYbxlMAx0h81eOwLmU57xgqToduDDPx3y5QsdjPfDu+FgOQ==}
     hasBin: true
 
   ua-parser-js@1.0.40:
@@ -15953,6 +15965,11 @@ snapshots:
       expo: 52.0.46(@babel/core@7.27.1)(@babel/preset-env@7.27.1(@babel/core@7.27.1))(@expo/metro-runtime@4.0.1(react-native@0.76.9(@babel/core@7.27.1)(@babel/preset-env@7.27.1(@babel/core@7.27.1))(@types/react@18.3.20)(bufferutil@4.0.9)(react@18.3.1)))(bufferutil@4.0.9)(react-native@0.76.9(@babel/core@7.27.1)(@babel/preset-env@7.27.1(@babel/core@7.27.1))(@types/react@18.3.20)(bufferutil@4.0.9)(react@18.3.1))(react@18.3.1)
       expo-dev-menu-interface: 1.9.3(expo@52.0.46(@babel/core@7.27.1)(@babel/preset-env@7.27.1(@babel/core@7.27.1))(@expo/metro-runtime@4.0.1(react-native@0.76.9(@babel/core@7.27.1)(@babel/preset-env@7.27.1(@babel/core@7.27.1))(@types/react@18.3.20)(bufferutil@4.0.9)(react@18.3.1)))(bufferutil@4.0.9)(react-native@0.76.9(@babel/core@7.27.1)(@babel/preset-env@7.27.1(@babel/core@7.27.1))(@types/react@18.3.20)(bufferutil@4.0.9)(react@18.3.1))(react@18.3.1))
 
+  expo-device@7.0.3(expo@52.0.46(@babel/core@7.27.1)(@babel/preset-env@7.27.1(@babel/core@7.27.1))(@expo/metro-runtime@4.0.1(react-native@0.76.9(@babel/core@7.27.1)(@babel/preset-env@7.27.1(@babel/core@7.27.1))(@types/react@18.3.20)(bufferutil@4.0.9)(react@18.3.1)))(bufferutil@4.0.9)(react-native@0.76.9(@babel/core@7.27.1)(@babel/preset-env@7.27.1(@babel/core@7.27.1))(@types/react@18.3.20)(bufferutil@4.0.9)(react@18.3.1))(react@18.3.1)):
+    dependencies:
+      expo: 52.0.46(@babel/core@7.27.1)(@babel/preset-env@7.27.1(@babel/core@7.27.1))(@expo/metro-runtime@4.0.1(react-native@0.76.9(@babel/core@7.27.1)(@babel/preset-env@7.27.1(@babel/core@7.27.1))(@types/react@18.3.20)(bufferutil@4.0.9)(react@18.3.1)))(bufferutil@4.0.9)(react-native@0.76.9(@babel/core@7.27.1)(@babel/preset-env@7.27.1(@babel/core@7.27.1))(@types/react@18.3.20)(bufferutil@4.0.9)(react@18.3.1))(react@18.3.1)
+      ua-parser-js: 0.7.40
+
   expo-eas-client@0.13.3: {}
 
   expo-file-system@18.0.12(expo@52.0.46(@babel/core@7.27.1)(@babel/preset-env@7.27.1(@babel/core@7.27.1))(@expo/metro-runtime@4.0.1(react-native@0.76.9(@babel/core@7.27.1)(@babel/preset-env@7.27.1(@babel/core@7.27.1))(@types/react@18.3.20)(bufferutil@4.0.9)(react@18.3.1)))(bufferutil@4.0.9)(react-native@0.76.9(@babel/core@7.27.1)(@babel/preset-env@7.27.1(@babel/core@7.27.1))(@types/react@18.3.20)(bufferutil@4.0.9)(react@18.3.1))(react@18.3.1))(react-native@0.76.9(@babel/core@7.27.1)(@babel/preset-env@7.27.1(@babel/core@7.27.1))(@types/react@18.3.20)(bufferutil@4.0.9)(react@18.3.1)):
@@ -20096,6 +20113,8 @@ snapshots:
       - supports-color
 
   typescript@5.8.3: {}
+
+  ua-parser-js@0.7.40: {}
 
   ua-parser-js@1.0.40: {}
 

@@ -1,15 +1,20 @@
-import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { prettyPrint } from "@omc/validators";
 import { TRPCError } from "@trpc/server";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
+
+import { prettyPrint } from "@omc/validators";
+
+import type { ImageScansKey } from "../utils/types";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "../trpc";
 import { images } from "../utils/benchmark-images";
-import { analyzeBodyImages, validateUploadedImage } from "../utils/gemini";
-import { detectFace } from "../utils/gemini";
+import {
+  analyzeBodyImages,
+  detectFace,
+  validateUploadedImage,
+} from "../utils/gemini";
 import { transformImage } from "../utils/openai";
-import type { ImageScansKey } from "../utils/types";
 
 type BodyShapeEnum = keyof typeof images;
 
@@ -33,12 +38,12 @@ export const userRouter = createTRPCRouter({
       console.log(JSON.stringify(input, null, 2));
       // Extract urls for each body angle
       const { imageKeys, desiredBodyShape } = input;
-      
+
       // Format for the analyzeBodyImages function
-      const imageData : ImageScansKey[] = [
-        { angle: 'front', key: imageKeys.front },
-        { angle: 'side', key: imageKeys.side },
-        { angle: 'back', key: imageKeys.back },
+      const imageData: ImageScansKey[] = [
+        { angle: "front", key: imageKeys.front },
+        { angle: "side", key: imageKeys.side },
+        { angle: "back", key: imageKeys.back },
       ];
 
       // Run body analyzer with image URLs and desired shape
@@ -68,25 +73,25 @@ export const userRouter = createTRPCRouter({
         // Generate unique file name
         const fileName = `${uuidv4()}.${fileType.split("/").pop() ?? "jpg"}`;
         console.log(fileName);
-        
+
         // Create S3 key path
         const key = `temp-users/${deviceId}/${photoType}/${fileName}`;
         console.log(key);
-        
+
         // Generate presigned URL for direct upload
         const putCommand = new PutObjectCommand({
           Bucket: "snatched-ai-bucket",
           Key: key,
           ContentType: fileType,
         });
-        
+
         // Generate signed URL that expires in 10 minutes
         const presignedUrl = await getSignedUrl(ctx.s3, putCommand, {
           expiresIn: 600,
         });
 
         prettyPrint(presignedUrl);
-        
+
         return {
           presignedUrl,
           key,
@@ -109,17 +114,29 @@ export const userRouter = createTRPCRouter({
         }),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const { imageKeys } = input;
       try {
         // Get face coordinates and image buffer from Gemini
         const { coordinates, imageBuffer } = await detectFace(imageKeys.front);
-        
+        const command = new GetObjectCommand({
+          Bucket: "snatched-ai-bucket",
+          Key: imageKeys.front,
+        });
+        // expires in 3 days
+        const currentImageUri = await getSignedUrl(ctx.s3, command, {
+          expiresIn: 259200,
+        });
         // Transform image using OpenAI
-        const transformedImageKey = await transformImage(imageBuffer, coordinates);
-        
+        const { transformedImageKey, transformedImageUri } = await transformImage(
+          imageBuffer,
+          coordinates,
+        );
+
         return {
+          currentImageUri,
           transformedImageKey,
+          transformedImageUri,
         };
       } catch (error) {
         console.error(error);
@@ -138,11 +155,11 @@ export const userRouter = createTRPCRouter({
     )
     .mutation(async ({ input }) => {
       const { imageKey } = input;
-      
+
       try {
         return await validateUploadedImage(imageKey);
       } catch (error) {
-        console.error('Error validating image:', error);
+        console.error("Error validating image:", error);
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Failed to validate image",

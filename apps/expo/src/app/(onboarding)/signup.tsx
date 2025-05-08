@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Platform,
   SafeAreaView,
   ScrollView,
   Text,
@@ -14,20 +15,35 @@ import { authClient } from "@/utils/auth";
 import { Ionicons } from "@expo/vector-icons";
 import Purchases from "react-native-purchases";
 import { scheme } from "@/lib/utils";
-
+import { getOrCreateDeviceId } from "@/utils/device-id";
+import { api } from "@/utils/api";
+import * as Device from "expo-device";
 export default function SignupScreen() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const { data: session } = authClient.useSession();
+  const { mutate: createUserDevice } = api.userDevices.create.useMutation();
 
   useEffect(() => {
-    console.log("session", session);
     if (session?.user) {
-      void Purchases.logIn(session.user.email).then(() => {
-        router.push("/(onboarding)/analyzing");
-      });
+      void (async () => {
+        try {
+          const deviceId = await getOrCreateDeviceId();
+          createUserDevice({
+            userId: session.user.id,
+            deviceId,
+            deviceType: Platform.OS,
+            deviceName: Device.deviceName,
+          });
+          
+          await Purchases.logIn(session.user.email);
+          router.push("/(onboarding)/analyzing");
+        } catch (error) {
+          console.error("Failed to associate device:", error);
+        }
+      })();
     }
-  }, [session]);
+  }, [session, router]);
 
   const handleAppleSignIn = async () => {
     setIsLoading(true);

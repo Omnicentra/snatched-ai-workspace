@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { user, bodyMeasurements, fitnessBlockers, foodCravings, previousExperiences, workoutCategories, workouts, healthConditions, bodyConsiderations, userWorkoutProgress, fitnessGoals, workoutExercises, exercises, recipes, recipeIngredients, mealPlans, mealSchedule, userMilestoneProgress, milestoneLevels, recipeInstructions, userRecipes, recipeCategories, session, account, workoutPlans, workoutPlanDays } from "./schema";
+import { user, bodyMeasurements, fitnessBlockers, foodCravings, previousExperiences, workoutCategories, workouts, healthConditions, bodyConsiderations, userWorkoutProgress, fitnessGoals, workoutExercises, exercises, recipes, recipeIngredients, mealPlans, mealSchedule, userMilestoneProgress, milestoneLevels, recipeInstructions, userRecipes, recipeCategories, session, account, workoutPlans, workoutPlanDays, userDevices } from "./schema";
 
 export const bodyMeasurementsRelations = relations(bodyMeasurements, ({one}) => ({
 	user: one(user, {
@@ -23,6 +23,7 @@ export const userRelations = relations(user, ({many}) => ({
 	sessions: many(session),
 	accounts: many(account),
 	workoutPlans: many(workoutPlans),
+	devices: many(userDevices),
 }));
 
 export const fitnessBlockersRelations = relations(fitnessBlockers, ({one}) => ({
@@ -205,6 +206,13 @@ export const sessionRelations = relations(session, ({one}) => ({
 export const accountRelations = relations(account, ({one}) => ({
 	user: one(user, {
 		fields: [account.userId],
+		references: [user.id]
+	}),
+}));
+
+export const userDevicesRelations = relations(userDevices, ({one}) => ({
+	user: one(user, {
+		fields: [userDevices.userId],
 		references: [user.id]
 	}),
 }));

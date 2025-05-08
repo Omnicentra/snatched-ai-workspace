@@ -1,30 +1,39 @@
 import type { ImageSourcePropType } from "react-native";
-import { View, Text, Pressable } from "react-native";
+import { Pressable, Text, useWindowDimensions, View } from "react-native";
+import Constants from "expo-constants";
 import { Image } from "expo-image";
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { Ionicons } from "@expo/vector-icons";
-import Constants from "expo-constants";
-import { LinearGradient } from "expo-linear-gradient";
-import { observer } from "@legendapp/state/react";
-import { transformationStore$ } from "@/stores/transformation.store";
-
 // Import types for static images
-import placeholderBody from "@/assets/images/placeholders/placeholder-body.jpeg"
-import placeholderSnatched from "@/assets/images/placeholders/placeholder-snatched.jpeg"
+import placeholderBody from "@/assets/images/placeholders/placeholder-body.jpeg";
+import placeholderSnatched from "@/assets/images/placeholders/placeholder-snatched.jpeg";
+import { transformationStore$ } from "@/stores/transformation.store";
+import { Ionicons } from "@expo/vector-icons";
+import { observer, use$ } from "@legendapp/state/react";
 
 const TransformationPreviewScreen = observer(() => {
   const router = useRouter();
-  const transformation = transformationStore$.get();
-  const progress = Math.round((transformation.currentScore / transformation.targetScore) * 100);
+  const { lastUpdated, currentImage, snatchedImage, nextSteps, bodyRating } =
+    use$(transformationStore$);
+  const { currentSnatchedScore, potentialSnatchedScore } = bodyRating;
 
-  const currentImageSource = transformation.currentImage
-    ? { uri: transformation.currentImage }
-    : placeholderBody as ImageSourcePropType;
+  console.log({ currentImage });
+  console.log({ snatchedImage });
 
-  const snatchedImageSource = transformation.snatchedImage
-    ? { uri: transformation.snatchedImage }
-    : placeholderSnatched as ImageSourcePropType;
+  const progress = Math.round(
+    ((currentSnatchedScore ?? 0) / (potentialSnatchedScore ?? 100)) * 100,
+  );
+
+  const currentImageSource = currentImage
+    ? { uri: currentImage }
+    : (placeholderBody as ImageSourcePropType);
+
+  const snatchedImageSource = snatchedImage
+    ? { uri: snatchedImage }
+    : (placeholderSnatched as ImageSourcePropType);
+
+  const { width: WIDTH, height: HEIGHT } = useWindowDimensions();
 
   return (
     <LinearGradient
@@ -32,7 +41,7 @@ const TransformationPreviewScreen = observer(() => {
       style={{ flex: 1, paddingTop: Constants.statusBarHeight }}
     >
       <StatusBar style="dark" />
-      
+
       {/* Header */}
       <View className="flex-row items-center justify-between p-6">
         <View className="flex-row items-center">
@@ -57,7 +66,7 @@ const TransformationPreviewScreen = observer(() => {
               Current Score
             </Text>
             <Text className="font-inter-bold text-2xl text-black">
-              {transformation.currentScore}
+              {currentSnatchedScore}
             </Text>
           </View>
           <View className="h-8 w-[1px] bg-gray-100" />
@@ -66,7 +75,7 @@ const TransformationPreviewScreen = observer(() => {
               Target Score
             </Text>
             <Text className="font-inter-bold text-2xl text-pink-500">
-              {transformation.targetScore}
+              {potentialSnatchedScore}
             </Text>
           </View>
           <View className="h-8 w-[1px] bg-gray-100" />
@@ -90,10 +99,10 @@ const TransformationPreviewScreen = observer(() => {
                 Current
               </Text>
             </View>
-            <View className="aspect-[3/4] w-full overflow-hidden rounded-3xl bg-gray-100">
+            <View className="w-full items-center justify-center overflow-hidden rounded-3xl bg-gray-100">
               <Image
                 source={currentImageSource}
-                style={{ width: "100%", height: "100%" }}
+                style={{ width: WIDTH / 2, height: 300 }}
                 contentFit="cover"
                 transition={200}
               />
@@ -108,10 +117,10 @@ const TransformationPreviewScreen = observer(() => {
                 Snatched Goal
               </Text>
             </View>
-            <View className="aspect-[3/4] w-full overflow-hidden rounded-3xl bg-gray-100">
+            <View className="w-full items-center justify-center overflow-hidden rounded-3xl bg-gray-100">
               <Image
                 source={snatchedImageSource}
-                style={{ width: "100%", height: "100%" }}
+                style={{ width: WIDTH / 2, height: 300 }}
                 contentFit="cover"
                 transition={200}
               />
@@ -129,7 +138,7 @@ const TransformationPreviewScreen = observer(() => {
             Next Steps
           </Text>
           <View className="gap-y-3">
-            {transformation.nextSteps.map((step, index) => (
+            {nextSteps.map((step, index) => (
               <View key={index} className="flex-row items-start">
                 <Ionicons
                   name="checkmark-circle"
@@ -147,11 +156,11 @@ const TransformationPreviewScreen = observer(() => {
 
         {/* Last Updated */}
         <Text className="font-inter mt-4 text-center text-xs text-gray-400">
-          Last updated: {new Date(transformation.lastUpdated).toLocaleDateString()}
+          Last updated: {new Date(lastUpdated).toLocaleDateString()}
         </Text>
       </View>
     </LinearGradient>
   );
 });
 
-export default TransformationPreviewScreen; 
+export default TransformationPreviewScreen;
