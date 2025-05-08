@@ -1,4 +1,9 @@
-import React, { useState, useEffect } from 'react'
+import { StyledButton } from '@/components/core'
+import { api } from '@/utils/api'
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'
+import Constants from 'expo-constants'
+import { useLocalSearchParams, useRouter } from 'expo-router'
+import React, { useEffect, useState } from 'react'
 import {
   Image,
   Pressable,
@@ -7,16 +12,7 @@ import {
   Text,
   View
 } from 'react-native'
-import { useRouter, useLocalSearchParams } from 'expo-router'
-import Constants from 'expo-constants'
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'
-import { StyledButton } from '@/components/core'
-import { api } from '@/utils/api'
-import type { RouterOutputs } from '@/utils/api'
 
-// Types
-type WorkoutWithExercises = RouterOutputs['workout']['getWorkoutWithExercises']
-type _WorkoutExercise = WorkoutWithExercises['exercises'][number]
 
 // Reusable Exercise Card
 const ExerciseCard = ({
@@ -73,6 +69,13 @@ export default function WorkoutDetailScreen() {
   const params = useLocalSearchParams()
   const workoutId = typeof params.workoutId === 'string' ? parseInt(params.workoutId, 10) : undefined
   const [isLoading, setIsLoading] = useState(true)
+  const utils = api.useUtils()
+
+  const { mutateAsync: completeWorkoutPlan } = api.workout.completeWorkoutPlan.useMutation({
+    onSuccess: () => {
+      void utils.workout.getCurrentWeekPlan.invalidate()
+    }
+  })
 
   // Get workout details with exercises
   const { data: workoutWithExercises, isLoading: isLoadingWorkout } = 
@@ -86,39 +89,26 @@ export default function WorkoutDetailScreen() {
     setIsLoading(isLoadingWorkout)
   }, [isLoadingWorkout])
 
-  const handlePlayWorkout = () => {
+  const handlePlayVideo = (exerciseName: string, exerciseIndex: number) => {
     if (!workoutWithExercises) return;
     
     router.push({
       pathname: '/(modals)/workout-start',
       params: {
         workoutId: workoutId?.toString(),
-        workoutTitle: workoutWithExercises.title,
-        totalExercises: workoutWithExercises.exercises.length.toString(),
-        duration: workoutWithExercises.durationMinutes.toString(),
-        categoryId: workoutWithExercises.categoryId?.toString() ?? '',
-        difficultyLevel: workoutWithExercises.difficultyLevel,
+        exerciseIndex: exerciseIndex.toString(),
       }
     });
   }
 
-  const handlePlayVideo = (exerciseName: string) => {
+  const handleMarkComplete = async () => {
     if (!workoutWithExercises) return;
-    
-    router.push({
-      pathname: '/(modals)/workout-start',
-      params: {
-        workoutId: workoutId?.toString(),
-        workoutTitle: workoutWithExercises.title,
-        exerciseName,
-        totalExercises: workoutWithExercises.exercises.length.toString(),
-        duration: workoutWithExercises.durationMinutes.toString(),
-      }
-    });
-  }
 
-  const handleMarkComplete = () => {
-    if (!workoutWithExercises) return;
+    await completeWorkoutPlan({
+      workoutId: workoutId ?? 0,
+      planId: workoutWithExercises.planId,
+      dayNumber: workoutWithExercises.dayNumber,
+    })
     
     router.push({
       pathname: '/(modals)/workout-complete',
@@ -128,6 +118,8 @@ export default function WorkoutDetailScreen() {
         duration: workoutWithExercises.durationMinutes.toString(),
         calories: workoutWithExercises.caloriesBurn?.toString() ?? '250',
         moves: workoutWithExercises.exercises.length.toString(),
+        planId: workoutWithExercises.planId.toString(),
+        dayNumber: workoutWithExercises.dayNumber.toString(),
       }
     });
   }
@@ -175,6 +167,7 @@ export default function WorkoutDetailScreen() {
   // Prepare data
   const workout = workoutWithExercises
   const exercises = workoutWithExercises.exercises
+  const initialExercise = exercises[0]
   
   // Format date for display
   const formattedDate = new Date().toLocaleDateString('en-US', {
@@ -217,7 +210,7 @@ export default function WorkoutDetailScreen() {
           </View>
           <Pressable
             className="h-14 w-14 items-center justify-center rounded-full bg-[#f472b6]"
-            onPress={handlePlayWorkout}
+            onPress={initialExercise ? () => handlePlayVideo(initialExercise.name, 0) : undefined}
           >
             <Ionicons name="play" size={28} color="white" style={{ marginLeft: 2 }} />
           </Pressable>
@@ -272,7 +265,7 @@ export default function WorkoutDetailScreen() {
                 target={ex.targetMuscles ?? 'Various muscle groups'}
                 rest={`${ex.restSeconds} seconds between sets`}
                 imageUrl={ex.imageUrl ?? 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438'}
-                onPlay={() => handlePlayVideo(ex.name)}
+                onPlay={() => handlePlayVideo(ex.name, index)}
               />
             ))
           ) : (

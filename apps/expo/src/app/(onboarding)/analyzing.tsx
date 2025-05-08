@@ -122,7 +122,7 @@ export default function AnalyzingScreen() {
         }
         return nextProgress;
       });
-    }, 100);
+    }, 120);
 
     return () => {
       clearInterval(statusInterval);

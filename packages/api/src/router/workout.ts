@@ -15,6 +15,8 @@ import {
   workoutPlanDays,
   workoutPlans,
   workouts,
+  userMilestoneProgress,
+  milestoneLevels,
 } from "@omc/db/schema";
 
 import { adminProcedure, protectedProcedure, publicProcedure } from "../trpc";
@@ -250,18 +252,37 @@ export const workoutRouter = {
     return categories;
   }),
 
-  getWorkoutWithExercises: publicProcedure
+  getWorkoutWithExercises: protectedProcedure
     .input(
       z.object({
         workoutId: z.number(),
       }),
     )
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       const { workoutId } = input;
+      let workoutPlanDay: (typeof workoutPlanDays.$inferSelect) | undefined;
 
       const workout = await db.query.workouts.findFirst({
         where: eq(workouts.id, workoutId),
       });
+
+      // check if the user has an active workout plan
+      const workoutPlan = await db.query.workoutPlans.findFirst({
+        where: and(
+          eq(workoutPlans.userId, Number(ctx.session.user.id)),
+          eq(workoutPlans.status, "active"),
+        ),
+      });
+      
+      // check if the workout is in the workout plan days
+      if (workoutPlan) {
+        workoutPlanDay = await db.query.workoutPlanDays.findFirst({
+          where: and(
+            eq(workoutPlanDays.workoutId, workoutId),
+            eq(workoutPlanDays.planId, workoutPlan.id),
+          ),
+        });
+      }
 
       if (!workout) {
         throw new TRPCError({
@@ -294,6 +315,8 @@ export const workoutRouter = {
 
       return {
         ...workout,
+        planId: workoutPlan?.id ?? 0,
+        dayNumber: workoutPlanDay?.dayNumber ?? 0,
         exercises: exercisesWithDetails,
       };
     }),
@@ -399,16 +422,16 @@ export const workoutRouter = {
       }
     }),
 
-  getUserWorkoutStats: publicProcedure
+  getUserWorkoutStats: protectedProcedure
     .input(
       z.object({
-        userId: z.number(),
         period: z.enum(["week", "month", "all"]).optional().default("all"),
       }),
     )
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       try {
-        const { userId, period } = input;
+        const { period } = input;
+        const { user } = ctx.session;
 
         // Build date filter based on period
         let dateFilter = undefined;
@@ -427,7 +450,7 @@ export const workoutRouter = {
         // Get user workout progress records
         const workoutRecords = await db.query.userWorkoutProgress.findMany({
           where: (fields) => {
-            const userFilter = eq(fields.userId, userId);
+            const userFilter = eq(fields.userId, Number(user.id));
             return period === "all"
               ? userFilter
               : sql`${userFilter} AND ${dateFilter}`;
@@ -823,4 +846,181 @@ export const workoutRouter = {
 
       return updatedPlanDay;
     }),
+
+  completeWorkoutPlan: protectedProcedure
+    .input(
+      z.object({
+        workoutId: z.number(),
+        planId: z.number(),
+        dayNumber: z.number(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { planId, dayNumber } = input;
+      const { user } = ctx.session;
+
+      // Update workout plan day completion
+      const [updatedPlanDay] = await db
+        .update(workoutPlanDays)
+        .set({
+          completed: true,
+          completedAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        })
+        .where(
+          and(
+            eq(workoutPlanDays.planId, planId),
+            eq(workoutPlanDays.dayNumber, dayNumber),
+          ),
+        )
+        .returning();
+
+      if (!updatedPlanDay) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to update workout plan day",
+        });
+      }
+
+      prettyPrint(updatedPlanDay);
+
+      // Update user milestone progress
+      const currentMilestone = await db.query.userMilestoneProgress.findFirst({
+        where: and(
+          eq(userMilestoneProgress.userId, Number(user.id)),
+          eq(userMilestoneProgress.completed, false)
+        ),
+        orderBy: [desc(userMilestoneProgress.id)],
+      });
+
+      if (!currentMilestone) {
+        // If no milestone exists, create the first level milestone
+        const firstLevel = await db.query.milestoneLevels.findFirst({
+          where: eq(milestoneLevels.level, 1),
+        });
+
+        if (firstLevel) {
+          await db.insert(userMilestoneProgress).values({
+            userId: Number(user.id),
+            levelId: firstLevel.id,
+            currentDay: 1,
+            completed: false,
+          });
+        }
+      } else {
+        const milestoneLevel = await db.query.milestoneLevels.findFirst({
+          where: eq(milestoneLevels.id, currentMilestone.levelId),
+        });
+
+        if (milestoneLevel) {
+          const newDay = currentMilestone.currentDay + 1;
+          const isCompleted = newDay >= milestoneLevel.totalDays;
+
+          await db
+            .update(userMilestoneProgress)
+            .set({
+              currentDay: newDay,
+              completed: isCompleted,
+              updatedAt: new Date().toISOString(),
+            })
+            .where(eq(userMilestoneProgress.id, currentMilestone.id));
+
+          // If milestone is completed, create next level milestone
+          if (isCompleted) {
+            const nextLevel = await db.query.milestoneLevels.findFirst({
+              where: eq(milestoneLevels.level, milestoneLevel.level + 1),
+            });
+
+            if (nextLevel) {
+              await db.insert(userMilestoneProgress).values({
+                userId: Number(user.id),
+                levelId: nextLevel.id,
+                currentDay: 1,
+                completed: false,
+              });
+            }
+          }
+        }
+      }
+
+      // Update workout plan status if all days are completed
+      const allPlanDays = await db
+        .select()
+        .from(workoutPlanDays)
+        .where(eq(workoutPlanDays.planId, planId))
+        .execute();
+
+      const allDaysCompleted = allPlanDays.every((day) => day.completed);
+
+      if (allDaysCompleted) {
+        await db
+          .update(workoutPlans)
+          .set({
+            status: "completed",
+            updatedAt: new Date().toISOString(),
+          })
+          .where(eq(workoutPlans.id, planId));
+      }
+
+      return {
+        success: true,
+        planDay: updatedPlanDay,
+        allDaysCompleted,
+      };
+    }),
+
+  getUserMilestoneProgress: protectedProcedure.query(async ({ ctx }) => {
+    const { user } = ctx.session;
+
+    const currentMilestone = await db.query.userMilestoneProgress.findFirst({
+      where: and(
+        eq(userMilestoneProgress.userId, Number(user.id)),
+        eq(userMilestoneProgress.completed, false)
+      ),
+      orderBy: [desc(userMilestoneProgress.id)],
+    });
+
+    if (!currentMilestone) {
+      // If no milestone exists, create the first level milestone
+      const firstLevel = await db.query.milestoneLevels.findFirst({
+        where: eq(milestoneLevels.level, 1),
+      });
+
+      if (firstLevel) {
+        const [newMilestone] = await db.insert(userMilestoneProgress).values({
+          userId: Number(user.id),
+          levelId: firstLevel.id,
+          currentDay: 1,
+          completed: false,
+        }).returning();
+
+        if (!newMilestone) {
+          throw new Error("Failed to create new milestone");
+        }
+
+        return {
+          currentDay: newMilestone.currentDay,
+          totalDays: firstLevel.totalDays,
+          emoji: firstLevel.emoji,
+          level: firstLevel.level,
+        };
+      }
+      return null;
+    }
+
+    const milestoneLevel = await db.query.milestoneLevels.findFirst({
+      where: eq(milestoneLevels.id, currentMilestone.levelId),
+    });
+
+    if (!milestoneLevel) {
+      return null;
+    }
+
+    return {
+      currentDay: currentMilestone.currentDay,
+      totalDays: milestoneLevel.totalDays,
+      emoji: milestoneLevel.emoji,
+      level: milestoneLevel.level,
+    };
+  }),
 } satisfies TRPCRouterRecord;

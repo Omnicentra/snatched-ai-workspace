@@ -7,6 +7,7 @@ import type { ImageScansKey } from "./types";
 import type { BodyRatingResponse } from "@omc/validators";
 import { desiredBodyShapeEnum } from "@omc/validators/onboarding";
 import { z } from "zod";
+import { prettyPrint } from "@omc/validators";
 
 const s3Client = new S3Client({
   region: "us-east-1"
@@ -106,7 +107,7 @@ export async function analyzeBodyImages(
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash-preview-04-17",
       contents: createUserContent([
-        "Analyze these body images and provide detailed metrics. The first three images are the user's front, back, and side views. The last image is the benchmark. Provide scores out of 100. The benchmark image has a score of 95 for all attributes. Reject the image if the image doesn't feature a person, and provide a reason for the rejection.",
+        "Analyze these body images and provide detailed metrics. The first three images are the user's front, back, and side views. The last image is the benchmark. Provide scores out of 100. The benchmark image has a score of 95 for all attributes.",
         ...userImages,
         createPartFromUri(benchmarkImageUri, "image/jpeg"),
       ]),
@@ -115,8 +116,6 @@ export async function analyzeBodyImages(
         responseSchema: {
           type: Type.OBJECT,
           properties: {
-            imageRejected: { type: Type.BOOLEAN },
-            imageRejectionReason: { type: Type.STRING },
             currentSnatchedScore: { type: Type.NUMBER },
             potentialSnatchedScore: { type: Type.NUMBER },
             potentialWaistReductionInches: { type: Type.NUMBER },
@@ -139,28 +138,55 @@ export async function analyzeBodyImages(
 
     const result = JSON.parse(response.text) as BodyRatingResponse;
 
-    
-    if (result.imageRejected) {
-      return {
-        imageRejected: true,
-        imageRejectionReason: result.imageRejectionReason,
-        currentSnatchedScore: null,
-        potentialSnatchedScore: null,
-        potentialWaistReductionInches: null,
-        glowUpOdds: null,
-        transformationComplete: null,
-        waistDefinition: null,
-        hipCurve: null,
-        gluteShape: null,
-        posture: null,
-        armShape: null,
-        backDefinition: null
-      };
-    }
+    prettyPrint(result);
 
     return result;
   } catch (error) {
     console.error("Error analyzing body images:", error);
+    throw error;
+  }
+}
+
+export interface ImageValidationResponse {
+  isValid: boolean;
+  rejectionReason: string;
+}
+
+export async function validateUploadedImage(imageKey: string): Promise<ImageValidationResponse> {
+  try {
+    const imageBuffer = await getImageFromS3(imageKey);
+    const base64Image = imageBuffer.toString('base64');
+
+    const geminiResponse = await ai.models.generateContent({
+      model: "gemini-2.5-flash-preview-04-17",
+      contents: createUserContent([
+        "Analyze this image and determine if it features a person. If it doesn't feature a person, provide a brief reason why. The image should be a clear photo of a person's body.",
+        {
+          inlineData: {
+            mimeType: 'image/jpeg',
+            data: base64Image,
+          },
+        },
+      ]),
+      config: {
+        responseMimeType: 'application/json',
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            isValid: { type: Type.BOOLEAN },
+            rejectionReason: { type: Type.STRING },
+          }
+        }
+      }
+    });
+
+    if (!geminiResponse.text) {
+      throw new Error("No response from Gemini AI");
+    }
+
+    return JSON.parse(geminiResponse.text) as ImageValidationResponse;
+  } catch (error) {
+    console.error("Error validating image:", error);
     throw error;
   }
 } 

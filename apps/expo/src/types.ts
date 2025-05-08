@@ -1,3 +1,8 @@
+import type { RouterOutputs } from "~/utils/api";
+import { Ionicons } from "@expo/vector-icons";
+
+export type IconName = keyof typeof Ionicons.glyphMap;
+
 // These are the actual icon names we use from Ionicons
 export type IoniconName = 
   | "sparkles-outline" 
@@ -36,3 +41,5 @@ export interface SnatchHack {
   benefits?: SnatchHackBenefit[];
   instructions?: string[];
 } 
+
+export type WorkoutWithExercises = RouterOutputs['workout']['getWorkoutWithExercises']

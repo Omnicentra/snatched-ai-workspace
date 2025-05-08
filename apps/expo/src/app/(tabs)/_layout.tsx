@@ -13,6 +13,9 @@ export default function TabLayout() {
   const { data: workoutData } = api.workout.getWorkouts.useQuery();
   // Get the categories from API data
   api.workout.getWorkoutCategories.useQuery();
+  api.workout.getUserWorkoutStats.useQuery({
+    period: "week",
+  });
   const {
     data: mealPlanData,
     error: mealPlanError,

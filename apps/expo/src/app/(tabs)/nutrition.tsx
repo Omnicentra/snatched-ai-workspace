@@ -281,7 +281,7 @@ export default function NutritionPlanScreen() {
       {/* Header */}
       <View className="flex-row items-center justify-between px-6 pb-3 pt-6">
         <Text className="font-inter-bold text-2xl text-black">Nutrition</Text>
-        <View className="flex-row gap-2">
+        {/* <View className="flex-row gap-2">
           <Pressable
             className="rounded-full bg-gray-100 p-2"
             onPress={() => setShowMilestone(true)}
@@ -292,7 +292,7 @@ export default function NutritionPlanScreen() {
               color="#f472b6"
             />
           </Pressable>
-        </View>
+        </View> */}
       </View>
 
       {/* Meal Lists */}

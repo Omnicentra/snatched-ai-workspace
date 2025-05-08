@@ -5,8 +5,9 @@ import { seedWorkoutExercises } from './workout-exercises'
 import { seedRecipeCategories } from './recipe-categories'
 import { seedRecipes } from './recipes'
 import { seedMoreRecipes } from './more-recipes'
+import { seedMilestoneLevels } from './milestone-levels'
 
-async function main() {
+export async function seed() {
   console.log('🌱 Starting database seeding...')
 
   try {
@@ -21,6 +22,9 @@ async function main() {
     await seedRecipes()
     await seedMoreRecipes()
     
+    // Seed milestone levels
+    await seedMilestoneLevels()
+    
     console.log('✅ Database seeding completed successfully')
   } catch (error) {
     console.error('❌ Error during database seeding:', error)
@@ -28,4 +32,4 @@ async function main() {
   }
 }
 
-void main() 
+void seed() 

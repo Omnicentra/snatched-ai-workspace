@@ -18,30 +18,26 @@ import Animated, {
   useSharedValue,
   withSpring
 } from 'react-native-reanimated'
+import { api } from '~/utils/api'
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window')
 const MAX_TRANSLATE_Y = -SCREEN_HEIGHT * 0.3
-const SNAP_POINTS = [0, SCREEN_HEIGHT]
 
 interface MilestoneModalProps {
   isVisible: boolean
   onClose: () => void
-  currentDay: number
-  totalDays: number
-  emoji: string
-  accentColor: string
   type: 'nutrition' | 'workout'
 }
 
 export const MilestoneModal: React.FC<MilestoneModalProps> = ({
   isVisible,
   onClose,
-  currentDay,
-  totalDays,
-  emoji,
-  accentColor,
   type
 }) => {
+  const { data: milestoneProgress } = api.workout.getUserMilestoneProgress.useQuery(undefined, {
+    enabled: isVisible,
+  });
+
   const translateY = useSharedValue(0)
   const context = useSharedValue({ y: 0 })
 
@@ -77,6 +73,9 @@ export const MilestoneModal: React.FC<MilestoneModalProps> = ({
     }
   })
 
+  if (!milestoneProgress) return null;
+
+  const { currentDay, totalDays, emoji } = milestoneProgress;
   const days = Array.from({ length: totalDays }, (_, i) => i + 1)
   const midPoint = Math.floor(days.length / 2)
   const firstRow = days.slice(0, midPoint)
@@ -85,7 +84,6 @@ export const MilestoneModal: React.FC<MilestoneModalProps> = ({
   const renderDay = (day: number, isReversed = false) => {
     const isCompleted = day < currentDay
     const isActive = day === currentDay
-    const position = isReversed ? 'bottom' : 'top'
 
     return (
       <View key={day} className="items-center">
@@ -95,8 +93,8 @@ export const MilestoneModal: React.FC<MilestoneModalProps> = ({
             isCompleted ? '' : 'bg-white border border-gray-100'
           }`}
           style={{
-            borderColor: accentColor,
-            backgroundColor: isCompleted ? accentColor : 'white'
+            borderColor: type === 'workout' ? '#FF6B6B' : '#4CAF50',
+            backgroundColor: isCompleted ? (type === 'workout' ? '#FFA5A5' : '#90EE90') : 'white'
           }}
         >
           {isCompleted && day === 1 && (
@@ -112,30 +110,6 @@ export const MilestoneModal: React.FC<MilestoneModalProps> = ({
           )}
           {isActive && (
             <Text className="text-xl">{emoji}</Text>
-          )}
-          {day !== (isReversed ? secondRow[0] : firstRow[firstRow.length - 1]) && (
-            <>
-              {/* Horizontal connecting line */}
-              {/* <View 
-                className={`absolute h-[2px] w-[60px] ${
-                  position === 'top' ? 'top-[27px]' : 'bottom-[27px]'
-                } ${isReversed ? '-left-[60px]' : '-right-[60px]'}`}
-                style={{
-                  backgroundColor: isCompleted ? accentColor : '#D1D5DB',
-                  opacity: isCompleted ? 1 : 0.7
-                }}
-              /> */}
-              {/* Line end dot for better connection */}
-              {/* <View 
-                className={`absolute h-1 w-1 rounded-full ${
-                  position === 'top' ? 'top-[27px]' : 'bottom-[27px]'
-                } ${isReversed ? '-right-[60px]' : '-left-[60px]'}`}
-                style={{
-                  backgroundColor: isCompleted ? accentColor : '#D1D5DB',
-                  opacity: isCompleted ? 1 : 0.7
-                }}
-              /> */}
-            </>
           )}
         </View>
       </View>
@@ -207,7 +181,7 @@ export const MilestoneModal: React.FC<MilestoneModalProps> = ({
                       className="h-full"
                       style={{ 
                         width: `${(currentDay / totalDays) * 100}%`,
-                        backgroundColor: accentColor
+                        backgroundColor: type === 'workout' ? '#FF6B6B' : '#4CAF50'
                       }}
                     />
                   </View>

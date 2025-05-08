@@ -1,21 +1,20 @@
 // Similar to scan-front/side, adjust titles, progress, tips, and navigation target.
-import React, { useState, useRef, useEffect } from 'react'
-import {
-  Text,
-  View,
-  Pressable,
-  SafeAreaView,
-  Alert,
-  StyleSheet
-} from 'react-native'
-import { CameraType, CameraView, useCameraPermissions } from 'expo-camera'
-import * as MediaLibrary from 'expo-media-library'
-import { useRouter } from 'expo-router'
-import Constants from 'expo-constants'
-import Svg, { Path } from 'react-native-svg'
 import { Ionicons } from '@expo/vector-icons'
 import { BlurView } from 'expo-blur'
+import { CameraType, CameraView, useCameraPermissions } from 'expo-camera'
+import Constants from 'expo-constants'
 import { usePermissions } from 'expo-media-library'
+import { useRouter } from 'expo-router'
+import React, { useRef, useState } from 'react'
+import {
+  Alert,
+  Pressable,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  View
+} from 'react-native'
+import Svg, { Path } from 'react-native-svg'
 
 // Import or define ProgressBar, Silhouette, CameraButton components
 

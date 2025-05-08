@@ -1,7 +1,7 @@
 // app/(onboarding)/results.tsx
 import Constants from 'expo-constants'
 import { LinearGradient } from 'expo-linear-gradient'
-import { useRouter } from 'expo-router'
+import { useRouter, useLocalSearchParams } from 'expo-router'
 import React, { useEffect, useRef } from 'react'; // Import useRef and useEffect
 import {
   Dimensions,
@@ -71,9 +71,15 @@ export default function ResultsScreen() {
   const router = useRouter()
   const confettiRef = useRef<ConfettiCannon>(null) // Create a ref for the confetti cannon
   const bodyRating = use$(onboardingStore$.bodyRating);
+  const searchParams = useLocalSearchParams<{ unlocked?: string }>();
+  const isUnlocked = searchParams.unlocked === 'true';
 
   const handleViewDetails = () => {
-    router.push('/(onboarding)/paywall') // Or your target route
+    if (isUnlocked) {
+      void router.push('/(tabs)/home');
+    } else {
+      void router.push('/(onboarding)/paywall');
+    }
   }
 
   useEffect(() => {
@@ -210,13 +216,11 @@ export default function ResultsScreen() {
                   flexDirection: 'row',
                   flexWrap: 'wrap',
                   height: 440,
-                  shadowColor: '#F6ADCE', // Keep existing container shadow
+                  shadowColor: '#F6ADCE',
                   shadowOffset: { width: 0, height: 4 },
                   shadowOpacity: 0.2,
                   shadowRadius: 8,
                   elevation: 4
-                  // Add a subtle background if needed, or keep transparent
-                  // backgroundColor: 'rgba(255, 255, 255, 0.1)', // Optional subtle background
                 }}
               >
                 {[
@@ -245,7 +249,7 @@ export default function ResultsScreen() {
                       <Text className="text-center font-inter-medium text-gray-800">
                         {title}
                       </Text>
-                      <Text className="text-2xl">{"🔒"}</Text>
+                      <Text className="text-center font-inter-bold text-2xl text-pink-400">{isUnlocked ? value : "🔒"}</Text>
                     </View>
                   </View>
                 ))}

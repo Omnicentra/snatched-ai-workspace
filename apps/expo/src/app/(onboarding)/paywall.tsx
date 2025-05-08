@@ -1,6 +1,6 @@
 import type { NativeScrollEvent, NativeSyntheticEvent } from "react-native";
 import type { PurchasesPackage } from "react-native-purchases";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState, memo } from "react";
 import {
   Alert,
   Dimensions,
@@ -593,90 +593,147 @@ const _GrowthGuideSection = () => {
   );
 };
 
+interface Plan {
+  id: string;
+  name: string;
+  price: string;
+  popular: boolean;
+  packageId: string;
+}
+
+// Memoize the plan selection component
+const PlanSelection = memo(({ 
+  plans, 
+  packages, 
+  selectedPackage, 
+  onSelectPackage 
+}: { 
+  plans: Record<string, Plan>;
+  packages: PurchasesPackage[];
+  selectedPackage?: PurchasesPackage;
+  onSelectPackage: (pkg: PurchasesPackage) => void;
+}) => (
+  <View style={styles.planContainer}>
+    {Object.keys(plans).length > 0 ? (
+      Object.values(plans).map((plan) => (
+        <Pressable
+          key={plan.id}
+          onPress={() => {
+            const pkg = packages.find(
+              (pkg) => pkg.product.identifier === plan.packageId,
+            );
+            if (pkg) {
+              onSelectPackage(pkg);
+            }
+          }}
+          style={[
+            styles.planBox,
+            selectedPackage?.product.identifier === plan.packageId &&
+              styles.selectedPlanBox,
+            plan.id === "weekly" ? { marginRight: 8 } : { marginLeft: 8 },
+          ]}
+        >
+          {plan.popular && (
+            <View style={styles.popularBadge}>
+              <Text style={styles.popularText}>Popular</Text>
+            </View>
+          )}
+          <View style={styles.planContent}>
+            <View>
+              <Text style={styles.planName}>{plan.name}</Text>
+              <Text style={styles.planPrice}>{plan.price}</Text>
+            </View>
+            <View
+              style={[
+                styles.radioOuter,
+                selectedPackage?.product.identifier === plan.packageId &&
+                  styles.selectedRadioOuter,
+              ]}
+            >
+              {selectedPackage?.product.identifier === plan.packageId && (
+                <View style={styles.radioInner} />
+              )}
+            </View>
+          </View>
+        </Pressable>
+      ))
+    ) : (
+      <View style={[styles.planBox, { flex: 1, justifyContent: 'center', alignItems: 'center' }]}>
+        <Text style={[styles.planName, { color: 'rgba(255,255,255,0.5)' }]}>Loading plans...</Text>
+      </View>
+    )}
+  </View>
+));
+
 export default function PaywallScreen() {
   const router = useRouter();
   const [currentPage, setCurrentPage] = useState(0);
   const scrollViewRef = useRef<ScrollView>(null);
   const autoScrollTimer = useRef<NodeJS.Timeout>();
   const [isManualScrolling, setIsManualScrolling] = useState(false);
+  const [isPurchasing, setIsPurchasing] = useState(false);
 
   const [packages, setPackages] = useState<PurchasesPackage[]>([]);
   const [selectedPackage, setSelectedPackage] = useState<PurchasesPackage>();
-  const [plans, setPlans] = useState<{
-    weekly?: {
-      id: string;
-      name: string;
-      price: string;
-      popular: boolean;
-      packageId: string;
-    };
-    lifetime?: {
-      id: string;
-      name: string;
-      price: string;
-      popular: boolean;
-      packageId: string;
-    };
-  }>({});
+  const [plans, setPlans] = useState<Record<string, Plan>>({});
 
   useEffect(() => {
     const fetchPackages = async () => {
-      const offerings = await Purchases.getOfferings();
-      const availablePackages = offerings.all.default?.availablePackages;
-      console.log(JSON.stringify(availablePackages, null, 2));
-      
-      if (availablePackages?.length) {
-        // Process packages and create plans
-        const plansObj: Record<string, {
-          id: string;
-          name: string;
-          price: string;
-          popular: boolean;
-          packageId: string;
-        }> = {};
+      try {
+        const offerings = await Purchases.getOfferings();
+        const availablePackages = offerings.all.default?.availablePackages;
         
-        // Find weekly package
-        const weeklyPackage = availablePackages.find(
-          (pkg) => 
-            typeof pkg.packageType === "string" && 
-            (pkg.packageType.toUpperCase() === "WEEKLY" || 
-            pkg.product.identifier.toLowerCase().includes("weekly"))
-        );
-        
-        // Find lifetime package
-        const lifetimePackage = availablePackages.find(
-          (pkg) => 
-            typeof pkg.packageType === "string" && 
-            (pkg.packageType.toUpperCase() === "LIFETIME" || 
-            pkg.product.identifier.toLowerCase().includes("lifetime"))
-        );
-        
-        if (weeklyPackage) {
-          plansObj.weekly = {
-            id: weeklyPackage.packageType.toLowerCase(),
-            name: "Weekly",
-            price: weeklyPackage.product.priceString,
-            popular: false,
-            packageId: weeklyPackage.product.identifier,
-          };
+        if (availablePackages?.length) {
+          // Process packages and create plans
+          const plansObj: Record<string, Plan> = {};
+          
+          // Find weekly package
+          const weeklyPackage = availablePackages.find(
+            (pkg) => 
+              typeof pkg.packageType === "string" && 
+              (pkg.packageType.toUpperCase() === "WEEKLY" || 
+              pkg.product.identifier.toLowerCase().includes("weekly"))
+          );
+          
+          // Find lifetime package
+          const lifetimePackage = availablePackages.find(
+            (pkg) => 
+              typeof pkg.packageType === "string" && 
+              (pkg.packageType.toUpperCase() === "LIFETIME" || 
+              pkg.product.identifier.toLowerCase().includes("lifetime"))
+          );
+          
+          if (weeklyPackage) {
+            plansObj.weekly = {
+              id: weeklyPackage.packageType.toLowerCase(),
+              name: "Weekly",
+              price: weeklyPackage.product.priceString,
+              popular: false,
+              packageId: weeklyPackage.product.identifier,
+            };
+          }
+          
+          if (lifetimePackage) {
+            plansObj.lifetime = {
+              id: "lifetime",
+              name: "Lifetime",
+              price: lifetimePackage.product.priceString,
+              popular: true,
+              packageId: lifetimePackage.product.identifier,
+            };
+          }
+          
+          // Batch state updates
+          setPlans(plansObj);
+          setPackages(availablePackages);
+          
+          // Default select lifetime package if available, otherwise the first package
+          const defaultPackage = lifetimePackage ?? availablePackages[0];
+          setSelectedPackage(defaultPackage);
         }
-        
-        if (lifetimePackage) {
-          plansObj.lifetime = {
-            id: "lifetime",
-            name: "Lifetime",
-            price: lifetimePackage.product.priceString,
-            popular: true,
-            packageId: lifetimePackage.product.identifier,
-          };
-        }
-        
-        setPlans(plansObj);
-        setPackages(availablePackages);
-        
-        // Default select lifetime package if available, otherwise the first package
-        const defaultPackage = lifetimePackage ?? availablePackages[0];
-        setSelectedPackage(defaultPackage);
+      } catch (error) {
+        console.error("Error fetching packages:", error);
+        Alert.alert("Error", "Failed to load subscription plans. Please try again.");
       }
     };
     void fetchPackages();
@@ -729,29 +786,37 @@ export default function PaywallScreen() {
   };
 
   const makePurchase = async () => {
+    if (!selectedPackage || isPurchasing) return;
+    
     try {
-      if (!selectedPackage) {
-        Alert.alert("Error", "No package selected");
-        return;
-      }
+      setIsPurchasing(true);
       const { customerInfo } = await Purchases.purchasePackage(selectedPackage);
-      if (
-        customerInfo.allPurchasedProductIdentifiers.includes(
-          selectedPackage.product.identifier,
-        )
-      ) {
-        // Set onboarding completion flag
-        await SecureStore.setItemAsync("onboarding_complete", "true");
-        router.replace("/(tabs)/home");
+      
+      if (customerInfo.allPurchasedProductIdentifiers.includes(selectedPackage.product.identifier)) {
+        // Set onboarding completion flag and navigate to results with unlocked state
+        await Promise.all([
+          SecureStore.setItemAsync("onboarding_complete", "true"),
+          router.replace({
+            pathname: "/(onboarding)/results",
+            params: { unlocked: "true" }
+          })
+        ]);
       }
     } catch (error) {
       console.error("Error purchasing:", error);
-      Alert.alert(
-        "Error",
-        "An error occurred while purchasing the package. Please try again.",
-      );
+      if (error instanceof Error) {
+        Alert.alert("Purchase Failed", error.message);
+      } else {
+        Alert.alert("Purchase Failed", "An error occurred while processing your purchase. Please try again.");
+      }
+    } finally {
+      setIsPurchasing(false);
     }
   };
+
+  const handleSelectPackage = useCallback((pkg: PurchasesPackage) => {
+    setSelectedPackage(pkg);
+  }, []);
 
   return (
     <LinearGradient colors={["#1f1f1f", "#111"]} style={styles.container}>
@@ -776,57 +841,12 @@ export default function PaywallScreen() {
           </Text>
 
           {/* Subscription Options */}
-          <View style={styles.planContainer}>
-            {Object.keys(plans).length > 0 ? (
-              Object.values(plans).map((plan) => (
-                <Pressable
-                  key={plan.id}
-                  onPress={() => {
-                    const pkg = packages.find(
-                      (pkg) => pkg.product.identifier === plan.packageId,
-                    );
-                    if (pkg) {
-                      setSelectedPackage(pkg);
-                    }
-                  }}
-                  style={[
-                    styles.planBox,
-                    selectedPackage?.product.identifier === plan.packageId &&
-                      styles.selectedPlanBox,
-                    plan.id === "weekly" ? { marginRight: 8 } : { marginLeft: 8 },
-                  ]}
-                >
-                  {plan.popular && (
-                    <View style={styles.popularBadge}>
-                      <Text style={styles.popularText}>Popular</Text>
-                    </View>
-                  )}
-                  <View style={styles.planContent}>
-                    <View>
-                      <Text style={styles.planName}>{plan.name}</Text>
-                      <Text style={styles.planPrice}>{plan.price}</Text>
-                    </View>
-                    <View
-                      style={[
-                        styles.radioOuter,
-                        selectedPackage?.product.identifier === plan.packageId &&
-                          styles.selectedRadioOuter,
-                      ]}
-                    >
-                      {selectedPackage?.product.identifier === plan.packageId && (
-                        <View style={styles.radioInner} />
-                      )}
-                    </View>
-                  </View>
-                </Pressable>
-              ))
-            ) : (
-              // Show placeholder if no plans loaded yet
-              <View style={[styles.planBox, { flex: 1, justifyContent: 'center', alignItems: 'center' }]}>
-                <Text style={[styles.planName, { color: 'rgba(255,255,255,0.5)' }]}>Loading plans...</Text>
-              </View>
-            )}
-          </View>
+          <PlanSelection
+            plans={plans}
+            packages={packages}
+            selectedPackage={selectedPackage}
+            onSelectPackage={handleSelectPackage}
+          />
 
           <Text style={styles.featuresTitle}>Here's what you'll get:</Text>
 
@@ -886,8 +906,8 @@ export default function PaywallScreen() {
         {/* Bottom Actions */}
         <View style={styles.footer}>
           <StyledButton
-            title="Continue"
-            disabled={!selectedPackage}
+            title={isPurchasing ? "Processing..." : "Continue"}
+            disabled={!selectedPackage || isPurchasing}
             onPress={() => {
               void makePurchase();
             }}

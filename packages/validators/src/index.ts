@@ -8,6 +8,7 @@ export const unused = z.string().describe(
 );
 
 export const prettyPrint = (obj: string | object | number) => {
+  console.log("");
   if (typeof obj === "string") {
     console.log("*".repeat(30));
     console.log(obj);
@@ -58,8 +59,6 @@ export const formatPostgresTimestamp = (timestamp: string | null | undefined): s
 };
 
 export interface BodyRatingResponse {
-  imageRejected: boolean;
-  imageRejectionReason: string | null;
   currentSnatchedScore: number | null;
   potentialSnatchedScore: number | null;
   potentialWaistReductionInches: number | null;

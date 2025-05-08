@@ -1,8 +1,7 @@
 // app/(tabs)/workouts.tsx
 import { MilestoneModal } from '@/app/(modals)/milestone-modal'
 import { StyledButton } from '@/components/core'
-import type { RouterOutputs } from '@/utils/api'
-import { api } from '@/utils/api'
+import { api, RouterOutputs } from '@/utils/api'
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'
 import Constants from 'expo-constants'
 import { LinearGradient } from 'expo-linear-gradient'
@@ -18,95 +17,7 @@ import {
   View
 } from 'react-native'
 
-// Define types for workout data (prefixed with _ since they're only used for type checking)
-type _WorkoutCategory = RouterOutputs['workout']['getWorkoutCategories'][number]
-type _Workout = RouterOutputs['workout']['getWorkouts'][number]
-
-// Milestone Progress Component (unused but kept for future use)
-const _MilestoneProgress = ({
-  level,
-  currentDay,
-  totalDays,
-  emoji
-}: {
-  level: number
-  currentDay: number
-  totalDays: number
-  emoji: string
-}) => {
-  const days = Array.from({ length: totalDays }, (_, i) => i + 1)
-  const midPoint = Math.floor(days.length / 2)
-  const firstRow = days.slice(0, midPoint)
-  const secondRow = days.slice(midPoint).reverse()
-
-  const renderDay = (day: number, isReversed = false) => {
-    const isCompleted = day < currentDay
-    const isActive = day === currentDay
-    const position = isReversed ? 'bottom' : 'top'
-
-    return (
-      <View key={day} className="items-center">
-        <View 
-          className={`h-12 w-12 items-center justify-center rounded-full ${
-            isActive ? 'border-2 border-dashed border-[#9333EA] bg-white' :
-            isCompleted ? 'bg-[#9333EA]' : 'bg-white border border-gray-100'
-          }`}
-        >
-          {isCompleted && day === 1 && (
-            <Text className="text-lg">{emoji}</Text>
-          )}
-          {isCompleted && day === totalDays && (
-            <MaterialCommunityIcons name="trophy" size={20} color="#FFD700" />
-          )}
-          {!isCompleted && !isActive && (
-            <Text className="font-inter-medium text-xs text-gray-400">
-              {day}
-            </Text>
-          )}
-          {isActive && (
-            <Text className="text-lg">{emoji}</Text>
-          )}
-        </View>
-        {day !== (isReversed ? secondRow[0] : firstRow[firstRow.length - 1]) && (
-          <View 
-            className={`absolute h-0.5 w-10 ${
-              isCompleted ? 'bg-[#9333EA]' : 'bg-gray-100'
-            } ${position === 'top' ? 'top-6' : 'bottom-6'} ${
-              isReversed ? 'right-6' : 'left-6'
-            }`} 
-          />
-        )}
-      </View>
-    )
-  }
-
-  return (
-    <View className="mb-6 rounded-2xl bg-purple-50/50 p-4">
-      <View className="mb-2 flex-row items-center justify-between">
-        <Text className="font-inter-medium text-sm text-gray-600">
-          Level {level} {emoji}
-        </Text>
-        <Text className="font-inter text-xs text-gray-400">
-          {currentDay}/{totalDays} days
-        </Text>
-      </View>
-      <View className="h-1 w-full overflow-hidden rounded-full bg-gray-100">
-        <View 
-          className="h-full bg-[#9333EA]" 
-          style={{ width: `${(currentDay / totalDays) * 100}%` }}
-        />
-      </View>
-      <View className="mt-4">
-        <View className="flex-row justify-between">
-          {firstRow.map((day) => renderDay(day))}
-        </View>
-        <View className="mt-3 flex-row justify-between">
-          {secondRow.map((day) => renderDay(day, true))}
-        </View>
-      </View>
-    </View>
-  )
-}
+type UserWorkoutStats = RouterOutputs['workout']['getUserWorkoutStats']
 
 // Category Pill Component
 const CategoryPill = ({
@@ -135,19 +46,38 @@ const CategoryPill = ({
 )
 
 // Stats Summary Component
-const StatsSummary = () => {
+const StatsSummary = ({ stats }: { stats?: UserWorkoutStats }) => {
+  if (!stats) {
+    return (
+      <View className="mb-8 flex-row justify-between rounded-3xl bg-white p-6 shadow-sm">
+        <View className="items-center">
+          <Text className="font-inter-bold text-2xl text-black">-</Text>
+          <Text className="font-inter text-xs text-gray-500">Workouts</Text>
+        </View>
+        <View className="items-center">
+          <Text className="font-inter-bold text-2xl text-green-500">-</Text>
+          <Text className="font-inter text-xs text-gray-500">Cal Burned</Text>
+        </View>
+        <View className="items-center">
+          <Text className="font-inter-bold text-2xl text-pink-500">-</Text>
+          <Text className="font-inter text-xs text-gray-500">Active Time</Text>
+        </View>
+      </View>
+    )
+  }
+  
   return (
     <View className="mb-8 flex-row justify-between rounded-3xl bg-white p-6 shadow-sm">
       <View className="items-center">
-        <Text className="font-inter-bold text-2xl text-black">12</Text>
+        <Text className="font-inter-bold text-2xl text-black">{stats.totalWorkouts}</Text>
         <Text className="font-inter text-xs text-gray-500">Workouts</Text>
       </View>
       <View className="items-center">
-        <Text className="font-inter-bold text-2xl text-green-500">320</Text>
+        <Text className="font-inter-bold text-2xl text-green-500">{Math.round(stats.totalCalories)}</Text>
         <Text className="font-inter text-xs text-gray-500">Cal Burned</Text>
       </View>
       <View className="items-center">
-        <Text className="font-inter-bold text-2xl text-pink-500">45m</Text>
+        <Text className="font-inter-bold text-2xl text-pink-500">{stats.totalDuration}m</Text>
         <Text className="font-inter text-xs text-gray-500">Active Time</Text>
       </View>
     </View>
@@ -244,8 +174,11 @@ const WorkoutCardSmall = ({
 export default function WorkoutLibraryScreen() {
   const router = useRouter()
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
-  const [searchQuery, setSearchQuery] = useState('')
+  const [searchQuery, _] = useState('')
   const [showMilestone, setShowMilestone] = useState(false)
+  const { data: stats } = api.workout.getUserWorkoutStats.useQuery({
+    period: "week"
+  });
   
   // Fetch workouts using tRPC
   const { data: workoutsData, isLoading, isRefetching, refetch } = api.workout.getWorkouts.useQuery()
@@ -358,7 +291,7 @@ export default function WorkoutLibraryScreen() {
         </ScrollView>
 
         {/* Stats Summary */}
-        <StatsSummary />
+        <StatsSummary stats={stats} />
 
         {isLoading ? (
           <View className="py-12 items-center justify-center">
@@ -425,10 +358,6 @@ export default function WorkoutLibraryScreen() {
       <MilestoneModal
         isVisible={showMilestone}
         onClose={() => setShowMilestone(false)}
-        currentDay={1}
-        totalDays={7}
-        emoji="💪"
-        accentColor="#f472b6"
         type="workout"
       />
     </LinearGradient>

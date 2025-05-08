@@ -1,13 +1,12 @@
 import { StyledButton } from '@/components/core'
+import { cooldownWorkoutId } from '@/lib/utils'
+import { api } from '@/utils/api'
 import { MaterialCommunityIcons, SimpleLineIcons } from '@expo/vector-icons'
-import { useRouter, useLocalSearchParams } from 'expo-router'
+import { useLocalSearchParams, useRouter } from 'expo-router'
 import React, { useState } from 'react'
-import { Pressable, Text, View, ActivityIndicator } from 'react-native'
+import { ActivityIndicator, Pressable, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import Share from 'react-native-share'
-import { api } from '@/utils/api'
-import { cooldownWorkoutId } from '@/lib/utils'
-import { authClient } from '@/utils/auth'
 
 interface WorkoutStats {
   minutes: number
@@ -25,6 +24,9 @@ export default function WorkoutCompleteScreen() {
   const workoutId = typeof params.workoutId === 'string' ? parseInt(params.workoutId, 10) : undefined
   const workoutTitle = params.workoutTitle as string || 'Workout'
   
+  // Check if this is a cooldown workout
+  const isCooldownWorkout = workoutId === Number(cooldownWorkoutId)
+  
   // Get workout stats from parameters or use defaults
   const stats: WorkoutStats = {
     minutes: typeof params.duration === 'string' ? parseInt(params.duration, 10) : 30,
@@ -33,7 +35,7 @@ export default function WorkoutCompleteScreen() {
     streak: 1 // Hardcoded for now, would come from user progress data
   }
 
-  // Mutation for tracking workout progress
+  // Mutations
   const trackProgressMutation = api.workout.trackWorkoutProgress.useMutation()
   
   const handleStartCooldown = () => {
@@ -44,6 +46,12 @@ export default function WorkoutCompleteScreen() {
         workoutId: cooldownWorkoutId
       }
     })
+  }
+
+  const handleFinishWorkout = () => {
+    if (!workoutId) return
+    // Success - go back to workouts screen
+    router.push('/(tabs)/workouts')
   }
 
   const handleSaveProgress = async () => {
@@ -142,17 +150,28 @@ export default function WorkoutCompleteScreen() {
 
         {/* Action Buttons */}
         <View className="mt-auto w-full gap-y-4 pb-8">
-          <StyledButton
-            title="Start Cooldown"
-            onPress={handleStartCooldown}
-            variant="primary"
-          />
-          <StyledButton
-            title={saveInProgress ? "Saving..." : "Save Progress"}
-            onPress={handleSaveProgress}
-            variant="secondary"
-            disabled={saveInProgress}
-          />
+          {isCooldownWorkout ? (
+            <StyledButton
+              title={saveInProgress ? "Finishing..." : "Finish Workout"}
+              onPress={handleFinishWorkout}
+              variant="primary"
+              disabled={saveInProgress}
+            />
+          ) : (
+            <StyledButton
+              title="Start Cooldown"
+              onPress={handleStartCooldown}
+              variant="primary"
+            />
+          )}
+          {!isCooldownWorkout && (
+            <StyledButton
+              title={saveInProgress ? "Saving..." : "Save Progress"}
+              onPress={handleSaveProgress}
+              variant="secondary"
+              disabled={saveInProgress}
+            />
+          )}
           {saveInProgress && (
             <ActivityIndicator size="small" color="#9CA3AF" className="mt-2" />
           )}

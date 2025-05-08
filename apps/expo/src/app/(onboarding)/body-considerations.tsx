@@ -53,6 +53,11 @@ const bodyConsiderationDisplayMap: Record<BodyConcern, Omit<ConsiderationDisplay
     description: "I want to build more curves and definition",
     iconBg: "bg-purple-100",
   },
+  "I don't have any specific body considerations": {
+    icon: "👍",
+    description: "I'm comfortable with my body and don't have any specific concerns to address.",
+    iconBg: "bg-green-100",
+  },
   "I have something else to mention": {
     icon: "✏️",
     description: "Tell us about any other body considerations we should know about.",
@@ -115,9 +120,19 @@ export default function BodyConsiderationsScreen() {
 
   const toggleConcern = (concern: BodyConcern) => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    onboardingStore$.onboarding.bodyDescription.set((prev) => 
-      prev.includes(concern) ? prev.filter((bId) => bId !== concern) : [...prev, concern]
-    );
+    
+    if (concern === "I don't have any specific body considerations") {
+      // If selecting "no concerns", clear all other selections
+      onboardingStore$.onboarding.bodyDescription.set([concern]);
+    } else {
+      // If selecting any other option, remove "no concerns" if it exists
+      onboardingStore$.onboarding.bodyDescription.set((prev) => {
+        const filtered = prev.filter((bId) => bId !== "I don't have any specific body considerations");
+        return prev.includes(concern) 
+          ? filtered.filter((bId) => bId !== concern) 
+          : [...filtered, concern];
+      });
+    }
   };
 
   const handleContinue = () => {

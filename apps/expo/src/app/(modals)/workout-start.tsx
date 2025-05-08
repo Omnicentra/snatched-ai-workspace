@@ -1,17 +1,18 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, Pressable, Dimensions } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
+import { cooldownWorkoutId } from '@/lib/utils';
+import { api } from '@/utils/api';
 import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Dimensions, Pressable, Text, View } from 'react-native';
 import Animated, {
+  Easing,
   useAnimatedProps,
   useSharedValue,
   withTiming,
-  Easing,
 } from 'react-native-reanimated';
-import { Svg, Circle } from 'react-native-svg';
-import { api } from '@/utils/api';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Circle, Svg } from 'react-native-svg';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const PADDING = 32; // Total horizontal padding
@@ -25,15 +26,20 @@ export default function WorkoutStartScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const [isPaused, setIsPaused] = useState(false);
-  const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(0);
+  const [currentExerciseIndex, setCurrentExerciseIndex] = useState(
+    typeof params.exerciseIndex === 'string' ? parseInt(params.exerciseIndex, 10) : 0
+  );
+  const [timeLeft, setTimeLeft] = useState(-1);
   const [totalTimeElapsed, setTotalTimeElapsed] = useState(0);
   const [caloriesBurned, setCaloriesBurned] = useState(0);
   const progress = useSharedValue(1);
+
+  const interval = useRef<NodeJS.Timeout>();
   
   // Get workout ID from params
   const workoutId = typeof params.workoutId === 'string' ? parseInt(params.workoutId, 10) : undefined;
 
+  const { mutateAsync: completeWorkoutPlan } = api.workout.completeWorkoutPlan.useMutation()
   // Fetch workout details with exercises
   const { data: workoutData } = api.workout.getWorkoutWithExercises.useQuery(
     { workoutId: workoutId ?? 0 },
@@ -50,10 +56,13 @@ export default function WorkoutStartScreen() {
   
   // Calculate exercise duration (work time + rest time)
   const calculateExerciseDuration = useCallback((exercise: NonNullable<typeof currentExercise>) => {
+    if (workoutId === Number(cooldownWorkoutId)) {
+      return 120; // 2 minutes for cooldown workout
+    }
     // Each set takes: (time for reps) + rest time
     const timePerRep = 3; // Assume 3 seconds per rep
     return exercise.sets * ((exercise.reps * timePerRep) + exercise.restSeconds);
-  }, []);
+  }, [workoutId]);
 
   // Initialize timer when exercise changes
   useEffect(() => {
@@ -66,18 +75,20 @@ export default function WorkoutStartScreen() {
 
   // Timer effect
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    
 
     if (!isPaused && timeLeft > 0 && currentExercise) {
-      interval = setInterval(() => {
+      interval.current = setInterval(() => {
         setTimeLeft((prev) => {
           const newTime = prev - 1;
           // Update progress ring
           const exerciseDuration = calculateExerciseDuration(currentExercise);
-          progress.value = withTiming(newTime / exerciseDuration, {
-            duration: 1000,
-            easing: Easing.linear,
-          });
+          if (exerciseDuration) {
+            progress.value = withTiming(newTime / exerciseDuration, {
+              duration: 1000,
+              easing: Easing.linear,
+            });
+          }
           return newTime;
         });
         setTotalTimeElapsed(prev => prev + 1);
@@ -86,7 +97,7 @@ export default function WorkoutStartScreen() {
       }, 1000);
     }
 
-    return () => clearInterval(interval);
+    return () => clearInterval(interval.current);
   }, [isPaused, timeLeft, currentExercise, progress, calculateExerciseDuration]);
 
   // Handle exercise completion
@@ -97,22 +108,33 @@ export default function WorkoutStartScreen() {
         setCurrentExerciseIndex(prev => prev + 1);
       } else {
         // Workout complete
+        clearInterval(interval.current);
         void handleWorkoutComplete();
       }
     }
   }, [timeLeft, currentExercise, currentExerciseIndex, totalExercises]);
 
+  /**
+   * @param auto - if true, indicates the user marked th
+   * @returns 
+   */
   const handleWorkoutComplete = async () => {
     if (!workoutData || !workoutId) return;
 
     try {
       // Track workout progress
       await trackProgressMutation.mutateAsync({
-        userId: 1, // Replace with actual user ID from auth
         workoutId,
         durationMinutes: Math.ceil(totalTimeElapsed / 60),
         caloriesBurned: Math.round(caloriesBurned),
       });
+
+      // Complete the workout plan
+      await completeWorkoutPlan({
+        workoutId,
+        planId: workoutData.planId,
+        dayNumber: workoutData.dayNumber,
+      })
 
       // Navigate to completion screen
       router.push({
@@ -147,6 +169,7 @@ export default function WorkoutStartScreen() {
       setCurrentExerciseIndex(prev => prev + 1);
     } else {
       void handleWorkoutComplete();
+      clearInterval(interval.current);
     }
   };
 
@@ -225,12 +248,16 @@ export default function WorkoutStartScreen() {
             <Text className="text-xl font-inter-bold mb-2 text-center">
               {currentExercise.name}
             </Text>
-            <Text className="text-gray-600 text-center text-sm mb-4">
-              {currentExercise.sets} sets × {currentExercise.reps} reps
-            </Text>
-            <Text className="text-gray-600 text-center text-sm mb-8">
-              {currentExercise.restSeconds}s rest between sets
-            </Text>
+            {workoutId !== Number(cooldownWorkoutId) && (
+              <>
+                <Text className="text-gray-600 text-center text-sm mb-4">
+                  {currentExercise.sets} sets × {currentExercise.reps} reps
+                </Text>
+                <Text className="text-gray-600 text-center text-sm mb-8">
+                  {currentExercise.restSeconds}s rest between sets
+                </Text>
+              </>
+            )}
             
             {/* Timer */}
             <Text className="text-7xl font-inter-bold mb-8">

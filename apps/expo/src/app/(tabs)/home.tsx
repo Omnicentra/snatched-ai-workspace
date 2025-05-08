@@ -4,17 +4,16 @@ import { NutritionStats } from "@/components/home/NutritionStats";
 import { RecentlyLogged } from "@/components/home/RecentlyLogged";
 import { SnatchHackCard } from "@/components/home/SnatchHackCard";
 import { TodaysPlanCard } from "@/components/home/TodaysPlanCard";
+import { api } from "@/utils/api";
 import { authClient } from "@/utils/auth";
 import { Ionicons } from "@expo/vector-icons";
+import Constants from "expo-constants";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import Constants from "expo-constants";
 import { StatusBar } from "expo-status-bar";
-import * as Sentry from "@sentry/react-native";
-import React, { useState, useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
-import { api } from "@/utils/api";
 
 // Day Pill Component
 const DayPill = ({
@@ -158,13 +157,12 @@ export default function HomeScreen() {
             <View className="flex h-9 w-9 items-center justify-center rounded-full bg-pink-50">
               <Text className="font-inter-bold text-sm text-pink-500">0</Text>
             </View>
-            <Pressable className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100">
+            {/* <Pressable className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100">
               <Ionicons name="notifications-outline" size={20} color="#1F2937" />
-            </Pressable>
+            </Pressable> */}
             <Pressable 
               className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100"
               onPress={() => {
-                Sentry.captureException(new Error("Profile button pressed"));
                 router.push("/(modals)/profile")
               }}
             >

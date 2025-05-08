@@ -172,7 +172,7 @@ export async function seedWorkoutExercises() {
         where: eq(workoutExercises.workoutId, workout.id)
       })
       
-      if (existingWorkoutExercises.length >= 5) {
+      if (existingWorkoutExercises.length >= 3) {
         console.warn(`⚠️ Workout exercises for "${workout.title}" already exist, skipping`)
         continue
       }

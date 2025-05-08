@@ -31,7 +31,7 @@ export default function SplashScreen() {
 
   const handleSkip = () => {
     void Haptics.selectionAsync().then(() => {
-      router.push("/(onboarding)/signup");
+      router.push("/(onboarding)/scan-front");
     });
   };
 
@@ -88,7 +88,7 @@ export default function SplashScreen() {
             </Text>
           </Pressable>
 
-          {appVariant === "production" && (
+          {appVariant !== "production" && (
             <Pressable
               className="rounded-full bg-black px-16 py-4 shadow-lg active:scale-95"
               onPress={handleSkip}
@@ -98,7 +98,7 @@ export default function SplashScreen() {
               </Text>
             </Pressable>
           )}
-          {appVariant == "production" && (
+          {appVariant !== "production" && (
             <Pressable
               className="rounded-full bg-black px-16 py-4 shadow-lg active:scale-95"
               onPress={handleLogin}

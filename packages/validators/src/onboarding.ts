@@ -66,6 +66,7 @@ export const bodyConcernEnum = z.enum([
   "I have a wide rib cage",
   "I have scoliosis or back sensitivity",
   "I feel like I have a straight body shape",
+  "I don't have any specific body considerations",
   "I have something else to mention",
 ]);
 

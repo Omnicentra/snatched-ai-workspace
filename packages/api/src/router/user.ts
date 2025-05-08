@@ -1,24 +1,15 @@
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { prettyPrint } from "@omc/validators";
 import { TRPCError } from "@trpc/server";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "../trpc";
 import { images } from "../utils/benchmark-images";
-import { analyzeBodyImages } from "../utils/gemini";
+import { analyzeBodyImages, validateUploadedImage } from "../utils/gemini";
 import type { ImageScansKey } from "../utils/types";
-import { prettyPrint } from "@omc/validators";
 
 type BodyShapeEnum = keyof typeof images;
-
-// Create S3 client only if environment variables are available
-const s3Client = new S3Client({
-  region: "us-east-1",
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID ?? "",
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY ?? "",
-  },
-});
 
 export const userRouter = createTRPCRouter({
   /**
@@ -68,7 +59,7 @@ export const userRouter = createTRPCRouter({
         fileType: z.string(),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const { deviceId, photoType, fileType } = input;
       prettyPrint(input);
       try {
@@ -88,7 +79,7 @@ export const userRouter = createTRPCRouter({
         });
         
         // Generate signed URL that expires in 10 minutes
-        const presignedUrl = await getSignedUrl(s3Client, putCommand, {
+        const presignedUrl = await getSignedUrl(ctx.s3, putCommand, {
           expiresIn: 600,
         });
 
@@ -104,6 +95,26 @@ export const userRouter = createTRPCRouter({
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Failed to generate upload URL",
+        });
+      }
+    }),
+
+  validateUploadedImage: publicProcedure
+    .input(
+      z.object({
+        imageKey: z.string(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const { imageKey } = input;
+      
+      try {
+        return await validateUploadedImage(imageKey);
+      } catch (error) {
+        console.error('Error validating image:', error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to validate image",
         });
       }
     }),

@@ -133,8 +133,9 @@ export default function ScanBackScreen() {
   const [isUploading, setIsUploading] = useState(false)
   const countdownRef = useRef<NodeJS.Timeout>()
   
-  // Get the mutation from tRPC
+  // Get the mutations from tRPC
   const generatePhotoUploadUrl = api.user.generatePhotoUploadUrl.useMutation();
+  const validateUploadedImage = api.user.validateUploadedImage.useMutation();
 
   useEffect(() => {
     return () => {
@@ -224,6 +225,28 @@ export default function ScanBackScreen() {
       
       if (uploadSuccess) {
         console.log('Upload successful');
+        
+        // Validate the uploaded image
+        const validationResult = await validateUploadedImage.mutateAsync({
+          imageKey: result.key,
+        });
+
+        if (!validationResult.isValid) {
+          Alert.alert(
+            'Invalid Image',
+            validationResult.rejectionReason ?? 'The image does not meet our requirements. Please try again.',
+            [
+              { 
+                text: 'Retake Photo',
+                onPress: () => {
+                  setCapturedImage(null);
+                  setIsUploading(false);
+                }
+              }
+            ]
+          );
+          return;
+        }
         
         // Store the image key in LegendState
         onboardingStore$.onboarding.backViewPhoto.set(result.key);
