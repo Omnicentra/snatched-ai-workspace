@@ -24,6 +24,10 @@ import beforeAfter from "@/assets/images/before-after.jpeg";
 import { StyledButton } from "@/components/core";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import { appVariant } from "@/lib/utils";
+import { api } from "@/utils/api";
+import { use$ } from "@legendapp/state/react";
+import { onboardingStore$ } from "@/stores/onboarding.store";
+import * as Sentry from '@sentry/react-native';
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CAROUSEL_ITEM_WIDTH = SCREEN_WIDTH - 40;
@@ -676,6 +680,17 @@ export default function PaywallScreen() {
   const [packages, setPackages] = useState<PurchasesPackage[]>([]);
   const [selectedPackage, setSelectedPackage] = useState<PurchasesPackage>();
   const [plans, setPlans] = useState<Record<string, Plan>>({});
+  const { mutate: imageTransformation } = api.user.imageTransformation.useMutation({
+    onSuccess: (data) => {
+      onboardingStore$.transformedImageKey.set(data.transformedImageKey);
+    },
+    onError: (error) => {
+      console.error(error);
+      Sentry.captureException(error);
+    }
+  });
+  
+  const frontImageKey = use$(onboardingStore$.onboarding.frontViewPhoto);
 
   useEffect(() => {
     const fetchPackages = async () => {
@@ -796,6 +811,11 @@ export default function PaywallScreen() {
         // Set onboarding completion flag and navigate to results with unlocked state
         await Promise.all([
           SecureStore.setItemAsync("onboarding_complete", "true"),
+          imageTransformation({
+            imageKeys: {
+              front: frontImageKey
+            }
+          }),
           router.replace({
             pathname: "/(onboarding)/results",
             params: { unlocked: "true" }

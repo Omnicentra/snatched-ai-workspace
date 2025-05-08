@@ -38,8 +38,6 @@ interface Onboarding {
 
 // Initial state matching the BodyRatingResponse type
 const bodyRatingStoreInitialState: BodyRatingResponse = {
-  imageRejected: false,
-  imageRejectionReason: null,
   currentSnatchedScore: null,
   potentialSnatchedScore: null,
   potentialWaistReductionInches: null,
@@ -56,6 +54,7 @@ const bodyRatingStoreInitialState: BodyRatingResponse = {
 interface Store {
   onboarding: Onboarding;
   bodyRating: BodyRatingResponse;
+  transformedImageKey: string;
 }
 
 // Create a global observable for the store
@@ -88,6 +87,7 @@ export const onboardingStore$ = observable<Store>({
     age: 0,
   },
   bodyRating: bodyRatingStoreInitialState,
+  transformedImageKey: "",
 });
 
 // Persist the observable to the named key of the global persist plugin

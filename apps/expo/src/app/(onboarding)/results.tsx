@@ -1,7 +1,9 @@
 // app/(onboarding)/results.tsx
-import Constants from 'expo-constants'
-import { LinearGradient } from 'expo-linear-gradient'
-import { useRouter, useLocalSearchParams } from 'expo-router'
+import { onboardingStore$ } from '@/stores/onboarding.store';
+import { use$ } from '@legendapp/state/react';
+import Constants from 'expo-constants';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useRef } from 'react'; // Import useRef and useEffect
 import {
   Dimensions,
@@ -11,9 +13,7 @@ import {
   View
 } from 'react-native'; // Import Dimensions
 import ConfettiCannon from 'react-native-confetti-cannon'; // Import ConfettiCannon
-import Svg, { Path } from 'react-native-svg'
-import { use$ } from '@legendapp/state/react';
-import { onboardingStore$ } from '@/stores/onboarding.store';
+import Svg, { Path } from 'react-native-svg';
 
 import { StyledButton } from '@/components/core'; // Assuming correct path
 
@@ -81,10 +81,6 @@ export default function ResultsScreen() {
       void router.push('/(onboarding)/paywall');
     }
   }
-
-  useEffect(() => {
-    console.log(JSON.stringify(bodyRating, null, 2));
-  }, [bodyRating]);
 
   // Trigger confetti shortly after the component mounts
   useEffect(() => {

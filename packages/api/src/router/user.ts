@@ -4,7 +4,7 @@ import { prettyPrint } from "@omc/validators";
 import { TRPCError } from "@trpc/server";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
-import { createTRPCRouter, publicProcedure } from "../trpc";
+import { createTRPCRouter, protectedProcedure, publicProcedure } from "../trpc";
 import { images } from "../utils/benchmark-images";
 import { analyzeBodyImages, validateUploadedImage } from "../utils/gemini";
 import { detectFace } from "../utils/gemini";
@@ -43,7 +43,7 @@ export const userRouter = createTRPCRouter({
 
       // Run body analyzer with image URLs and desired shape
       try {
-        return analyzeBodyImages(imageData, desiredBodyShape);
+        return await analyzeBodyImages(imageData, desiredBodyShape);
       } catch (error) {
         console.error(error);
         throw new TRPCError({
@@ -101,7 +101,7 @@ export const userRouter = createTRPCRouter({
       }
     }),
 
-  imageTransformation: publicProcedure
+  imageTransformation: protectedProcedure
     .input(
       z.object({
         imageKeys: z.object({

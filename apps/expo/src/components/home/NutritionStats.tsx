@@ -1,44 +1,58 @@
 import { ProgressRing } from "@/components/core";
 import { onboardingStore$ } from "@/stores/onboarding.store";
+import type { IconName } from "@/types";
 import { Ionicons } from "@expo/vector-icons";
 import { use$ } from "@legendapp/state/react";
+import { useRouter } from "expo-router";
 import React from "react";
-import { Alert, Pressable, Text, View } from "react-native";
-import type { IconName } from "@/types";
+import { Pressable, Text, View } from "react-native";
 
 export const NutritionStats = () => {
   const bodyRating = use$(onboardingStore$.bodyRating);
+  const router = useRouter();
 
-  const handleTransformationPreview = () => {
-    Alert.alert(
-      "Coming Soon!",
-      "We're working hard to bring you AI-powered transformation previews. Stay tuned for this exciting feature!",
-      [{ text: "Can't Wait!", style: "default" }]
-    );
-  };
+  // const handleTransformationPreview = () => {
+  //   Alert.alert(
+  //     "Coming Soon!",
+  //     "We're working hard to bring you AI-powered transformation previews. Stay tuned for this exciting feature!",
+  //     [{ text: "Can't Wait!", style: "default" }],
+  //   );
+  // };
 
   // Calculate the overall snatched score as an average of all metrics
-  const snatchedScore = Math.round(
-    [
-      bodyRating.waistDefinition ?? 0,
-      bodyRating.hipCurve ?? 0,
-      bodyRating.gluteShape ?? 0,
-      bodyRating.posture ?? 0,
-      bodyRating.armShape ?? 0,
-      bodyRating.backDefinition ?? 0,
-    ].filter(Boolean).reduce((a, b) => a + b, 0) / 6
-  );
+  // const snatchedScore = Math.round(
+  //   [
+  //     bodyRating.waistDefinition ?? 0,
+  //     bodyRating.hipCurve ?? 0,
+  //     bodyRating.gluteShape ?? 0,
+  //     bodyRating.posture ?? 0,
+  //     bodyRating.armShape ?? 0,
+  //     bodyRating.backDefinition ?? 0,
+  //   ].filter(Boolean).reduce((a, b) => a + b, 0) / 6
+  // );
 
   const bodyPartStats: {
     label: string;
     value: number;
     icon: IconName;
   }[] = [
-    { label: "Waist Definition", value: bodyRating.waistDefinition ?? 0, icon: "hourglass-outline" },
+    {
+      label: "Waist Definition",
+      value: bodyRating.waistDefinition ?? 0,
+      icon: "hourglass-outline",
+    },
     { label: "Arm Shape", value: bodyRating.armShape ?? 0, icon: "barbell" },
-    { label: "Glute Shape", value: bodyRating.gluteShape ?? 0, icon: "fitness" },
+    {
+      label: "Glute Shape",
+      value: bodyRating.gluteShape ?? 0,
+      icon: "fitness",
+    },
     { label: "Hip Curve", value: bodyRating.hipCurve ?? 0, icon: "walk" },
-    { label: "Back Definition", value: bodyRating.backDefinition ?? 0, icon: "body" },
+    {
+      label: "Back Definition",
+      value: bodyRating.backDefinition ?? 0,
+      icon: "body",
+    },
     { label: "Posture", value: bodyRating.posture ?? 0, icon: "shield" },
   ];
 
@@ -51,32 +65,26 @@ export const NutritionStats = () => {
             <ProgressRing
               size={160}
               strokeWidth={12}
-              progress={snatchedScore / 100}
+              progress={bodyRating.currentSnatchedScore / 100}
               bgColor="#F3F4F6"
               progressColor="#F472B6"
             />
             <View className="absolute inset-0 items-center justify-center">
-              <Text className="font-inter-bold text-4xl text-black">{snatchedScore}</Text>
+              <Text className="font-inter-bold text-4xl text-black">
+                {bodyRating.currentSnatchedScore}
+              </Text>
               <Text className="font-inter mt-1 text-sm text-gray-500">
                 Snatched Score
               </Text>
             </View>
           </View>
-          <Pressable 
-            className="flex-row items-center rounded-full bg-gray-100 px-4 py-2"
-            onPress={handleTransformationPreview}
+          <Pressable
+            className="flex-row items-center rounded-full bg-pink-50 px-4 py-2"
+            onPress={() => router.push("/(modals)/transformation-preview")}
           >
-            <View className="relative">
-              <Ionicons name="image" size={18} color="#6B7280" />
-              <View className="absolute -right-1 -top-1">
-                <View className="h-3 w-3 items-center justify-center rounded-full bg-yellow-400">
-                  <Text className="font-inter-bold text-[6px] text-white">!</Text>
-                </View>
-              </View>
-            </View>
-            <Text className="font-inter-medium ml-2 text-sm text-gray-500">
-              Transformation Preview
-              <Text className="text-green-500"> • Coming Soon</Text>
+            <Ionicons name="image" size={18} color="#F472B6" />
+            <Text className="font-inter-medium ml-2 text-sm text-pink-500">
+              See Snatched Transformation
             </Text>
           </Pressable>
         </View>
@@ -116,4 +124,4 @@ export const NutritionStats = () => {
       </View>
     </View>
   );
-}; 
+};
