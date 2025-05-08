@@ -828,8 +828,10 @@ export default function PaywallScreen() {
       console.error("Error purchasing:", error);
       if (error instanceof Error) {
         Alert.alert("Purchase Failed", error.message);
+        Sentry.captureException(error);
       } else {
         Alert.alert("Purchase Failed", "An error occurred while processing your purchase. Please try again.");
+        Sentry.captureException(error);
       }
     } finally {
       setIsPurchasing(false);

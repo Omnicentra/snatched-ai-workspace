@@ -16,7 +16,6 @@ import { StatusBar } from "expo-status-bar";
 import { nutritionStore$ } from "@/stores/nutrition.store";
 import { authClient } from "@/utils/auth";
 import { Ionicons } from "@expo/vector-icons";
-import { appVariant } from "@/lib/utils";
 
 const MenuItem = ({
   icon,
@@ -105,8 +104,10 @@ export default function ProfileScreen() {
         ]);
       },
     },
-    ...(appVariant !== "production" ? [{
-      icon: <Ionicons name="refresh-circle-outline" size={18} color="#DC2626" />,
+    {
+      icon: (
+        <Ionicons name="refresh-circle-outline" size={18} color="#DC2626" />
+      ),
       label: "Reset Onboarding",
       onPress: () => {
         Alert.alert(
@@ -128,9 +129,8 @@ export default function ProfileScreen() {
         );
       },
       textColor: "text-red-600",
-    }] : []),
+    },
   ];
-
 
   return (
     <LinearGradient

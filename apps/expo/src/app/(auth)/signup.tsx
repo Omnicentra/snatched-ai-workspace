@@ -19,7 +19,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { getOrCreateDeviceId } from "@/utils/device-id";
 import { api } from "@/utils/api";
 import * as Device from "expo-device";
-
+import * as Sentry from "@sentry/react-native";
 export default function SignupScreen() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -39,6 +39,10 @@ export default function SignupScreen() {
           });
           
           const info = await Purchases.logIn(session.user.email);
+          Sentry.setUser({
+            email: session.user.email,
+            id: session.user.id,
+          });
           if (info.customerInfo.activeSubscriptions.length > 0) {
             router.push("/(tabs)/home");
           } else {

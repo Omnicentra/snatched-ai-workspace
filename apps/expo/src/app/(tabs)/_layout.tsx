@@ -59,7 +59,7 @@ export default function TabLayout() {
     if (!currentWeekPlan && isFetched) {
       generateWorkoutPlan();
     }
-  }, [currentWeekPlan, isFetched,]);
+  }, [currentWeekPlan, isFetched]);
 
   useEffect(() => {
     if (mealPlanError) {
@@ -97,7 +97,7 @@ export default function TabLayout() {
         name="home"
         options={{
           title: "Snatched",
-          tabBarIcon: ({ color, focused }) => (
+          tabBarIcon: ({ color }) => (
             <MaterialCommunityIcons
               name="chart-bar-stacked"
               size={26}

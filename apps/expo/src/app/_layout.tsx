@@ -1,11 +1,5 @@
 import "@bacons/text-decoder/install";
 
-import { useCallback, useEffect } from "react";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
-import Purchases, { LOG_LEVEL } from "react-native-purchases";
-import { Stack, useNavigationContainerRef } from "expo-router";
-import * as SplashScreen from "expo-splash-screen";
-import { StatusBar } from "expo-status-bar";
 import {
   Inter_400Regular,
   Inter_500Medium,
@@ -13,6 +7,12 @@ import {
   Inter_700Bold,
   useFonts,
 } from "@expo-google-fonts/inter";
+import { Stack, useNavigationContainerRef } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
+import { StatusBar } from "expo-status-bar";
+import { useCallback, useEffect } from "react";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import Purchases, { LOG_LEVEL } from "react-native-purchases";
 
 import "react-native-reanimated";
 
@@ -20,15 +20,15 @@ import { TRPCProvider } from "~/utils/api";
 
 import "../styles.css";
 
-import { Platform } from "react-native";
-import { isRunningInExpoGo } from "expo";
-import Constants from "expo-constants";
 import {
   appVariant,
   revenuecatProjectAppleApiKey,
   revenuecatProjectGoogleApiKey,
 } from "@/lib/utils";
 import * as Sentry from "@sentry/react-native";
+import { isRunningInExpoGo } from "expo";
+import Constants from "expo-constants";
+import { Platform } from "react-native";
 
 const navigationIntegration = Sentry.reactNavigationIntegration({
   enableTimeToInitialDisplay: !isRunningInExpoGo(),
@@ -53,7 +53,7 @@ Sentry.init({
 
 export {
   // Catch any errors thrown by the Layout component.
-  ErrorBoundary,
+  ErrorBoundary
 } from "expo-router";
 
 export const unstable_settings = {
@@ -79,12 +79,18 @@ function RootLayout() {
   });
 
   const initRevenueCat = useCallback(async () => {
-    await Purchases.setLogLevel(LOG_LEVEL.VERBOSE);
+    if (appVariant !== "production") {
+      await Purchases.setLogLevel(LOG_LEVEL.VERBOSE);
+    }
     if (Platform.OS === "ios") {
       Purchases.configure({ apiKey: revenuecatProjectAppleApiKey });
     } else if (Platform.OS === "android") {
       Purchases.configure({ apiKey: revenuecatProjectGoogleApiKey });
     }
+  }, []);
+
+  useEffect(() => {
+    void initRevenueCat();
   }, []);
 
   useEffect(() => {
@@ -94,12 +100,11 @@ function RootLayout() {
   }, [ref]);
 
   useEffect(() => {
-    void initRevenueCat();
     if (fontsLoaded || fontError) {
       // Hide the splash screen after the fonts have loaded or an error occurred
       void SplashScreen.hideAsync();
     }
-  }, [fontsLoaded, fontError, initRevenueCat]);
+  }, [fontsLoaded, fontError]);
 
   // Prevent rendering until the fonts have loaded or an error occurred
   if (!fontsLoaded && !fontError) {

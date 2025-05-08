@@ -1,0 +1,64 @@
+{
+  "faqs": [
+    {
+      "question": "What is Snatched AI?",
+      "answer": "Snatched AI is a personalized fitness and nutrition app that uses advanced body scanning technology to create custom workout and nutrition plans tailored to your specific goals, body type, and preferences."
+    },
+    {
+      "question": "How does the body scanning process work?",
+      "answer": "The body scanning process involves taking photos from multiple angles (front, side, and back) to create a detailed analysis of your body composition. This helps us understand your unique body type and create a personalized plan."
+    },
+    {
+      "question": "What information do I need to provide during onboarding?",
+      "answer": "During onboarding, we collect essential information including your height, weight, age, fitness goals, dietary preferences, health considerations, and menstrual cycle information (if applicable) to create the most effective personalized plan."
+    },
+    {
+      "question": "How are the workout plans personalized?",
+      "answer": "Workout plans are personalized based on your body scan results, fitness goals, available equipment, workout frequency preferences, and any physical limitations or health considerations you've shared."
+    },
+    {
+      "question": "How does the nutrition planning work?",
+      "answer": "Our nutrition plans are customized based on your body composition, goals, dietary preferences, and any food restrictions. The plan includes meal suggestions, portion guidance, and helps you manage cravings while working towards your goals."
+    },
+    {
+      "question": "Can I adjust my plan if it's not working for me?",
+      "answer": "Yes, you can fine-tune your plan at any time. The app allows you to adjust your goals, preferences, and provides options to overcome any setbacks you might encounter."
+    },
+    {
+      "question": "How does the app handle menstrual cycle considerations?",
+      "answer": "The app takes into account your menstrual cycle to optimize your workout and nutrition plans. This includes adjusting exercise intensity and nutrition recommendations based on different phases of your cycle."
+    },
+    {
+      "question": "What if I have dietary restrictions or preferences?",
+      "answer": "During onboarding, you can specify any dietary restrictions, preferences, or allergies. The app will then customize your nutrition plan accordingly, ensuring all recommendations align with your dietary needs."
+    },
+    {
+      "question": "How often should I update my body scan?",
+      "answer": "We recommend updating your body scan every 4-6 weeks to track your progress and adjust your plan accordingly. This helps ensure your workout and nutrition plans remain optimized for your current body composition."
+    },
+    {
+      "question": "What if I miss workouts or have setbacks?",
+      "answer": "The app includes features to help you overcome setbacks and stay motivated. You can adjust your plan, get back on track, and receive support to maintain consistency in your fitness journey."
+    },
+    {
+      "question": "How does the app help with cravings?",
+      "answer": "The app provides strategies to manage cravings based on your specific triggers and preferences. This includes alternative food suggestions, timing recommendations, and techniques to overcome common craving challenges."
+    },
+    {
+      "question": "Can I use the app if I have health conditions?",
+      "answer": "Yes, the app takes into account various health considerations. During onboarding, you can specify any health conditions or concerns, and the app will adjust your plan accordingly. However, always consult with your healthcare provider before starting any new fitness or nutrition program."
+    },
+    {
+      "question": "How does the app track progress?",
+      "answer": "The app tracks your progress through regular body scans, workout completion, and nutrition adherence. You can view your transformation timeline and celebrate milestones along your journey."
+    },
+    {
+      "question": "What makes Snatched AI different from other fitness apps?",
+      "answer": "Snatched AI stands out through its comprehensive body scanning technology, personalized approach that considers your unique body type, menstrual cycle integration, and adaptive planning that evolves with your progress and changing needs."
+    },
+    {
+      "question": "How do I get started with Snatched AI?",
+      "answer": "Getting started is easy! Download the app, create an account, and follow the onboarding process. You'll be guided through body scanning, goal setting, and preference selection to create your personalized plan."
+    }
+  ]
+} 
