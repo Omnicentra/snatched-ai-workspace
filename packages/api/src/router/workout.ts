@@ -662,7 +662,7 @@ export const workoutRouter = {
       const [workoutPlan] = await db
         .insert(workoutPlans)
         .values({
-          userId: dbUser.id,
+          userId: Number(user.id),
           startDate: startDate.toISOString(),
           endDate: endDate.toISOString(),
           targetCaloriesBurn: weeklyPlan.targetCaloriesBurn,

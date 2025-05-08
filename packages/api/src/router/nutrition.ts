@@ -1,8 +1,9 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { S3Client } from "@aws-sdk/client-s3";
 import type { TRPCRouterRecord } from "@trpc/server";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { GoogleGenAI, Type } from "@google/genai";
-import { and, asc, eq, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { createSelectSchema } from "drizzle-zod";
 import OpenAI from "openai";
 import { z } from "zod";
@@ -16,9 +17,9 @@ import {
   recipes,
   user,
 } from "@omc/db/schema";
+import { slugify } from "@omc/validators";
 
 import { protectedProcedure, publicProcedure } from "../trpc";
-import { slugify } from "@omc/validators";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY });
 
@@ -316,7 +317,9 @@ async function getOrCreateRecipe(
   const similarRecipeId = await findSimilarRecipe(meal.name, existingRecipes);
 
   if (similarRecipeId) {
-    const existingRecipe = existingRecipes.find((r) => r.id === similarRecipeId);
+    const existingRecipe = existingRecipes.find(
+      (r) => r.id === similarRecipeId,
+    );
     if (existingRecipe) {
       console.log("Found existing recipe:", existingRecipe);
       // Check if the recipe needs an image
@@ -327,9 +330,11 @@ async function getOrCreateRecipe(
           .set({ imageUrl })
           .where(eq(recipes.id, existingRecipe.id))
           .returning();
-          
+
         if (!updatedRecipe) {
-          console.error("Failed to update recipe with image, using existing recipe");
+          console.error(
+            "Failed to update recipe with image, using existing recipe",
+          );
           return existingRecipe;
         }
         return updatedRecipe;
@@ -354,7 +359,7 @@ export const nutritionRouter = {
         .from(user)
         .where(eq(user.email, ctx.session.user.email))
         .execute();
-      
+
       if (!dbUser) {
         throw new Error("User not found");
       }
@@ -630,6 +635,42 @@ export const nutritionRouter = {
         meals: mealsWithDetails,
       };
     }),
+  getUserMealSchedules: protectedProcedure.query(async ({ ctx }) => {
+    const userId = Number(ctx.session.user.id);
+    const dbMealPlans = await db
+      .select({ id: mealPlans.id, date: mealPlans.date })
+      .from(mealPlans)
+      .where(eq(mealPlans.userId, userId));
+
+    if (!dbMealPlans[0]) {
+      throw new Error("No meal plans found for user");
+    }
+    const mealPlanIds = dbMealPlans.map((mealPlan) => mealPlan.id);
+
+    const mealSchedules = await db
+      .select()
+      .from(mealSchedule)
+      .where(inArray(mealSchedule.mealPlanId, mealPlanIds))
+      .execute();
+
+      // Format the meal schedules such that the key is the meal plan date and the value is the meal schedules as an array
+      const formattedMealSchedules: Record<string, typeof mealSchedule.$inferSelect[]> = {};
+
+      for (const mealSchedule of mealSchedules) {
+        // Get the meal plan for the meal schedule
+        const mealPlan = dbMealPlans.find((mealPlan) => mealPlan.id === mealSchedule.mealPlanId);
+
+        // If the meal plan is found, add the meal schedule to the formatted meal schedules
+        if (mealPlan) {
+          const dateStr = new Date(mealPlan.date).toISOString();
+          const key = dateStr.split("T")[0]!;
+          formattedMealSchedules[key] ??= [];
+          formattedMealSchedules[key].push(mealSchedule);
+        }
+      }
+
+    return formattedMealSchedules;
+  }),
 
   toggleMealCompletion: protectedProcedure
     .input(

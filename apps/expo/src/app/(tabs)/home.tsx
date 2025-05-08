@@ -1,12 +1,15 @@
 import logo from "@/assets/images/logo-dark.png";
 import { PedometerCard } from "@/components/core/PedometerCard";
+import { DayPill } from "@/components/home/DayPill";
 import { NutritionStats } from "@/components/home/NutritionStats";
 import { RecentlyLogged } from "@/components/home/RecentlyLogged";
 import { SnatchHackCard } from "@/components/home/SnatchHackCard";
 import { TodaysPlanCard } from "@/components/home/TodaysPlanCard";
+import { snatchHackStore$ } from "@/stores/snatch-hack.store";
 import { api } from "@/utils/api";
 import { authClient } from "@/utils/auth";
 import { Ionicons } from "@expo/vector-icons";
+import { use$ } from "@legendapp/state/react";
 import Constants from "expo-constants";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
@@ -15,62 +18,11 @@ import { StatusBar } from "expo-status-bar";
 import React, { useMemo, useState } from "react";
 import { Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
 
-// Day Pill Component
-const DayPill = ({
-  dayLetter,
-  dayNumber,
-  isActive,
-  isFutureDay,
-  onPress
-}: {
-  dayLetter: string
-  dayNumber: string | number
-  isActive: boolean
-  isFutureDay: boolean
-  onPress: () => void
-}) => (
-  <Pressable 
-    className={`items-center ${isFutureDay ? 'opacity-50' : ''}`} 
-    onPress={isFutureDay ? undefined : onPress}
-    disabled={isFutureDay}
-  >
-    {isActive ? (
-      <LinearGradient
-        colors={['#f472b6', '#F6ADCE']}
-        style={{
-          borderRadius: 100,
-          width: 36,
-          height: 36,
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginBottom: 2.5
-        }}
-      >
-        <Text className="font-inter-medium text-sm text-white">
-          {dayLetter}
-        </Text>
-      </LinearGradient>
-    ) : (
-      <View className="mb-1 h-10 w-10 items-center justify-center rounded-full border border-dashed border-primary">
-        {isFutureDay ? (
-          <Ionicons name="lock-closed" size={16} color="#9CA3AF" />
-        ) : (
-          <Text className="font-inter-medium text-sm text-gray-400">
-            {dayLetter}
-          </Text>
-        )}
-      </View>
-    )}
-    <Text className={`font-inter text-xs ${isActive ? 'text-pink-500' : 'text-gray-400'}`}>
-      {dayNumber}
-    </Text>
-  </Pressable>
-)
-
 export default function HomeScreen() {
   const router = useRouter();
   const utils = api.useUtils();
   const { data: session } = authClient.useSession();
+  const snatchHackStore = use$(snatchHackStore$);
   
   // Get current date and calculate the Monday of current week
   const today = new Date();
@@ -116,6 +68,36 @@ export default function HomeScreen() {
   const [activeDayIndex, setActiveDayIndex] = useState(Math.max(0, todayIndex));
   const [refreshing, setRefreshing] = useState(false);
 
+  // Fetch data for completion status
+  const { data: workoutPlan } = api.workout.getCurrentWeekPlan.useQuery();
+  const { data: mealSchedules } = api.nutrition.getUserMealSchedules.useQuery();
+
+  // Check if a day is completed
+  const isDayCompleted = (date: Date) => {
+    const dateStr = date.toISOString().split('T')[0];
+    if (!dateStr) return false;
+    const dayNumber = date.getDay() === 0 ? 7 : date.getDay(); // Convert to 1-7 range where 7 is Sunday
+    
+    // Check workout completion
+    const hasCompletedWorkout = !!workoutPlan?.workouts.find((w) => w.dayNumber === dayNumber)?.completed;
+
+    // Check meal logging completion
+    const mealSchedule = mealSchedules?.[dateStr];
+    const hasCompletedMeals = !!mealSchedule?.every((meal) => meal.completed);
+
+    // Check snatch hack completion from local store
+    const hasCompletedSnatchHack = Boolean(dateStr && snatchHackStore.completedHacks[dateStr]?.completedAt);
+
+    return hasCompletedWorkout && hasCompletedMeals && hasCompletedSnatchHack;
+  };
+
+  // Calculate number of completed days in the current week
+  const completedDaysCount = useMemo(() => {
+    return weekDates.reduce((count, day) => {
+      return count + (isDayCompleted(day.fullDate) ? 1 : 0);
+    }, 0);
+  }, [weekDates, workoutPlan, mealSchedules, snatchHackStore]);
+
   const handleRefresh = () => {
     setRefreshing(true);
     void Promise.all([
@@ -155,7 +137,7 @@ export default function HomeScreen() {
           {/* Action Icons */}
           <View className="flex-row items-center gap-x-4">
             <View className="flex h-9 w-9 items-center justify-center rounded-full bg-pink-50">
-              <Text className="font-inter-bold text-sm text-pink-500">0</Text>
+              <Text className="font-inter-bold text-sm text-pink-500">{completedDaysCount}</Text>
             </View>
             {/* <Pressable className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100">
               <Ionicons name="notifications-outline" size={20} color="#1F2937" />
@@ -181,6 +163,7 @@ export default function HomeScreen() {
                 dayNumber={day.number}
                 isActive={index === activeDayIndex}
                 isFutureDay={day.fullDate > today}
+                isCompleted={isDayCompleted(day.fullDate)}
                 onPress={() => setActiveDayIndex(index)}
               />
             ))}

@@ -59,11 +59,11 @@ export default function SnatchHackDetailScreen() {
   const hack = SNATCH_HACKS.find(h => h.id === hackId)
   
   // Get today's date as string (YYYY-MM-DD)
-  const today = new Date().toISOString().split('T')[0]
+  const today = new Date().toISOString().split('T')[0] ?? '';
   
   // Get completion status from store
-  const snatchHackStore = use$(snatchHackStore$)
-  const completedHacks = snatchHackStore.completedHacks || {}
+  const snatchHackStore = use$(snatchHackStore$);
+  const completedHacks = snatchHackStore.completedHacks;
   const todaysHack = completedHacks[today]
   const isCompleted = todaysHack?.hackId === hackId
 
