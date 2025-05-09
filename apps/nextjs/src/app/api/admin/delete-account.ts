@@ -30,7 +30,6 @@ interface DeleteAccountRequest {
 export async function POST(request: Request) {
   try {
     const adminEmail = headers().get("x-admin-email");
-    console.log("adminEmail", adminEmail);
 
     if (!adminEmail?.endsWith("@omnicentra.com")) {
       Sentry.captureException(new Error("Unauthorized header"));
