@@ -24,10 +24,14 @@ import { prettyPrint, slugify } from "@omc/validators";
 import type { S3Client } from "@aws-sdk/client-s3";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { OpenAI } from "openai";
+import { openaiImageQueue } from "../utils/rate-limiter";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY });
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+// Bind method to avoid unbound 'this' lint errors
+const generateImage: typeof openai.images.generate =
+  openai.images.generate.bind(openai.images);
 
 const exerciseSchema = z.object({
   name: z.string(),
@@ -62,12 +66,16 @@ type Workout = z.infer<typeof workoutSchema>;
 type Exercise = z.infer<typeof exerciseSchema>;
 
 const generateAndUploadImage = async (s3: S3Client, workoutName: string): Promise<string> => {
-  const img = await openai.images.generate({
-    model: "gpt-image-1",
-    prompt: `Thumbnail image for ${workoutName}. The image should be a high-quality, professional-looking thumbnail for a workout video with no text or watermarks. Prefer a female model.`,
-    n: 1,
-    size: "1024x1024",
-  });
+  // Call the SDK method directly to retain full type checking on params
+  const img = await openaiImageQueue.enqueue(
+    generateImage,
+    {
+      model: "gpt-image-1",
+      prompt: `Thumbnail image for ${workoutName}. The image should be a high-quality, professional-looking thumbnail for a workout video with no text or watermarks. Prefer a female model.`,
+      n: 1,
+      size: "1024x1024" as const,
+    }
+  );
 
   if (!img.data?.[0] || img.data.length === 0) {
     throw new Error("No image data returned from OpenAI");

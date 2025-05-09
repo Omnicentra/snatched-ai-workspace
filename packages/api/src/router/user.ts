@@ -15,6 +15,7 @@ import {
   validateUploadedImage,
 } from "../utils/gemini";
 import { transformImage } from "../utils/openai";
+import { geminiVisionQueue, openaiImageQueue } from "../utils/rate-limiter";
 
 type BodyShapeEnum = keyof typeof images;
 
@@ -48,7 +49,7 @@ export const userRouter = createTRPCRouter({
 
       // Run body analyzer with image URLs and desired shape
       try {
-        return await analyzeBodyImages(imageData, desiredBodyShape);
+        return await geminiVisionQueue.enqueue(analyzeBodyImages, imageData, desiredBodyShape);
       } catch (error) {
         console.error(error);
         throw new TRPCError({
@@ -118,7 +119,7 @@ export const userRouter = createTRPCRouter({
       const { imageKeys } = input;
       try {
         // Get face coordinates and image buffer from Gemini
-        const { coordinates, imageBuffer } = await detectFace(imageKeys.front);
+        const { coordinates, imageBuffer } = await geminiVisionQueue.enqueue(detectFace, imageKeys.front);
         const command = new GetObjectCommand({
           Bucket: "snatched-ai-bucket",
           Key: imageKeys.front,
@@ -128,7 +129,8 @@ export const userRouter = createTRPCRouter({
           expiresIn: 259200,
         });
         // Transform image using OpenAI
-        const { transformedImageKey, transformedImageUri } = await transformImage(
+        const { transformedImageKey, transformedImageUri } = await openaiImageQueue.enqueue(
+          transformImage,
           imageBuffer,
           coordinates,
         );
@@ -157,7 +159,7 @@ export const userRouter = createTRPCRouter({
       const { imageKey } = input;
 
       try {
-        return await validateUploadedImage(imageKey);
+        return await geminiVisionQueue.enqueue(validateUploadedImage, imageKey);
       } catch (error) {
         console.error("Error validating image:", error);
         throw new TRPCError({

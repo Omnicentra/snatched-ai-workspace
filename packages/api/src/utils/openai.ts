@@ -6,7 +6,6 @@ import { v4 as uuidv4 } from "uuid";
 import type { FaceCoordinates } from "./gemini";
 import { s3Client } from "./gemini";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { sleep } from "@omc/validators";
 
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -104,8 +103,6 @@ export async function transformImage(
       Bucket: "snatched-ai-bucket",
       Key: outputKey,
     });
-
-    await sleep(500);
 
     // expires in 3 days
     const presignedUrl = await getSignedUrl(

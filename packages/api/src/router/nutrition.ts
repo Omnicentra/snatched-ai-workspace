@@ -20,10 +20,14 @@ import {
 import { slugify } from "@omc/validators";
 
 import { protectedProcedure, publicProcedure } from "../trpc";
+import { openaiImageQueue } from "../utils/rate-limiter";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY });
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+// Bind method to avoid unbound 'this' lint errors
+const generateImage: typeof openai.images.generate =
+  openai.images.generate.bind(openai.images);
 
 const ingredientSchema = z.object({
   name: z.string(),
@@ -82,12 +86,16 @@ const generateAndUploadImage = async (
   s3: S3Client,
   recipeName: string,
 ): Promise<string> => {
-  const img = await openai.images.generate({
-    model: "gpt-image-1",
-    prompt: `${recipeName}`,
-    n: 1,
-    size: "1024x1024",
-  });
+  // Use the OpenAI SDK method directly to preserve parameter type inference
+  const img = await openaiImageQueue.enqueue(
+    generateImage,
+    {
+      model: "gpt-image-1",
+      prompt: `${recipeName}`,
+      n: 1,
+      size: "1024x1024" as const,
+    }
+  );
 
   if (!img.data?.[0] || img.data.length === 0) {
     throw new Error("No image data returned from OpenAI");
