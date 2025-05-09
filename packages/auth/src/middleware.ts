@@ -11,6 +11,11 @@ export async function authMiddleware(request: NextRequest) {
 	 *
 	 * You can then use this session to make decisions about the request
 	 */
+	// Skip auth check for admin API routes
+	if (request.nextUrl.pathname.startsWith('/api/admin')) {
+		return NextResponse.next();
+	}
+
 	const { data: session } = await client.getSession({
 		fetchOptions: {
 			headers: {
@@ -19,7 +24,7 @@ export async function authMiddleware(request: NextRequest) {
 		}
 	})
 	if (!session) {
-		NextResponse.redirect(new URL("/sign-in", request.url));
+		return NextResponse.redirect(new URL("/sign-in", request.url));
 	}
 	return NextResponse.next();
 }
