@@ -76,10 +76,11 @@ export default function DeleteAccountPage() {
 
     try {
       if (deletionType === "full") {
-        const response = await fetch("/api/delete-account", {
+        const response = await fetch("/api/admin/delete-account", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            "x-admin-email": "chisom@omnicentra.com",
           },
           body: JSON.stringify({ email }),
         });
@@ -98,7 +99,7 @@ export default function DeleteAccountPage() {
           .map(([id]) => dataOptions.find(opt => opt.id === id)?.label)
           .filter(Boolean);
 
-        const mailtoLink = `mailto:support@snatched.ai?subject=Data Deletion Request&body=Hello,%0A%0AI would like to request deletion of the following data from my account:%0A%0A${selectedItems.join("%0A")}%0A%0AEmail: ${email}%0A%0AThank you.`;
+        const mailtoLink = `mailto:chisomt@omnicentra.com?subject=Data Deletion Request&body=Hello,%0A%0AI would like to request deletion of the following data from my account:%0A%0A${selectedItems.join("%0A")}%0A%0AEmail: ${email}%0A%0AThank you.`;
         window.location.href = mailtoLink;
         setIsSuccess(true);
       }

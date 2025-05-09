@@ -1,5 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import { prettyPrint } from "@omc/validators";
 import { LinearGradient } from "expo-linear-gradient";
 import React from "react";
 import { Pressable, Text, View } from "react-native";
@@ -21,7 +20,6 @@ export function DayPill({
   isCompleted,
   onPress
 }: DayPillProps) {
-  prettyPrint({ isCompleted });
   return (
     <Pressable 
       className={`items-center ${isFutureDay ? 'opacity-50' : ''}`} 

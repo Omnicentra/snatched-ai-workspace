@@ -22,6 +22,7 @@
     "@omc/db": "workspace:*",
     "@omc/ui": "workspace:*",
     "@omc/validators": "workspace:*",
+    "@sentry/nextjs": "^9.17.0",
     "@t3-oss/env-nextjs": "^0.12.0",
     "@tanstack/react-query": "catalog:",
     "@trpc/client": "catalog:",
