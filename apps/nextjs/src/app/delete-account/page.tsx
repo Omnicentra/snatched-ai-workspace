@@ -1,5 +1,17 @@
 "use client";
 
+import { useState } from "react";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import {
+  AlertCircle,
+  CheckCircle2,
+  Mail,
+  ShieldAlert,
+  Trash2,
+} from "lucide-react";
+import { z } from "zod";
+
 import { Alert, AlertDescription, AlertTitle } from "@omc/ui/alert";
 import {
   AlertDialog,
@@ -13,16 +25,18 @@ import {
   AlertDialogTrigger,
 } from "@omc/ui/alert-dialog";
 import { Button } from "@omc/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@omc/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@omc/ui/card";
 import { Checkbox } from "@omc/ui/checkbox";
 import { Input } from "@omc/ui/input";
 import { Label } from "@omc/ui/label";
 import { RadioGroup, RadioGroupItem } from "@omc/ui/radio-group";
-import { AlertCircle, CheckCircle2, Mail, ShieldAlert, Trash2 } from "lucide-react";
-import Image from "next/image";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { z } from "zod";
+
 import { api } from "~/trpc/react";
 
 const emailSchema = z.object({
@@ -46,19 +60,19 @@ export default function DeleteAccountPage() {
   const [selectedData, setSelectedData] = useState<Record<string, boolean>>({});
   const router = useRouter();
 
-  const { mutateAsync: deleteAccount, isLoading } = api.admin.deleteAccount.useMutation({
-    onSuccess: () => {
-      setIsSuccess(true);
-    },
-    onError: (error) => {
-      setError(error.message);
-    },
-  });
+  const { mutateAsync: deleteAccount, isPending } =
+    api.admin.deleteAccount.useMutation({
+      onSuccess: () => {
+        setIsSuccess(true);
+      },
+      onError: (error) => {
+        setError(error.message);
+      },
+    });
 
   const validationResult = emailSchema.safeParse({ email });
   const isValidEmail = validationResult.success;
   const hasSelectedData = Object.values(selectedData).some(Boolean);
-  
 
   const handleDeleteAccount = async () => {
     if (!email) {
@@ -68,7 +82,9 @@ export default function DeleteAccountPage() {
 
     const result = emailSchema.safeParse({ email });
     if (!result.success) {
-      setError(result.error.errors[0]?.message ?? "Please enter a valid email address");
+      setError(
+        result.error.errors[0]?.message ?? "Please enter a valid email address",
+      );
       return;
     }
 
@@ -86,7 +102,7 @@ export default function DeleteAccountPage() {
         // For partial deletion, compose email
         const selectedItems = Object.entries(selectedData)
           .filter(([_, selected]) => selected)
-          .map(([id]) => dataOptions.find(opt => opt.id === id)?.label)
+          .map(([id]) => dataOptions.find((opt) => opt.id === id)?.label)
           .filter(Boolean);
 
         const mailtoLink = `mailto:chisomt@omnicentra.com?subject=Data Deletion Request&body=Hello,%0A%0AI would like to request deletion of the following data from my account:%0A%0A${selectedItems.join("%0A")}%0A%0AEmail: ${email}%0A%0AThank you.`;
@@ -128,7 +144,8 @@ export default function DeleteAccountPage() {
               </CardTitle>
             </div>
             <CardDescription className="text-base text-red-600/80 dark:text-red-400/80">
-              We're sorry to see you go. Please read the information below carefully before proceeding.
+              We're sorry to see you go. Please read the information below
+              carefully before proceeding.
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
@@ -147,18 +164,26 @@ export default function DeleteAccountPage() {
                 </Label>
                 <RadioGroup
                   value={deletionType}
-                  onValueChange={(value: string) => setDeletionType(value as DeletionType)}
+                  onValueChange={(value: string) =>
+                    setDeletionType(value as DeletionType)
+                  }
                   className="space-y-3"
                 >
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="full" id="full" />
-                    <Label htmlFor="full" className="text-gray-700 dark:text-gray-300">
+                    <Label
+                      htmlFor="full"
+                      className="text-gray-700 dark:text-gray-300"
+                    >
                       Delete my entire account and all data
                     </Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="partial" id="partial" />
-                    <Label htmlFor="partial" className="text-gray-700 dark:text-gray-300">
+                    <Label
+                      htmlFor="partial"
+                      className="text-gray-700 dark:text-gray-300"
+                    >
                       Delete specific data only
                     </Label>
                   </div>
@@ -196,7 +221,10 @@ export default function DeleteAccountPage() {
                   </h3>
                   <div className="space-y-3">
                     {dataOptions.map((option) => (
-                      <div key={option.id} className="flex items-center space-x-2">
+                      <div
+                        key={option.id}
+                        className="flex items-center space-x-2"
+                      >
                         <Checkbox
                           id={option.id}
                           checked={selectedData[option.id] ?? false}
@@ -220,7 +248,10 @@ export default function DeleteAccountPage() {
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <Label
+                  htmlFor="email"
+                  className="text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
                   Confirm your email address
                 </Label>
                 <div className="relative">
@@ -238,7 +269,8 @@ export default function DeleteAccountPage() {
                   />
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Please enter the email address associated with your account to confirm deletion.
+                  Please enter the email address associated with your account to
+                  confirm deletion.
                 </p>
                 {!isValidEmail && email && (
                   <p className="text-xs text-red-500">
@@ -249,12 +281,16 @@ export default function DeleteAccountPage() {
 
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button 
-                    variant="destructive" 
+                  <Button
+                    variant="destructive"
                     className="w-full bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800"
-                    disabled={isLoading || !isValidEmail || (deletionType === "partial" && !hasSelectedData)}
+                    disabled={
+                      isPending ||
+                      !isValidEmail ||
+                      (deletionType === "partial" && !hasSelectedData)
+                    }
                   >
-                    {isLoading ? (
+                    {isPending ? (
                       <div className="flex items-center gap-2">
                         <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
                         Processing...
@@ -262,7 +298,9 @@ export default function DeleteAccountPage() {
                     ) : (
                       <>
                         <Trash2 className="mr-2 h-4 w-4" />
-                        {deletionType === "full" ? "Delete My Account" : "Request Data Deletion"}
+                        {deletionType === "full"
+                          ? "Delete My Account"
+                          : "Request Data Deletion"}
                       </>
                     )}
                   </Button>
@@ -270,29 +308,34 @@ export default function DeleteAccountPage() {
                 <AlertDialogContent>
                   <AlertDialogHeader>
                     <AlertDialogTitle className="text-red-600 dark:text-red-400">
-                      {deletionType === "full" ? "Are you absolutely sure?" : "Confirm Data Deletion Request"}
+                      {deletionType === "full"
+                        ? "Are you absolutely sure?"
+                        : "Confirm Data Deletion Request"}
                     </AlertDialogTitle>
                     <AlertDialogDescription className="text-gray-600 dark:text-gray-300">
-                      {deletionType === "full" 
+                      {deletionType === "full"
                         ? "This action cannot be undone. This will permanently delete your account and remove all associated data from our servers."
                         : "Your request will be sent to our support team. We will process your data deletion request within 30 days."}
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction 
+                    <AlertDialogAction
                       onClick={handleDeleteAccount}
                       className="bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800"
-                      disabled={isLoading}
+                      disabled={isPending}
                     >
-                      {deletionType === "full" ? "Yes, delete my account" : "Yes, send request"}
+                      {deletionType === "full"
+                        ? "Yes, delete my account"
+                        : "Yes, send request"}
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
 
               <p className="text-center text-sm text-gray-500 dark:text-gray-400">
-                If you're having issues with your account, please contact our support team before deleting.
+                If you're having issues with your account, please contact our
+                support team before deleting.
               </p>
             </div>
           </CardContent>
@@ -306,7 +349,9 @@ export default function DeleteAccountPage() {
               <CheckCircle2 className="h-12 w-12 text-pink-500 dark:text-pink-400" />
             </div>
             <AlertDialogTitle className="text-center text-xl font-bold text-pink-600 dark:text-pink-400">
-              {deletionType === "full" ? "Account Deleted Successfully" : "Request Sent Successfully"}
+              {deletionType === "full"
+                ? "Account Deleted Successfully"
+                : "Request Sent Successfully"}
             </AlertDialogTitle>
             <AlertDialogDescription className="text-center text-gray-600 dark:text-gray-300">
               {deletionType === "full"
@@ -326,4 +371,4 @@ export default function DeleteAccountPage() {
       </AlertDialog>
     </div>
   );
-} 
+}

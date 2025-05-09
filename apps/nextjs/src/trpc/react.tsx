@@ -42,7 +42,18 @@ export function TRPCReactProvider(props: { children: React.ReactNode }) {
           headers() {
             const headers = new Headers();
             headers.set("x-trpc-source", "nextjs-react");
+            // Add admin email header for admin routes
+            if (window.location.pathname.includes("/delete-account")) {
+              headers.set("x-admin-email", "chisomt@omnicentra.com");
+            }
             return headers;
+          },
+          fetch(url, options) {
+            const headers = new Headers(options?.headers);
+            return fetch(url, {
+              ...options,
+              headers,
+            });
           },
         }),
       ],

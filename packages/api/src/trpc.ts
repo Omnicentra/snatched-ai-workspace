@@ -146,6 +146,7 @@ export const adminProcedure = t.procedure.use(({ ctx, next }) => {
   return next({
     ctx: {
       session: { ...ctx.session },
+      isAdmin: true,
     },
   });
 });
