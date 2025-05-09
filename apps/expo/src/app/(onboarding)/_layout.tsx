@@ -12,6 +12,7 @@ export default function OnboardingLayout() {
       <Stack.Screen name="ideal-body" />
       <Stack.Screen name="height" />
       <Stack.Screen name="weight" />
+      <Stack.Screen name="bmi" />
       <Stack.Screen name="ethnicity"/>
       <Stack.Screen name="transformation-intro"/>
       <Stack.Screen name="health" />

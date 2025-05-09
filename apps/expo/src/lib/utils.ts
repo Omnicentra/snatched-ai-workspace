@@ -37,3 +37,41 @@ export const calculateCaloriesBurned = (totalDuration: number) => {
   const caloriesBurned = totalDuration * 0.1;
   return Math.round(caloriesBurned);
 }
+
+/**
+ * Calculate BMI (Body Mass Index)
+ * @param weight - weight value
+ * @param weightUnit - 'kg' or 'lb'
+ * @param height - height value
+ * @param heightUnit - 'cm', 'ft/in', or 'in'
+ * @returns BMI value (number)
+ */
+export function calculateBMI({
+  weight,
+  weightUnit,
+  height,
+  heightUnit,
+}: {
+  weight: number;
+  weightUnit: 'kg' | 'lb';
+  height: number;
+  heightUnit: 'cm' | 'ft/in' | 'in';
+}): number {
+  let weightKg = weight;
+  let heightM = height;
+
+  if (weightUnit === 'lb') {
+    weightKg = weight * 0.453592;
+  }
+  if (heightUnit === 'cm') {
+    heightM = height / 100;
+  } else if (heightUnit === 'ft/in') {
+    // height is expected in inches for ft/in
+    heightM = height * 0.0254;
+  } else if (heightUnit === 'in') {
+    heightM = height * 0.0254;
+  }
+
+  if (heightM === 0) return 0;
+  return weightKg / (heightM * heightM);
+}

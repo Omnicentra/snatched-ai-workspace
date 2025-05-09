@@ -31,7 +31,7 @@ export default function SplashScreen() {
 
   const handleSkip = () => {
     void Haptics.selectionAsync().then(() => {
-      router.push("/(onboarding)/analyzing");
+      router.push("/(onboarding)/bmi");
     });
   };
 

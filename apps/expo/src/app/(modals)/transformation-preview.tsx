@@ -33,7 +33,7 @@ const TransformationPreviewScreen = observer(() => {
     ? { uri: snatchedImage }
     : (placeholderSnatched as ImageSourcePropType);
 
-  const { width: WIDTH, height: HEIGHT } = useWindowDimensions();
+  const { width: WIDTH } = useWindowDimensions();
 
   return (
     <LinearGradient
@@ -117,16 +117,36 @@ const TransformationPreviewScreen = observer(() => {
                 Snatched Goal
               </Text>
             </View>
-            <View className="w-full items-center justify-center overflow-hidden rounded-3xl bg-gray-100">
+            <View className="w-full items-center justify-center overflow-hidden rounded-3xl bg-gray-100 relative">
+              {/* Pink Glow */}
+              <View
+                style={{
+                  position: 'absolute',
+                  top: 20,
+                  left: '50%',
+                  transform: [{ translateX: -(WIDTH / 4) }],
+                  width: WIDTH / 2,
+                  height: 300,
+                  borderRadius: 24,
+                  backgroundColor: '#F9A8D4', // Pink-300
+                  opacity: 0.35,
+                  shadowColor: '#F472B6', // Pink-400
+                  shadowOffset: { width: 0, height: 0 },
+                  shadowOpacity: 0.7,
+                  shadowRadius: 40,
+                  zIndex: 0,
+                }}
+              />
               <Image
                 source={snatchedImageSource}
-                style={{ width: WIDTH / 2, height: 300 }}
+                style={{ width: WIDTH / 2, height: 300, zIndex: 1, borderRadius: 24 }}
                 contentFit="cover"
                 transition={200}
               />
               <LinearGradient
                 colors={["rgba(244,114,182,0.1)", "rgba(244,114,182,0.2)"]}
                 className="absolute inset-0"
+                style={{ borderRadius: 24, zIndex: 2 }}
               />
             </View>
           </View>

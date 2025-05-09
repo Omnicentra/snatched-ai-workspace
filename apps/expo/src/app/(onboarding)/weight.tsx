@@ -66,7 +66,7 @@ export default function WeightScreen() {
     if (result.success) {
       onboardingStore$.onboarding.weight.set(weightValue);
       onboardingStore$.onboarding.weightUnit.set(unit);
-      router.push("/(onboarding)/ethnicity");
+      router.push("/(onboarding)/bmi");
     } else {
       // Handle validation error if needed
       console.error("Weight validation failed:", result.error);
