@@ -23,10 +23,9 @@ import { RadioGroup, RadioGroupItem } from "@omc/ui/radio-group";
 import { Checkbox } from "@omc/ui/checkbox";
 import Image from "next/image";
 import { z } from "zod";
-
-interface ApiResponse {
-  message: string;
-}
+import { api } from "~/trpc/react";
+import { TRPCClientError } from "@trpc/client";
+import type { AppRouter } from "@omc/api";
 
 const emailSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -45,14 +44,23 @@ export default function DeleteAccountPage() {
   const [error, setError] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
   const [email, setEmail] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const [deletionType, setDeletionType] = useState<DeletionType>("full");
   const [selectedData, setSelectedData] = useState<Record<string, boolean>>({});
   const router = useRouter();
 
+  const deleteAccountMutation = api.admin.deleteAccount.useMutation({
+    onSuccess: () => {
+      setIsSuccess(true);
+    },
+    onError: (error: TRPCClientError<AppRouter>) => {
+      setError(error.message);
+    },
+  });
+
   const validationResult = emailSchema.safeParse({ email });
   const isValidEmail = validationResult.success;
   const hasSelectedData = Object.values(selectedData).some(Boolean);
+  const isLoading = deleteAccountMutation.isLoading;
 
   const handleDeleteAccount = async () => {
     if (!email) {
@@ -71,27 +79,11 @@ export default function DeleteAccountPage() {
       return;
     }
 
-    setIsLoading(true);
     setError(null);
 
     try {
       if (deletionType === "full") {
-        const response = await fetch("/api/admin/delete-account", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-admin-email": "chisom@omnicentra.com",
-          },
-          body: JSON.stringify({ email }),
-        });
-
-        const data = (await response.json()) as ApiResponse;
-
-        if (!response.ok) {
-          throw new Error(data.message);
-        }
-
-        setIsSuccess(true);
+        await deleteAccountMutation.mutateAsync({ email });
       } else {
         // For partial deletion, compose email
         const selectedItems = Object.entries(selectedData)
@@ -104,9 +96,11 @@ export default function DeleteAccountPage() {
         setIsSuccess(true);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
-    } finally {
-      setIsLoading(false);
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("An unexpected error occurred");
+      }
     }
   };
 
