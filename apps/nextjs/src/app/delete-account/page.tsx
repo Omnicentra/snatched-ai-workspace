@@ -1,11 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Button } from "@omc/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@omc/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@omc/ui/alert";
-import { AlertCircle, Trash2, ShieldAlert, CheckCircle2, Mail } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,15 +12,18 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@omc/ui/alert-dialog";
+import { Button } from "@omc/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@omc/ui/card";
+import { Checkbox } from "@omc/ui/checkbox";
 import { Input } from "@omc/ui/input";
 import { Label } from "@omc/ui/label";
 import { RadioGroup, RadioGroupItem } from "@omc/ui/radio-group";
-import { Checkbox } from "@omc/ui/checkbox";
+import { AlertCircle, CheckCircle2, Mail, ShieldAlert, Trash2 } from "lucide-react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { z } from "zod";
 import { api } from "~/trpc/react";
-import { TRPCClientError } from "@trpc/client";
-import type { AppRouter } from "@omc/api";
 
 const emailSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -48,11 +46,11 @@ export default function DeleteAccountPage() {
   const [selectedData, setSelectedData] = useState<Record<string, boolean>>({});
   const router = useRouter();
 
-  const deleteAccountMutation = api.admin.deleteAccount.useMutation({
+  const { mutateAsync: deleteAccount, isLoading } = api.admin.deleteAccount.useMutation({
     onSuccess: () => {
       setIsSuccess(true);
     },
-    onError: (error: TRPCClientError<AppRouter>) => {
+    onError: (error) => {
       setError(error.message);
     },
   });
@@ -60,7 +58,7 @@ export default function DeleteAccountPage() {
   const validationResult = emailSchema.safeParse({ email });
   const isValidEmail = validationResult.success;
   const hasSelectedData = Object.values(selectedData).some(Boolean);
-  const isLoading = deleteAccountMutation.isLoading;
+  
 
   const handleDeleteAccount = async () => {
     if (!email) {
@@ -83,7 +81,7 @@ export default function DeleteAccountPage() {
 
     try {
       if (deletionType === "full") {
-        await deleteAccountMutation.mutateAsync({ email });
+        await deleteAccount({ email });
       } else {
         // For partial deletion, compose email
         const selectedItems = Object.entries(selectedData)
