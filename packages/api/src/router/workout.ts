@@ -650,9 +650,8 @@ export const workoutRouter = {
         throw new Error("No response from Gemini");
       }
 
-      prettyPrint(JSON.stringify(response.text, null, 2));
-
       const weeklyPlan = JSON.parse(response.text) as WeeklyPlan;
+      prettyPrint(weeklyPlan);
 
       // Fetch existing workouts for similarity check
       const existingWorkouts = await db.select().from(workouts).execute();
