@@ -30,6 +30,7 @@ import Animated, {
   withSequence,
   withDelay
 } from 'react-native-reanimated'
+import { uploadToS3 } from '@/utils/s3'
 
 const AnimatedIcon = Animated.createAnimatedComponent(MaterialCommunityIcons);
 
@@ -144,33 +145,6 @@ export default function ScanBackScreen() {
       }
     }
   }, [])
-
-  // Direct upload to S3 using the presigned URL
-  const uploadToS3 = async (uri: string, presignedUrl: string): Promise<boolean> => {
-    try {
-      // Get the blob from uri
-      const response = await fetch(uri);
-      const blob = await response.blob();
-      
-      // Upload directly to S3 using the presigned URL
-      const uploadResponse = await fetch(presignedUrl, {
-        method: 'PUT',
-        body: blob,
-        headers: {
-          'Content-Type': blob.type,
-        },
-      });
-      
-      if (!uploadResponse.ok) {
-        throw new Error(`Upload failed with status: ${uploadResponse.status}`);
-      }
-      
-      return true;
-    } catch (error) {
-      console.error('Error uploading to S3:', error);
-      return false;
-    }
-  };
 
   const startCountdown = () => {
     setCountdown(5)

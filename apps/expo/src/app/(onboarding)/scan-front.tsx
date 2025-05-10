@@ -1,35 +1,35 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useEffect, useRef, useState } from 'react';
 import {
-  Text,
-  View,
+  Alert,
+  Linking,
   Pressable,
   SafeAreaView,
-  Alert,
   StyleSheet,
+  Text,
   useWindowDimensions,
-  Linking,
-} from 'react-native' // Added Alert, StyleSheet, Linking
+  View,
+} from 'react-native'; // Added Alert, StyleSheet, Linking
 // No 'styled' import
-import type { CameraType} from 'expo-camera';
-import { CameraView, useCameraPermissions } from 'expo-camera';
-import * as MediaLibrary from 'expo-media-library';
-import { useRouter } from 'expo-router';
-import Constants from 'expo-constants';
-import { Image } from 'expo-image';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
 import sillhouetteFront from '@/assets/images/silhouette-front.png';
-import * as ImagePicker from 'expo-image-picker';
-import { getOrCreateDeviceId } from '@/utils/device-id';
 import { onboardingStore$ } from '@/stores/onboarding.store';
 import { api } from '@/utils/api';
-import * as Sentry from '@sentry/react-native';
-import Animated, { 
-  useAnimatedStyle, 
-  withRepeat, 
-  withTiming, 
+import { getOrCreateDeviceId } from '@/utils/device-id';
+import { uploadToS3 } from '@/utils/s3';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
+import type { CameraType } from 'expo-camera';
+import { CameraView, useCameraPermissions } from 'expo-camera';
+import Constants from 'expo-constants';
+import { Image } from 'expo-image';
+import * as ImagePicker from 'expo-image-picker';
+import * as MediaLibrary from 'expo-media-library';
+import { useRouter } from 'expo-router';
+import Animated, {
+  useAnimatedStyle,
+  withDelay,
+  withRepeat,
   withSequence,
-  withDelay
+  withTiming
 } from 'react-native-reanimated';
 
 const AnimatedIcon = Animated.createAnimatedComponent(MaterialCommunityIcons);
@@ -158,41 +158,6 @@ export default function ScanFrontScreen() {
       })
     }, 1000)
   }
-
-  // Direct upload to S3 using the presigned URL
-  const uploadToS3 = async (uri: string, presignedUrl: string): Promise<boolean> => {
-    try {
-      // Get the blob from uri
-      const response = await fetch(uri);
-      const blob = await response.blob();
-      
-      // Upload directly to S3 using the presigned URL
-      const uploadResponse = await fetch(presignedUrl, {
-        method: 'PUT',
-        body: blob,
-        headers: {
-          'Content-Type': blob.type,
-        },
-      });  
-      if (!uploadResponse.ok) {
-        Sentry.captureException(new Error(`Upload failed with status: ${uploadResponse.status}`));
-        throw new Error(`Upload failed with status: ${uploadResponse.status}`);
-      }
-
-      Sentry.captureEvent({
-        message: `Upload response: ${uploadResponse.status}`,
-        level: 'info',
-        extra: {
-          ...uploadResponse
-        },
-      });
-
-      return true;
-    } catch (error) {
-      console.error('Error uploading to S3:', error);
-      return false;
-    }
-  };
 
   const takePicture = async () => {
     if (!cameraRef.current) {

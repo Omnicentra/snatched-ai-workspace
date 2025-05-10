@@ -1,30 +1,71 @@
 // Similar structure to scan-front.tsx, just change titles, progress, tips, and navigation target.
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import {
-  Text,
-  View,
+  Alert,
   Pressable,
   SafeAreaView,
-  Alert,
-  StyleSheet
+  StyleSheet,
+  Text,
+  View
 } from 'react-native'
-import { CameraType, CameraView } from 'expo-camera'
-import {
-  PermissionStatus,
-  usePermissions,
-  getPermissionsAsync
-} from 'expo-media-library'
-import { useRouter } from 'expo-router'
+import { CameraType, CameraView, useCameraPermissions } from 'expo-camera'
 import Constants from 'expo-constants'
-import Svg, { Path } from 'react-native-svg'
-import { Ionicons } from '@expo/vector-icons'
+import { Image } from 'expo-image'
+import * as ImagePicker from 'expo-image-picker'
+import * as MediaLibrary from 'expo-media-library'
+import { useRouter } from 'expo-router'
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'
 import { BlurView } from 'expo-blur'
+import { onboardingStore$ } from '@/stores/onboarding.store'
+import { api } from '@/utils/api'
+import { getOrCreateDeviceId } from '@/utils/device-id'
+import { uploadToS3 } from '@/utils/s3'
+import Animated, { 
+  useAnimatedStyle, 
+  withRepeat, 
+  withTiming, 
+  withSequence,
+  withDelay
+} from 'react-native-reanimated'
 
-// Import or define ProgressBar, Silhouette, CameraButton components as in scan-front.tsx
+const AnimatedIcon = Animated.createAnimatedComponent(MaterialCommunityIcons);
 
-const ProgressBar = (
-  { progress }: { progress: number } // Duplicated for brevity
-) => (
+// Loading animation components
+function LoadingDot({ delay }: { delay: number }) {
+  const dotStyle = useAnimatedStyle(() => ({
+    opacity: withRepeat(
+      withSequence(
+        withDelay(delay,
+          withTiming(0.2, { duration: 500 })
+        ),
+        withTiming(1, { duration: 500 })
+      ),
+      -1,
+      true
+    )
+  }));
+
+  return (
+    <AnimatedIcon
+      name="circle"
+      size={12}
+      color="white"
+      style={dotStyle}
+    />
+  );
+}
+
+function LoadingDots() {
+  return (
+    <View className="flex-row gap-x-2">
+      {[0, 1, 2].map((i) => (
+        <LoadingDot key={i} delay={i * 200} />
+      ))}
+    </View>
+  );
+}
+
+const ProgressBar = ({ progress }: { progress: number }) => (
   <View className="h-1 w-full rounded-full bg-gray-700">
     <View
       className="h-1 rounded-full bg-pink-400"
@@ -32,46 +73,73 @@ const ProgressBar = (
     />
   </View>
 )
-const Silhouette = () => (
-  // Duplicated for brevity - Use shared component
-  <Svg width="220" height="500" viewBox="0 0 220 500">
-    <Path
-      d="M110 120 C 130 120, 150 130, 160 150 C 165 160, 170 170, 170 180 C 170 190, 165 200, 160 210 C 155 220, 150 230, 145 240 C 140 250, 135 260, 130 270 C 125 280, 120 290, 120 300 C 120 310, 120 320, 120 330 C 120 340, 120 350, 120 360 C 120 370, 115 380, 110 390 C 105 380, 100 370, 100 360 C 100 350, 100 340, 100 330 C 100 320, 100 310, 100 300 C 100 290, 95 280, 90 270 C 85 260, 80 250, 75 240 C 70 230, 65 220, 60 210 C 55 200, 50 190, 50 180 C 50 170, 55 160, 60 150 C 70 130, 90 120, 110 120"
-      stroke="white"
-      strokeWidth="2"
-      strokeDasharray="4"
-      fill="none"
-    />
-  </Svg>
-)
-const CameraButton = (
-  { onPress }: { onPress: () => void } // Duplicated for brevity
-) => (
+
+const CameraButton = ({
+  onPress,
+  isRetake
+}: {
+  onPress: () => void
+  isRetake?: boolean
+}) => (
   <Pressable
     className="h-[70px] w-[70px] items-center justify-center rounded-full bg-white shadow-lg active:opacity-70"
     onPress={onPress}
   >
-    <View className="h-[54px] w-[54px] rounded-full border-2 border-black" />
+    {isRetake ? (
+      <Ionicons name="refresh" size={30} color="black" />
+    ) : (
+      <View className="h-[54px] w-[54px] rounded-full border-2 border-black" />
+    )}
   </Pressable>
 )
 
-export default function ScanSideScreen() {
+const ControlButton = ({ onPress, icon }: { onPress: () => void; icon: React.ReactNode }) => (
+  <Pressable
+    className="h-12 w-12 items-center justify-center rounded-full bg-black/50"
+    onPress={onPress}
+  >
+    {icon}
+  </Pressable>
+)
+
+export default function ProgressSideScreen() {
   const router = useRouter()
   const [type, setType] = useState<CameraType>('back')
-  const [cameraPermission, setCameraPermission] =
-    useState<PermissionStatus | null>(null)
-  const [mediaPermission, requestMediaPermission] = usePermissions()
+  const [cameraPermission, requestCameraPermission] = useCameraPermissions()
+  const [mediaPermission, requestMediaPermission] = MediaLibrary.usePermissions()
   const cameraRef = useRef<CameraView>(null)
+  const [countdown, setCountdown] = useState<number | null>(null)
+  const [capturedImage, setCapturedImage] = useState<string | null>(null)
+  const [isUploading, setIsUploading] = useState(false)
+  const countdownRef = useRef<NodeJS.Timeout>()
+  
+  // Get the mutations from tRPC
+  const generatePhotoUploadUrl = api.user.generatePhotoUploadUrl.useMutation();
+  const validateUploadedImage = api.user.validateUploadedImage.useMutation();
 
   useEffect(() => {
-    // Permissions likely already requested, but good practice to check/request if needed
-    if (cameraPermission !== PermissionStatus.GRANTED) {
-      getPermissionsAsync().then((p) => {
-        setCameraPermission(p.status)
-      })
+    void requestCameraPermission()
+    void requestMediaPermission()
+    return () => {
+      if (countdownRef.current) {
+        clearInterval(countdownRef.current)
+      }
     }
-    if (!mediaPermission?.granted) requestMediaPermission()
   }, [])
+
+  const startCountdown = () => {
+    setCountdown(5)
+    countdownRef.current = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev === 1) {
+          clearInterval(countdownRef.current)
+          void takePicture()
+          return null
+        }
+        return prev ? prev - 1 : null
+      })
+    }, 1000)
+  }
 
   const takePicture = async () => {
     if (!cameraRef.current || !mediaPermission?.granted) {
@@ -79,26 +147,136 @@ export default function ScanSideScreen() {
       return
     }
     try {
-      const photo = await cameraRef.current.takePictureAsync({ quality: 0.7 })
-      console.log('Side Photo URI:', photo?.uri)
-      // TODO: Store photo URI
-      router.push('/(modals)/progress-back') // Navigate to BACK scan
+      const photo = await cameraRef.current.takePictureAsync({ 
+        quality: 0.7,
+        exif: true
+      });
+
+      if (photo?.uri) {
+        setCapturedImage(photo.uri);
+      }
     } catch (error) {
       console.error('Failed to take picture:', error)
       Alert.alert('Capture Failed', 'Could not take photo. Please try again.')
     }
   }
 
+  const handlePhotoUpload = async (uri: string, mimeType: string) => {
+    setIsUploading(true);
+    
+    try {
+      // Get or create device ID
+      const deviceId = await getOrCreateDeviceId();
+      
+      // Generate presigned URL using tRPC
+      const result = await generatePhotoUploadUrl.mutateAsync({
+        deviceId,
+        photoType: 'side', 
+        fileType: mimeType,
+      });
+      
+      // Upload directly to S3
+      const uploadSuccess = await uploadToS3(uri, result.presignedUrl);
+      
+      if (uploadSuccess) {
+        console.log('Upload successful');
+        
+        // Validate the uploaded image
+        const validationResult = await validateUploadedImage.mutateAsync({
+          imageKey: result.key,
+        });
+
+        if (!validationResult.isValid) {
+          Alert.alert(
+            'Invalid Image',
+            validationResult.rejectionReason ?? 'The image does not meet our requirements. Please try again.',
+            [
+              { 
+                text: 'Retake Photo',
+                onPress: () => {
+                  setCapturedImage(null);
+                  setIsUploading(false);
+                }
+              }
+            ]
+          );
+          return;
+        }
+        
+        // Store the image key in LegendState
+        onboardingStore$.onboarding.sideViewPhoto.set(result.key);
+        console.log('Stored image key in LegendState:', result.key);
+        
+        // Navigate to next screen
+        router.push('/(modals)/progress-back');
+      } else {
+        Alert.alert('Upload Failed', 'Failed to upload image. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error in image upload process:', error);
+      Alert.alert('Upload Error', 'An error occurred during the upload process.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleRetake = () => {
+    setCapturedImage(null)
+  }
+
+  const handleContinue = () => {
+    if (capturedImage) {
+      void handlePhotoUpload(capturedImage, 'image/jpeg');
+    }
+  }
+
+  const handleCameraFlip = () => {
+    setType(current => (current === 'front' ? 'back' : 'front'))
+  }
+
+  const handleGalleryUpload = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: false,
+        aspect: [3, 4],
+        quality: 0.7,
+      })
+
+      if (!result.canceled && result.assets.length > 0) {
+        const asset = result.assets[0];
+        if (asset) {
+          setCapturedImage(asset.uri);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to select image from gallery:', error)
+      Alert.alert('Error', 'Failed to select image from gallery.')
+    }
+  }
+
   if (!cameraPermission) return <View className="flex-1 bg-black" />
-  if (cameraPermission !== PermissionStatus.GRANTED)
+
+  if (!cameraPermission.granted) {
     return (
-      <View className="flex-1 bg-black">
-        <Text>Camera permission not granted</Text>
-      </View>
+      <SafeAreaView className="flex-1 items-center justify-center bg-black p-5">
+        <Text className="mb-5 text-center font-inter text-white">
+          We need your permission to use the camera.
+        </Text>
+        <Pressable
+          onPress={requestCameraPermission}
+          className="rounded-lg bg-white px-5 py-3"
+        >
+          <Text className="font-inter-medium text-black">
+            Grant Camera Permission
+          </Text>
+        </Pressable>
+      </SafeAreaView>
     )
+  }
 
   return (
-    <View className="flex-1 bg-black">
+    <View className="flex-1 bg-black/20">
       <CameraView
         style={StyleSheet.absoluteFill}
         ref={cameraRef}
@@ -126,49 +304,109 @@ export default function ScanSideScreen() {
               </View>
               <ProgressBar progress={2 / 3} />
             </View>
-            <View className="h-10 w-10" />
           </View>
+
+          {/* Countdown Display */}
+          {countdown && (
+            <View className="absolute inset-0 z-30 items-center justify-center">
+              <Text className="text-8xl font-bold text-white">{countdown}</Text>
+            </View>
+          )}
 
           {/* Tip Card */}
-          <View className="absolute left-6 right-6 top-24 z-20">
-            <BlurView
-              intensity={80}
-              tint="light"
-              className="overflow-hidden rounded-xl p-4"
-            >
-              <View className="flex-row items-start">
-                <View className="mr-3 mt-1 h-8 w-8 items-center justify-center rounded-full bg-blue-100">
-                  <Text className="text-lg text-black">💡</Text>
+          {!capturedImage && (
+            <View className="absolute left-6 right-6 top-32 z-20">
+              <BlurView
+                intensity={80}
+                tint="light"
+                className="overflow-hidden rounded-xl p-4"
+              >
+                <View className="flex-row items-start">
+                  <View className="mr-3 mt-1 h-8 w-8 items-center justify-center rounded-full bg-blue-100">
+                    <Text className="text-lg text-black">💡</Text>
+                  </View>
+                  <View>
+                    <Text className="mb-1 font-inter-semibold text-sm text-black">
+                      Side View Tips
+                    </Text>
+                    <Text className="font-inter text-xs text-black">
+                      • Stand with your right side to the camera
+                    </Text>
+                    <Text className="font-inter text-xs text-black">
+                      • Keep your back straight
+                    </Text>
+                    <Text className="font-inter text-xs text-black">
+                      • Arms relaxed at your sides
+                    </Text>
+                    <Text className="font-inter text-xs text-black">
+                      • Look straight ahead
+                    </Text>
+                  </View>
                 </View>
-                <View>
-                  <Text className="mb-1 font-inter-semibold text-sm text-black">
-                    Side View Tips
-                  </Text>
-                  <Text className="font-inter text-xs text-black">
-                    • Stand with your right side to the camera
-                  </Text>
-                  <Text className="font-inter text-xs text-black">
-                    • Keep your back straight
-                  </Text>
-                  <Text className="font-inter text-xs text-black">
-                    • Arms relaxed at your sides
-                  </Text>
-                  <Text className="font-inter text-xs text-black">
-                    • Look straight ahead
-                  </Text>
-                </View>
-              </View>
-            </BlurView>
-          </View>
+              </BlurView>
+            </View>
+          )}
 
-          {/* Silhouette */}
-          <View className="pointer-events-none absolute inset-0 z-10 items-center justify-center">
-            <Silhouette />
-          </View>
+          {/* Preview Image Layer */}
+          {capturedImage && (
+            <View className="absolute inset-0 z-10 pointer-events-none">
+              <Image
+                source={{ uri: capturedImage }}
+                style={[StyleSheet.absoluteFill, { transform: [{ scaleX: -1 }] }]}
+                contentFit="cover"
+              />
+            </View>
+          )}
 
-          {/* Controls */}
-          <View className="z-20 items-center pb-10">
-            <CameraButton onPress={takePicture} />
+          {/* Loading Indicator */}
+          {isUploading && (
+            <View className="absolute inset-0 z-40 items-center justify-center bg-black/30">
+              <BlurView
+                intensity={40}
+                tint="dark"
+                className="items-center justify-center overflow-hidden rounded-xl p-6"
+              >
+                <Text className="mb-4 font-inter-semibold text-white">Uploading Image</Text>
+                <LoadingDots />
+              </BlurView>
+            </View>
+          )}
+
+          {/* Bottom Controls */}
+          <View 
+            className="absolute bottom-0 right-0 left-0 z-50 flex-row items-center justify-center gap-x-8 pb-10" 
+            style={{ 
+              elevation: 10,
+              zIndex: 50,
+              position: 'absolute',
+              bottom: 0
+            }}
+          >
+            {capturedImage ? (
+              <>
+                <CameraButton onPress={handleRetake} isRetake />
+                <Pressable
+                  onPress={handleContinue}
+                  className="h-[70px] items-center justify-center rounded-full bg-pink-400 px-8"
+                >
+                  <Text className="font-inter-medium text-lg text-white">
+                    Continue
+                  </Text>
+                </Pressable>
+              </>
+            ) : (
+              <>
+                <ControlButton
+                  onPress={handleCameraFlip}
+                  icon={<MaterialCommunityIcons name="camera-flip" size={24} color="white" />}
+                />
+                <CameraButton onPress={startCountdown} />
+                <ControlButton
+                  onPress={handleGalleryUpload}
+                  icon={<MaterialCommunityIcons name="image" size={24} color="white" />}
+                />
+              </>
+            )}
           </View>
         </SafeAreaView>
       </CameraView>

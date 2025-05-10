@@ -54,11 +54,13 @@ export const config = {
       redirectURI: redirectURI + "/discord",
     },
     apple: {
+      prompt: 'select_account',
       clientId: env.APPLE_AUTH_CLIENT_ID,
       clientSecret: makeAppleClientSecret(),
       redirectURI: redirectURI + "/apple",
     },
     google: {
+      prompt: "select_account",
       clientId: env.AUTH_GOOGLE_ID,
       clientSecret: env.AUTH_GOOGLE_SECRET,
       redirectURI: redirectURI + "/google",

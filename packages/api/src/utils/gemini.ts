@@ -109,7 +109,7 @@ export async function analyzeBodyImages(
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash-preview-04-17",
       contents: createUserContent([
-        "Analyze these body images and provide detailed metrics. The first three images are the user's front, back, and side views. The last image is the benchmark. Provide scores out of 100. The benchmark image has a score of 95 for all attributes.",
+        "Analyze these body images and provide detailed metrics. The first three images are the user's front, back, and side views. The last image is the benchmark. Provide scores out of 100. The benchmark image has a score of 95 for all attributes. Also provide a list of up to 3 issues that are preventing the user from achieving the desired body shape.",
         ...userImages,
         createPartFromUri(benchmarkImageUri, "image/jpeg"),
       ]),
@@ -121,14 +121,15 @@ export async function analyzeBodyImages(
             currentSnatchedScore: { type: Type.NUMBER },
             potentialSnatchedScore: { type: Type.NUMBER },
             potentialWaistReductionInches: { type: Type.NUMBER },
-            glowUpOdds: { type: Type.NUMBER },
-            transformationComplete: { type: Type.NUMBER },
             waistDefinition: { type: Type.NUMBER },
             hipCurve: { type: Type.NUMBER },
             gluteShape: { type: Type.NUMBER },
             posture: { type: Type.NUMBER },
             armShape: { type: Type.NUMBER },
-            backDefinition: { type: Type.NUMBER }
+            backDefinition: { type: Type.NUMBER },
+            issue1: { type: Type.STRING, nullable: true },
+            issue2: { type: Type.STRING, nullable: true },
+            issue3: { type: Type.STRING, nullable: true }
           }
         }
       }

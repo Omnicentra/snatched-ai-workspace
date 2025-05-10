@@ -1,25 +1,73 @@
-import React, { useState, useRef, useEffect } from 'react'
-import {
-  Text,
-  View,
-  Pressable,
-  SafeAreaView,
-  Alert,
-  StyleSheet
-} from 'react-native' // Added Alert, StyleSheet
-// No 'styled' import
-import { CameraView, CameraType, useCameraPermissions } from 'expo-camera'
+import { onboardingStore$ } from '@/stores/onboarding.store'
+import { transformationStore$ } from '@/stores/transformation.store'
+import { api } from '@/utils/api'
+import { getOrCreateDeviceId } from '@/utils/device-id'
+import { uploadToS3 } from '@/utils/s3'
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'
+import { BlurView } from 'expo-blur'
+import type { CameraType} from 'expo-camera';
+import { CameraView, useCameraPermissions } from 'expo-camera'
+import Constants from 'expo-constants'
+import { Image } from 'expo-image'
+import * as ImagePicker from 'expo-image-picker'
 import * as MediaLibrary from 'expo-media-library'
 import { useRouter } from 'expo-router'
-import Constants from 'expo-constants'
-import Svg, { Path } from 'react-native-svg'
-import { Ionicons } from '@expo/vector-icons'
-import { BlurView } from 'expo-blur'
+import React, { useEffect, useRef, useState } from 'react'
+import {
+  Alert,
+  Pressable,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  View
+} from 'react-native'
+import Animated, {
+  useAnimatedStyle,
+  withDelay,
+  withRepeat,
+  withSequence,
+  withTiming
+} from 'react-native-reanimated'
 
-// Reusable Progress Bar (Import or define as before using View)
+const AnimatedIcon = Animated.createAnimatedComponent(MaterialCommunityIcons);
+
+// Loading animation components
+function LoadingDot({ delay }: { delay: number }) {
+  const dotStyle = useAnimatedStyle(() => ({
+    opacity: withRepeat(
+      withSequence(
+        withDelay(delay,
+          withTiming(0.2, { duration: 500 })
+        ),
+        withTiming(1, { duration: 500 })
+      ),
+      -1,
+      true
+    )
+  }));
+
+  return (
+    <AnimatedIcon
+      name="circle"
+      size={12}
+      color="white"
+      style={dotStyle}
+    />
+  );
+}
+
+function LoadingDots() {
+  return (
+    <View className="flex-row gap-x-2">
+      {[0, 1, 2].map((i) => (
+        <LoadingDot key={i} delay={i * 200} />
+      ))}
+    </View>
+  );
+}
+
 const ProgressBar = ({ progress }: { progress: number }) => (
   <View className="h-1 w-full rounded-full bg-gray-700">
-    {/* Use LinearGradient or simple color */}
     <View
       className="h-1 rounded-full bg-pink-400"
       style={{ width: `${progress * 100}%` }}
@@ -27,77 +75,189 @@ const ProgressBar = ({ progress }: { progress: number }) => (
   </View>
 )
 
-// Simplified Silhouette
-const Silhouette = () => (
-  <Svg width="220" height="500" viewBox="0 0 220 500">
-    <Path
-      d="M110 120 C 140 120, 160 140, 160 170 C 160 190, 150 210, 130 220 C 140 225, 150 235, 150 250 C 150 270, 140 290, 130 310 C 125 320, 120 330, 120 340 C 120 350, 120 360, 120 370 C 120 380, 115 390, 110 400 C 105 390, 100 380, 100 370 C 100 360, 100 350, 100 340 C 100 330, 95 320, 90 310 C 80 290, 70 270, 70 250 C 70 235, 80 225, 90 220 C 70 210, 60 190, 60 170 C 60 140, 80 120, 110 120"
-      stroke="white"
-      strokeWidth="2"
-      strokeDasharray="4" // Animation for dash requires Reanimated/Animated API
-      fill="none"
-    />
-  </Svg>
-)
-
-// Reusable Camera Button
-const CameraButton = ({ onPress }: { onPress: () => void }) => (
+const CameraButton = ({
+  onPress,
+  isRetake
+}: {
+  onPress: () => void
+  isRetake?: boolean
+}) => (
   <Pressable
     className="h-[70px] w-[70px] items-center justify-center rounded-full bg-white shadow-lg active:opacity-70"
     onPress={onPress}
   >
-    <View className="h-[54px] w-[54px] rounded-full border-2 border-black" />{' '}
-    {/* Use border-2/border-4 etc */}
+    {isRetake ? (
+      <Ionicons name="refresh" size={30} color="black" />
+    ) : (
+      <View className="h-[54px] w-[54px] rounded-full border-2 border-black" />
+    )}
   </Pressable>
 )
 
-export default function ScanFrontScreen() {
+const ControlButton = ({ onPress, icon }: { onPress: () => void; icon: React.ReactNode }) => (
+  <Pressable
+    className="h-12 w-12 items-center justify-center rounded-full bg-black/50"
+    onPress={onPress}
+  >
+    {icon}
+  </Pressable>
+)
+
+export default function ProgressFrontScreen() {
   const router = useRouter()
   const [type, setType] = useState<CameraType>('back')
   const [cameraPermission, requestCameraPermission] = useCameraPermissions()
-  const [mediaPermission, requestMediaPermission] =
-    MediaLibrary.usePermissions()
+  const [mediaPermission, requestMediaPermission] = MediaLibrary.usePermissions()
   const cameraRef = useRef<CameraView>(null)
+  const [countdown, setCountdown] = useState<number | null>(null)
+  const [capturedImage, setCapturedImage] = useState<string | null>(null)
+  const [isUploading, setIsUploading] = useState(false)
+  const countdownRef = useRef<NodeJS.Timeout>()
+  
+  // Get the mutations from tRPC
+  const generatePhotoUploadUrl = api.user.generatePhotoUploadUrl.useMutation();
+  const validateUploadedImage = api.user.validateUploadedImage.useMutation();
 
   useEffect(() => {
-    // Request permissions on mount
-    requestCameraPermission()
-    requestMediaPermission()
+    void requestCameraPermission()
+    void requestMediaPermission()
+    return () => {
+      if (countdownRef.current) {
+        clearInterval(countdownRef.current)
+      }
+    }
   }, [])
 
-  const takePicture = async () => {
-    if (!cameraRef.current) {
-      Alert.alert('Error', 'Camera not available.')
-      return
-    }
-    if (!mediaPermission?.granted) {
-      Alert.alert(
-        'Permission Required',
-        'Please grant media library permission to save photos.',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Grant Permission', onPress: requestMediaPermission }
-        ]
-      )
-      return
-    }
+  const startCountdown = () => {
+    setCountdown(5)
+    countdownRef.current = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev === 1) {
+          clearInterval(countdownRef.current)
+          void takePicture()
+          return null
+        }
+        return prev ? prev - 1 : null
+      })
+    }, 1000)
+  }
 
+  const takePicture = async () => {
+    if (!cameraRef.current || !mediaPermission?.granted) {
+      Alert.alert('Error', 'Camera not ready or permissions missing.')
+      return
+    }
     try {
-      const photo = await cameraRef.current.takePictureAsync({ quality: 0.7 }) // Add quality option
-      console.log('Photo URI:', photo?.uri)
-      // TODO: Store photo URI (e.g., in Zustand store or pass via params if small enough - unlikely)
-      // Consider saving to a temporary location managed by expo-file-system if not saving to library
-      // await MediaLibrary.saveToLibraryAsync(photo.uri); // Optional save
-      router.push('/(modals)/progress-side')
+      const photo = await cameraRef.current.takePictureAsync({ 
+        quality: 0.7,
+        exif: true
+      });
+
+      if (photo?.uri) {
+        setCapturedImage(photo.uri);
+      }
     } catch (error) {
       console.error('Failed to take picture:', error)
       Alert.alert('Capture Failed', 'Could not take photo. Please try again.')
     }
   }
 
-  if (!cameraPermission) {
-    return <View className="flex-1 bg-black" /> // Loading state
+  const handlePhotoUpload = async (uri: string, mimeType: string) => {
+    setIsUploading(true);
+    
+    try {
+      // Get or create device ID
+      const deviceId = await getOrCreateDeviceId();
+      
+      // Generate presigned URL using tRPC
+      const result = await generatePhotoUploadUrl.mutateAsync({
+        deviceId,
+        photoType: 'front', 
+        fileType: mimeType,
+      });
+      
+      // Upload directly to S3
+      const uploadSuccess = await uploadToS3(uri, result.presignedUrl);
+      
+      if (uploadSuccess) {
+        console.log('Upload successful');
+        
+        // Validate the uploaded image
+        const validationResult = await validateUploadedImage.mutateAsync({
+          imageKey: result.key,
+        });
+
+        if (!validationResult.isValid) {
+          Alert.alert(
+            'Invalid Image',
+            validationResult.rejectionReason ?? 'The image does not meet our requirements. Please try again.',
+            [
+              { 
+                text: 'Retake Photo',
+                onPress: () => {
+                  setCapturedImage(null);
+                  setIsUploading(false);
+                }
+              }
+            ]
+          );
+          return;
+        }
+        
+        // Store the image key in LegendState
+        onboardingStore$.onboarding.frontViewPhoto.set(result.key);
+        transformationStore$.currentImage.set(result.presignedUrl);
+        console.log('Stored image key in LegendState:', result.key);
+        
+        // Navigate to next screen
+        router.push('/(modals)/progress-side');
+      } else {
+        Alert.alert('Upload Failed', 'Failed to upload image. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error in image upload process:', error);
+      Alert.alert('Upload Error', 'An error occurred during the upload process.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleRetake = () => {
+    setCapturedImage(null)
   }
+
+  const handleContinue = () => {
+    if (capturedImage) {
+      void handlePhotoUpload(capturedImage, 'image/jpeg');
+    }
+  }
+
+  const handleCameraFlip = () => {
+    setType(current => (current === 'front' ? 'back' : 'front'))
+  }
+
+  const handleGalleryUpload = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: false,
+        aspect: [3, 4],
+        quality: 0.7,
+      })
+
+      if (!result.canceled && result.assets.length > 0) {
+        const asset = result.assets[0];
+        if (asset) {
+          setCapturedImage(asset.uri);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to select image from gallery:', error)
+      Alert.alert('Error', 'Failed to select image from gallery.')
+    }
+  }
+
+  if (!cameraPermission) return <View className="flex-1 bg-black" />
 
   if (!cameraPermission.granted) {
     return (
@@ -118,19 +278,18 @@ export default function ScanFrontScreen() {
   }
 
   return (
-    <View className="flex-1 bg-black">
+    <View className="flex-1 bg-black/20">
       <CameraView
         style={StyleSheet.absoluteFill}
         ref={cameraRef}
         ratio="16:9"
         facing={type}
       >
-        {/* Overlay uses SafeAreaView for status bar handling */}
         <SafeAreaView
           style={{ paddingTop: Constants.statusBarHeight }}
           className="flex-1 justify-between"
         >
-          {/* Top Section: Progress & Back Button */}
+          {/* Top Section */}
           <View className="z-20 flex-row items-center justify-between px-6 pt-2">
             <Pressable
               onPress={() => router.back()}
@@ -147,49 +306,109 @@ export default function ScanFrontScreen() {
               </View>
               <ProgressBar progress={1 / 3} />
             </View>
-            <View className="h-10 w-10" /> {/* Spacer to balance */}
           </View>
 
-          {/* Tip Card - positioned absolutely */}
-          <View className="absolute left-6 right-6 top-24 z-20">
-            <BlurView
-              intensity={80}
-              tint="light"
-              className="overflow-hidden rounded-xl p-4"
-            >
-              <View className="flex-row items-start">
-                <View className="mr-3 mt-1 h-8 w-8 items-center justify-center rounded-full bg-pink-100">
-                  <Text className="text-lg text-black">💡</Text>
-                </View>
-                <View>
-                  <Text className="mb-1 font-inter-semibold text-sm text-black">
-                    Front View Tips
-                  </Text>
-                  <Text className="font-inter text-xs text-black">
-                    • Stand with feet shoulder-width apart
-                  </Text>
-                  <Text className="font-inter text-xs text-black">
-                    • Arms relaxed at your sides
-                  </Text>
-                  <Text className="font-inter text-xs text-black">
-                    • Face the camera directly
-                  </Text>
-                  <Text className="font-inter text-xs text-black">
-                    • Wear form-fitting clothes
-                  </Text>
-                </View>
-              </View>
-            </BlurView>
-          </View>
+          {/* Countdown Display */}
+          {countdown && (
+            <View className="absolute inset-0 z-30 items-center justify-center">
+              <Text className="text-8xl font-bold text-white">{countdown}</Text>
+            </View>
+          )}
 
-          {/* Silhouette - Centered */}
-          <View className="pointer-events-none absolute inset-0 z-10 items-center justify-center">
-            <Silhouette />
-          </View>
+          {/* Tip Card */}
+          {!capturedImage && (
+            <View className="absolute left-6 right-6 top-32 z-20">
+              <BlurView
+                intensity={80}
+                tint="light"
+                className="overflow-hidden rounded-xl p-4"
+              >
+                <View className="flex-row items-start">
+                  <View className="mr-3 mt-1 h-8 w-8 items-center justify-center rounded-full bg-pink-100">
+                    <Text className="text-lg text-black">💡</Text>
+                  </View>
+                  <View>
+                    <Text className="mb-1 font-inter-semibold text-sm text-black">
+                      Front View Tips
+                    </Text>
+                    <Text className="font-inter text-xs text-black">
+                      • Stand with feet shoulder-width apart
+                    </Text>
+                    <Text className="font-inter text-xs text-black">
+                      • Arms relaxed at your sides
+                    </Text>
+                    <Text className="font-inter text-xs text-black">
+                      • Face the camera directly
+                    </Text>
+                    <Text className="font-inter text-xs text-black">
+                      • Wear form-fitting clothes
+                    </Text>
+                  </View>
+                </View>
+              </BlurView>
+            </View>
+          )}
+
+          {/* Preview Image Layer */}
+          {capturedImage && (
+            <View className="absolute inset-0 z-10 pointer-events-none">
+              <Image
+                source={{ uri: capturedImage }}
+                style={[StyleSheet.absoluteFill, { transform: [{ scaleX: -1 }] }]}
+                contentFit="cover"
+              />
+            </View>
+          )}
+
+          {/* Loading Indicator */}
+          {isUploading && (
+            <View className="absolute inset-0 z-40 items-center justify-center bg-black/30">
+              <BlurView
+                intensity={40}
+                tint="dark"
+                className="items-center justify-center overflow-hidden rounded-xl p-6"
+              >
+                <Text className="mb-4 font-inter-semibold text-white">Uploading Image</Text>
+                <LoadingDots />
+              </BlurView>
+            </View>
+          )}
 
           {/* Bottom Controls */}
-          <View className="z-20 items-center pb-10">
-            <CameraButton onPress={takePicture} />
+          <View 
+            className="absolute bottom-0 right-0 left-0 z-50 flex-row items-center justify-center gap-x-8 pb-10" 
+            style={{ 
+              elevation: 10,
+              zIndex: 50,
+              position: 'absolute',
+              bottom: 0
+            }}
+          >
+            {capturedImage ? (
+              <>
+                <CameraButton onPress={handleRetake} isRetake />
+                <Pressable
+                  onPress={handleContinue}
+                  className="h-[70px] items-center justify-center rounded-full bg-pink-400 px-8"
+                >
+                  <Text className="font-inter-medium text-lg text-white">
+                    Continue
+                  </Text>
+                </Pressable>
+              </>
+            ) : (
+              <>
+                <ControlButton
+                  onPress={handleCameraFlip}
+                  icon={<MaterialCommunityIcons name="camera-flip" size={24} color="white" />}
+                />
+                <CameraButton onPress={startCountdown} />
+                <ControlButton
+                  onPress={handleGalleryUpload}
+                  icon={<MaterialCommunityIcons name="image" size={24} color="white" />}
+                />
+              </>
+            )}
           </View>
         </SafeAreaView>
       </CameraView>

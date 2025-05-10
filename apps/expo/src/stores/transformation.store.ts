@@ -8,14 +8,15 @@ const bodyRatingStoreInitialState: BodyRatingResponse = {
   currentSnatchedScore: null,
   potentialSnatchedScore: null,
   potentialWaistReductionInches: null,
-  glowUpOdds: null,
-  transformationComplete: null,
   waistDefinition: null,
   hipCurve: null,
   gluteShape: null,
   posture: null,
   armShape: null,
   backDefinition: null,
+  issue1: null,
+  issue2: null,
+  issue3: null,
 }
 
 export interface TransformationData {
@@ -24,6 +25,7 @@ export interface TransformationData {
   nextSteps: string[];
   lastUpdated: string;
   bodyRating: BodyRatingResponse;
+  nextImageTransformationTime: string | null;
 }
 
 const initialState: TransformationData = {
@@ -36,6 +38,7 @@ const initialState: TransformationData = {
   ],
   lastUpdated: new Date().toISOString(),
   bodyRating: bodyRatingStoreInitialState,
+  nextImageTransformationTime: null,
 };
 
 export const transformationStore$ = observable<TransformationData>(initialState);
@@ -47,3 +50,9 @@ syncObservable(transformationStore$, {
         plugin: ObservablePersistMMKV
     }
 })
+
+// Helper to set the next image transformation time to 3 minutes from now
+export function setNextImageTransformationTime() {
+  const nextTime = new Date(Date.now() + 3 * 60 * 1000).toISOString();
+  transformationStore$.nextImageTransformationTime.set(nextTime);
+}

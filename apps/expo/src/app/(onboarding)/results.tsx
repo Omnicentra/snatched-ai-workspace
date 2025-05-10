@@ -1,100 +1,170 @@
 // app/(onboarding)/results.tsx
-import { transformationStore$ } from '@/stores/transformation.store';
-import { use$ } from '@legendapp/state/react';
-import Constants from 'expo-constants';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from "react";
 import {
   Dimensions,
+  Pressable,
   SafeAreaView,
   ScrollView,
   Text,
-  View
-} from 'react-native';
-import ConfettiCannon from 'react-native-confetti-cannon';
-import Svg, { Path } from 'react-native-svg';
-
-import { StyledButton } from '@/components/core';
-
+  View,
+} from "react-native";
+import ConfettiCannon from "react-native-confetti-cannon";
+import Svg, { Path, Circle } from "react-native-svg";
+import Constants from "expo-constants";
+import { LinearGradient } from "expo-linear-gradient";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { StyledButton } from "@/components/core";
+import { transformationStore$ } from "@/stores/transformation.store";
+import { use$ } from "@legendapp/state/react";
+import * as Haptics from "expo-haptics";
 // --- GoalTimelineGraph component remains the same ---
 const GoalTimelineGraph = () => {
-  // ... (your existing GoalTimelineGraph code)
+  const bodyRating = use$(transformationStore$.bodyRating);
+  const currentScore = bodyRating.currentSnatchedScore ?? 55;
+  const potentialScore = bodyRating.potentialSnatchedScore ?? 98;
+  const isUnlocked = useLocalSearchParams<{ unlocked?: string }>().unlocked === "true";
+
+  // Calculate the normalized scores (0-100 to 0-1)
+  const normalizedCurrent = currentScore / 100;
+  const normalizedPotential = potentialScore / 100;
+
+  // Calculate the curve points
+  const getCurvePoints = () => {
+    const points = [];
+    const steps = 100;
+    
+    for (let i = 0; i <= steps; i++) {
+      const x = i / steps; // x goes from 0 to 1
+      let y;
+      
+      if (x < 0.2) {
+        // Initial rapid improvement phase
+        y = normalizedCurrent + (normalizedPotential - normalizedCurrent) * (x / 0.2) * 0.3;
+      } else if (x < 0.8) {
+        // Middle steady progress phase
+        const middleProgress = (x - 0.2) / 0.6;
+        y = normalizedCurrent + (normalizedPotential - normalizedCurrent) * (0.3 + middleProgress * 0.5);
+      } else {
+        // Final optimization phase
+        const finalProgress = (x - 0.8) / 0.2;
+        y = normalizedCurrent + (normalizedPotential - normalizedCurrent) * (0.8 + finalProgress * 0.2);
+      }
+      
+      points.push({ x, y });
+    }
+    
+    return points;
+  };
+
+  const curvePoints = getCurvePoints();
+  
+  // Convert points to SVG path with padding
+  const pathData = curvePoints.map((point, index) => {
+    const x = point.x * 100;
+    const y = 100 - (point.y * 100); // Invert y for SVG coordinate system
+    return `${index === 0 ? 'M' : 'L'} ${x} ${y}`;
+  }).join(' ');
+
   return (
     <View className="relative h-[200px] w-full">
-      {' '}
-      {/* Removed bg-white, let parent handle bg */}
       <Svg
         width="100%"
         height="100%"
-        viewBox="0 0 100 100"
+        viewBox="-3 0 107 100" // Added padding to left and right
         preserveAspectRatio="none"
       >
         {/* Background gradient fill */}
         <Path
-          d="M0 100 L0 60 Q25 40 50 35 Q75 30 100 25 L100 100 Z"
-          fill="rgba(243, 232, 255, 0.3)" // Slightly adjusted opacity if needed
+          d={`${pathData} L 100 100 L 0 100 Z`}
+          fill="rgba(243, 232, 255, 0.3)"
           vectorEffect="non-scaling-stroke"
         />
         {/* Main curve */}
         <Path
-          d="M0 60 Q25 40 50 35 Q75 30 100 25"
-          stroke="#A855F7" // Purple color
+          d={pathData}
+          stroke="#A855F7"
           strokeWidth="2"
           fill="none"
           vectorEffect="non-scaling-stroke"
         />
+        {/* Current score point - only show when unlocked */}
+        {isUnlocked && (
+          <Circle
+            cx="0"
+            cy={100 - (normalizedCurrent * 100)}
+            r="3"
+            fill="#A855F7"
+          />
+        )}
+        {/* Potential score point - only show when unlocked */}
+        {isUnlocked && (
+          <Circle
+            cx="100"
+            cy={100 - (normalizedPotential * 100)}
+            r="3"
+            fill="#A855F7"
+          />
+        )}
       </Svg>
-      {/* Lock indicator */}
-      <View className="absolute" style={{ left: '45%', top: '30%' }}>
-        {/* Adjusted Lock Styling for better visibility on dark bg */}
-        <View
-          className="h-8 w-8 items-center justify-center rounded-lg bg-purple-500/80"
-          style={{
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: 0.2,
-            shadowRadius: 2
-          }}
-        >
-          <Text className="text-sm text-white">🔒</Text>
+      {/* Lock indicator - only show when locked */}
+      {!isUnlocked && (
+        <View className="absolute" style={{ left: "45%", top: "30%" }}>
+          <View
+            className="h-8 w-8 items-center justify-center rounded-lg bg-purple-500/80"
+            style={{
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 1 },
+              shadowOpacity: 0.2,
+              shadowRadius: 2,
+            }}
+          >
+            <Text className="text-sm text-white">🔒</Text>
+          </View>
         </View>
-      </View>
+      )}
     </View>
-  )
-}
+  );
+};
 // --- End of GoalTimelineGraph ---
 
-const { width: screenWidth } = Dimensions.get('window') // Get screen width
+const { width: screenWidth } = Dimensions.get("window"); // Get screen width
 
 export default function ResultsScreen() {
-  const router = useRouter()
-  const confettiRef = useRef<ConfettiCannon>(null) // Create a ref for the confetti cannon
+  const router = useRouter();
+  const confettiRef = useRef<ConfettiCannon>(null); // Create a ref for the confetti cannon
   const bodyRating = use$(transformationStore$.bodyRating);
   const searchParams = useLocalSearchParams<{ unlocked?: string }>();
-  const isUnlocked = searchParams.unlocked === 'true';
+  const isUnlocked = searchParams.unlocked === "true";
+  const [showIssues, setShowIssues] = useState(false);
+
+  // Get the number of issues that are not null
+  const issueCount = [
+    bodyRating.issue1,
+    bodyRating.issue2,
+    bodyRating.issue3,
+  ].filter(Boolean).length;
 
   const handleViewDetails = () => {
     if (isUnlocked) {
-      void router.push('/(tabs)/home');
+      void router.push("/(tabs)/home");
     } else {
-      void router.push('/(onboarding)/paywall');
+      void router.push("/(onboarding)/paywall");
     }
-  }
+  };
 
   // Trigger confetti shortly after the component mounts
   useEffect(() => {
     const timer = setTimeout(() => {
-      confettiRef.current?.start()
-    }, 300) // Delay slightly to allow screen to render
+      confettiRef.current?.start();
+    }, 300); // Delay slightly to allow screen to render
 
-    return () => clearTimeout(timer) // Cleanup timer on unmount
-  }, [])
+    return () => clearTimeout(timer); // Cleanup timer on unmount
+  }, []);
 
   return (
     // Changed background to dark purple/black gradient
     <LinearGradient
-      colors={['#FED0E2', '#FED0E2', '#fff']} // Dark Purple to Black Gradient
+      colors={["#FED0E2", "#FED0E2", "#fff"]} // Dark Purple to Black Gradient
       style={{ flex: 1 }}
     >
       <SafeAreaView
@@ -104,25 +174,25 @@ export default function ResultsScreen() {
         {/* Confetti Cannon - Place it high in the hierarchy, outside ScrollView */}
         <ConfettiCannon
           ref={confettiRef}
-          count={200} // Number of confetti pieces
+          count={150} // Number of confetti pieces
           origin={{ x: screenWidth / 2, y: -20 }} // Start from top center, slightly above screen
           autoStart={false} // We start it manually with the ref
           fadeOut={true}
           explosionSpeed={400} // How fast they shoot out
           fallSpeed={3000} // How fast they fall
-          colors={['#a855f7', '#ec4899', '#f9a8d4', '#ffffff', '#ddd6fe']} // Purple, Pink, Light Pink, White, Light Purple
+          colors={["#a855f7", "#ec4899", "#f9a8d4", "#ffffff", "#ddd6fe"]} // Purple, Pink, Light Pink, White, Light Purple
         />
 
         <ScrollView
           contentContainerStyle={{
             flexGrow: 1,
-            paddingBottom: 40 // Add padding at the bottom
+            paddingBottom: 40, // Add padding at the bottom
           }}
           showsVerticalScrollIndicator={false} // Hide scrollbar for cleaner look
         >
           <View className="px-6 pt-6">
             {/* Changed text color to white/light for dark background */}
-            <Text className="mb-8 text-center font-inter-bold text-3xl text-primary">
+            <Text className="font-inter-bold mb-8 text-center text-3xl text-primary">
               You're all set 👀
             </Text>
 
@@ -135,20 +205,22 @@ export default function ResultsScreen() {
                   className="mr-2 flex-1 rounded-2xl border border-pink-100 bg-pink-50/90 p-4 shadow-lg shadow-purple-500/30"
                   // Removed inline style shadows, using Tailwind shadows
                 >
-                  <Text className="mb-2 text-center font-inter-medium text-gray-600">
+                  <Text className="font-inter-medium mb-2 text-center text-gray-600">
                     Current snatched score
                   </Text>
-                  <Text className="text-center font-inter-bold text-3xl text-pink-400">
-                    {bodyRating.currentSnatchedScore ?? 55} {/* Use actual value or fallback */}
+                  <Text className="font-inter-bold text-center text-3xl text-pink-400">
+                    {bodyRating.currentSnatchedScore ?? 55}{" "}
+                    {/* Use actual value or fallback */}
                   </Text>
                 </View>
                 {/* Card 2: Potential Score */}
                 <View className="ml-2 flex-1 rounded-2xl border border-pink-100 bg-pink-50/90 p-4 shadow-lg shadow-purple-500/30">
-                  <Text className="mb-2 text-center font-inter-medium text-gray-600">
+                  <Text className="font-inter-medium mb-2 text-center text-gray-600">
                     Potential snatched score
                   </Text>
-                  <Text className="text-center font-inter-bold text-3xl text-pink-400">
-                    {bodyRating.potentialSnatchedScore ?? 98} {/* Use actual value or fallback */}
+                  <Text className="font-inter-bold text-center text-3xl text-pink-400">
+                    {bodyRating.potentialSnatchedScore ?? 98}{" "}
+                    {/* Use actual value or fallback */}
                   </Text>
                 </View>
               </View>
@@ -156,28 +228,60 @@ export default function ResultsScreen() {
 
             {/* Optimization Target - Adjusted styling */}
             <View className="mb-6 rounded-2xl border border-pink-100 bg-pink-50 p-4">
-              <Text className="text-center font-inter-medium text-gray-600">
-                You can reduce your waist by <Text className="font-inter-bold">{bodyRating.potentialWaistReductionInches ?? "🔒"}</Text>{' '}
+              <Text className="font-inter-medium text-center text-gray-600">
+                You can reduce your waist by{" "}
+                <Text className="font-inter-bold">
+                  {bodyRating.potentialWaistReductionInches ?? "🔒"}
+                </Text>{" "}
                 inch(es) <Text className="">📈</Text>
               </Text>
             </View>
 
-            {/* Progress Graph Section - Adjusted styling */}
+            {/* Progress Graph or Issues Section */}
             <View className="mb-6 rounded-2xl border border-pink-100 bg-pink-50 p-4 shadow-lg shadow-purple-500/30">
               <View className="mb-3 flex-row items-center justify-between px-2">
                 <View className="flex-row items-center">
                   <View className="mr-2 h-2.5 w-2.5 rounded-full bg-[#A855F7]" />
                   <Text className="font-inter-medium text-gray-600">
-                    Body shape / Weight
+                    {showIssues ? "Areas for Improvement" : "Body shape / Weight"}
                   </Text>
                 </View>
-                <View className="rounded-full bg-red-500/80 px-2.5 py-1">
+                {/* Toggle Button */}
+                <Pressable
+                  onPress={() => {
+                    setShowIssues(!showIssues)
+                    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
+                  }}
+                  className="rounded-full bg-red-500/80 px-2.5 py-2"
+                >
                   <Text className="font-inter-medium text-xs text-white">
-                    3 Issues found {/* Example Value */}
+                    {showIssues ? "Show Progress" : `${issueCount} Issues found`}
                   </Text>
-                </View>
+                </Pressable>
               </View>
-              <GoalTimelineGraph />
+
+              {showIssues ? (
+                <View className="space-y-4">
+                  {[
+                    bodyRating.issue1,
+                    bodyRating.issue2,
+                    bodyRating.issue3,
+                  ].map((issue, index) => (
+                    issue ? (
+                      <View key={index} className="flex-row items-start">
+                        <Text className="mr-2 font-inter-bold text-pink-500">
+                          {index + 1}.
+                        </Text>
+                        <Text className="flex-1 font-inter-medium text-gray-700">
+                          {issue}
+                        </Text>
+                      </View>
+                    ) : null
+                  ))}
+                </View>
+              ) : (
+                <GoalTimelineGraph />
+              )}
             </View>
 
             {/* Visual Preview Grid */}
@@ -208,32 +312,36 @@ export default function ResultsScreen() {
                 style={{
                   borderRadius: 20,
                   padding: 10,
-                  justifyContent: 'space-between',
-                  flexDirection: 'row',
-                  flexWrap: 'wrap',
-                  height: 440,
-                  shadowColor: '#F6ADCE',
+                  justifyContent: "space-between",
+                  flexDirection: "row",
+                  flexWrap: "wrap",
+                  height: 300,
+                  shadowColor: "#F6ADCE",
                   shadowOffset: { width: 0, height: 4 },
                   shadowOpacity: 0.2,
                   shadowRadius: 8,
-                  elevation: 4
+                  elevation: 4,
                 }}
               >
                 {[
-                  { title: 'Glow Up Odds', value: bodyRating.glowUpOdds },
-                  { title: 'Transformation complete', value: bodyRating.transformationComplete },
-                  { title: 'Waist definition', value: bodyRating.waistDefinition },
-                  { title: 'Hip curve', value: bodyRating.hipCurve },
-                  { title: 'Glute shape', value: bodyRating.gluteShape },
-                  { title: 'Posture', value: bodyRating.posture },
-                  { title: 'Arm shape', value: bodyRating.armShape },
-                  { title: 'Back definition', value: bodyRating.backDefinition }
+                  {
+                    title: "Waist definition",
+                    value: bodyRating.waistDefinition,
+                  },
+                  { title: "Hip curve", value: bodyRating.hipCurve },
+                  { title: "Glute shape", value: bodyRating.gluteShape },
+                  { title: "Posture", value: bodyRating.posture },
+                  { title: "Arm shape", value: bodyRating.armShape },
+                  {
+                    title: "Back definition",
+                    value: bodyRating.backDefinition,
+                  },
                 ].map(({ title, value }, index) => (
                   <View
                     key={index}
                     className="mb-4 aspect-square w-[48%] rounded-2xl border border-pink-400/20 bg-white/90 p-4"
                     style={{
-                      shadowColor: '#F6ADCE',
+                      shadowColor: "#F6ADCE",
                       shadowOffset: { width: 0, height: 2 },
                       shadowOpacity: 0.15,
                       shadowRadius: 6,
@@ -242,10 +350,12 @@ export default function ResultsScreen() {
                     }}
                   >
                     <View className="mb-2 flex-col items-center justify-between gap-y-2">
-                      <Text className="text-center font-inter-medium text-gray-800">
+                      <Text className="font-inter-medium text-center text-gray-800">
                         {title}
                       </Text>
-                      <Text className="text-center font-inter-bold text-2xl text-pink-400">{isUnlocked ? value : "🔒"}</Text>
+                      <Text className="font-inter-bold text-center text-2xl text-pink-400">
+                        {isUnlocked ? value : "🔒"}
+                      </Text>
                     </View>
                   </View>
                 ))}
@@ -264,14 +374,14 @@ export default function ResultsScreen() {
             onPress={handleViewDetails}
             variant="primary" // Assuming a primary variant exists with appropriate styling
             style={{
-              shadowColor: '#a855f7',
+              shadowColor: "#a855f7",
               shadowOpacity: 0.4,
               shadowRadius: 8,
-              shadowOffset: { width: 0, height: 4 }
+              shadowOffset: { width: 0, height: 4 },
             }} // Added shadow
           />
         </View>
       </SafeAreaView>
     </LinearGradient> // Close LinearGradient
-  )
+  );
 }

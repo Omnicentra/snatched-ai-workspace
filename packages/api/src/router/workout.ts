@@ -522,12 +522,7 @@ export const workoutRouter = {
     .mutation(async ({ ctx }) => {
       // Get fitness goals
       const userId = Number(ctx.session.user.id);
-      
-      const [fitnessGoal] = await db
-        .select()
-        .from(fitnessGoals)
-        .where(eq(fitnessGoals.userId, userId))
-        .execute();
+      console.log("userId", userId);
 
       // check if the user has an active workout plan
       const [activeWorkoutPlan] = await db
@@ -542,6 +537,12 @@ export const workoutRouter = {
       if (activeWorkoutPlan) {
         throw new Error("User already has an active workout plan");
       }
+
+      const [fitnessGoal] = await db
+        .select()
+        .from(fitnessGoals)
+        .where(eq(fitnessGoals.userId, userId))
+        .execute();
 
       // Generate weekly workout plan using Gemini
       const response = await ai.models.generateContent({

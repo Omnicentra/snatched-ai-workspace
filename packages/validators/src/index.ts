@@ -64,12 +64,13 @@ export interface BodyRatingResponse {
   currentSnatchedScore: number | null;
   potentialSnatchedScore: number | null;
   potentialWaistReductionInches: number | null;
-  glowUpOdds: number | null;
-  transformationComplete: number | null;
   waistDefinition: number | null;
   hipCurve: number | null;
   gluteShape: number | null;
   posture: number | null;
   armShape: number | null;
   backDefinition: number | null;
+  issue1: string | null;
+  issue2: string | null;
+  issue3: string | null;
 }

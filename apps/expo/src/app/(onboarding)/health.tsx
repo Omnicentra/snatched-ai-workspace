@@ -6,6 +6,8 @@ import {
   Text,
   TextInput,
   View,
+  TouchableWithoutFeedback,
+  Keyboard,
 } from "react-native";
 import Constants from "expo-constants";
 import { useRouter } from "expo-router";
@@ -50,54 +52,56 @@ export default function HealthScreen() {
   };
 
   return (
-    <SafeAreaView
-      style={{ paddingTop: Constants.statusBarHeight }}
-      className="flex-1 bg-white"
-    >
-      <View style={{ flexGrow: 1 }} className="p-8">
-        <KeyboardAvoidingView behavior="padding" className="flex-1">
-          <OnboardingHeader
-            progress={11 / 20}
-            title="Medical/Health Conditions?"
-            subtitle="This helps us ensure your plan is safe and suitable for you."
-          />
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <SafeAreaView
+        style={{ paddingTop: Constants.statusBarHeight }}
+        className="flex-1 bg-white"
+      >
+        <View style={{ flexGrow: 1 }} className="p-8">
+          <KeyboardAvoidingView behavior="padding" className="flex-1">
+            <OnboardingHeader
+              progress={11 / 20}
+              title="Medical/Health Conditions?"
+              subtitle="This helps us ensure your plan is safe and suitable for you."
+            />
 
-          <View className="mb-8 flex-1 gap-y-4">
-            {medicalConditionResponseEnum.options.map((option) => (
-              <OptionCard
-                key={option}
-                text={option}
-                selected={selectedOption === option}
-                onPress={() => setSelectedOption(option)}
-              />
-            ))}
-            
-            {selectedOption === "Yes" && (
-              <View className="mt-4 mb-8">
-                <Text className="font-inter-medium mb-2 text-sm">
-                  Please specify (optional):
-                </Text>
-                <TextInput
-                  placeholder="E.g., Knee injury, Diabetes"
-                  className="w-full rounded-xl border border-gray-200 p-4 text-base text-black"
-                  multiline
-                  value={healthDetails}
-                  onChangeText={(text) => onboardingStore$.onboarding.healthConditions.set(text)}
+            <View className="mb-8 flex-1 gap-y-4">
+              {medicalConditionResponseEnum.options.map((option) => (
+                <OptionCard
+                  key={option}
+                  text={option}
+                  selected={selectedOption === option}
+                  onPress={() => setSelectedOption(option)}
                 />
-              </View>
-            )}
-          </View>
-        </KeyboardAvoidingView>
-      </View>
+              ))}
+              
+              {selectedOption === "Yes" && (
+                <View className="mt-4 mb-8">
+                  <Text className="font-inter-medium mb-2 text-sm">
+                    Please specify (optional):
+                  </Text>
+                  <TextInput
+                    placeholder="E.g., Knee injury, Diabetes"
+                    className="w-full rounded-xl border border-gray-200 p-4 text-base text-black"
+                    multiline
+                    value={healthDetails}
+                    onChangeText={(text) => onboardingStore$.onboarding.healthConditions.set(text)}
+                  />
+                </View>
+              )}
+            </View>
+          </KeyboardAvoidingView>
+        </View>
 
-      <View className="mt-auto p-8">
-        <StyledButton
-          title="Continue"
-          onPress={handleContinue}
-          disabled={!selectedOption}
-          variant="primary"
-        />
-      </View>
-    </SafeAreaView>
+        <View className="mt-auto p-8">
+          <StyledButton
+            title="Continue"
+            onPress={handleContinue}
+            disabled={!selectedOption}
+            variant="primary"
+          />
+        </View>
+      </SafeAreaView>
+    </TouchableWithoutFeedback>
   );
 }

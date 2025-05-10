@@ -5,6 +5,7 @@ import { NutritionStats } from "@/components/home/NutritionStats";
 import { RecentlyLogged } from "@/components/home/RecentlyLogged";
 import { SnatchHackCard } from "@/components/home/SnatchHackCard";
 import { TodaysPlanCard } from "@/components/home/TodaysPlanCard";
+import { onboardingStore$ } from "@/stores/onboarding.store";
 import { snatchHackStore$ } from "@/stores/snatch-hack.store";
 import { api } from "@/utils/api";
 import { authClient } from "@/utils/auth";
@@ -23,6 +24,7 @@ export default function HomeScreen() {
   const utils = api.useUtils();
   const { data: session } = authClient.useSession();
   const snatchHackStore = use$(snatchHackStore$);
+  const userName = use$(onboardingStore$.onboarding.name);
   
   // Get current date and calculate the Monday of current week
   const today = new Date();
@@ -173,7 +175,7 @@ export default function HomeScreen() {
         {/* User Welcome Section */}
         <View className="mt-8">
           <Text className="font-inter-bold text-3xl text-gray-900" numberOfLines={1} ellipsizeMode="tail">
-            Hey, {session?.user.name.split(" ")[0]}!
+            Hey, {userName}!
           </Text>
           <Text className="font-inter mt-1 text-base text-gray-600">
             Week {journeyProgress.week}, Day {journeyProgress.day} of your journey

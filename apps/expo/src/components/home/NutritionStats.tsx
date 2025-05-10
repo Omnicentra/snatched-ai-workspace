@@ -1,25 +1,52 @@
 import { ProgressRing } from "@/components/core";
-import { transformationStore$ } from "@/stores/transformation.store";
+import { onboardingStore$ } from "@/stores/onboarding.store";
+import { setNextImageTransformationTime, transformationStore$ } from "@/stores/transformation.store";
 import type { IconName } from "@/types";
+import { api } from "@/utils/api";
 import { Ionicons } from "@expo/vector-icons";
 import { use$ } from "@legendapp/state/react";
 import { useRouter } from "expo-router";
 import React from "react";
 import { Pressable, Text, View } from "react-native";
+import * as Sentry from "@sentry/react-native";
 
 export const NutritionStats = () => {
+  const router = useRouter();
+  const now = new Date();
   const bodyRating = use$(transformationStore$.bodyRating);
   const currentImage = use$(transformationStore$.currentImage);
   const snatchedImage = use$(transformationStore$.snatchedImage);
-  const router = useRouter();
+  const nextImageTransformationTime = use$(transformationStore$.nextImageTransformationTime);
+  const { mutate: imageTransformation } = api.user.imageTransformation.useMutation({
+    onSuccess: (data) => {
+      transformationStore$.currentImage.set(data.currentImageUri);
+      transformationStore$.snatchedImage.set(data.transformedImageUri);
+    },
+    onError: (error) => {
+      console.error(error);
+      Sentry.captureException(error);
+    }
+  });
 
-  // const handleTransformationPreview = () => {
-  //   Alert.alert(
-  //     "Coming Soon!",
-  //     "We're working hard to bring you AI-powered transformation previews. Stay tuned for this exciting feature!",
-  //     [{ text: "Can't Wait!", style: "default" }],
-  //   );
-  // };
+  const frontImageKey = use$(onboardingStore$.onboarding.frontViewPhoto);
+  const canRequest = !nextImageTransformationTime || now >= new Date(nextImageTransformationTime);
+  const canShow = !!currentImage && !!snatchedImage;
+  const buttonDisabled = !canShow && !canRequest;
+
+  const buttonText = canShow
+    ? 'See Snatched Transformation'
+    : canRequest
+      ? 'Generate Transformation Image'
+      : 'Please wait...';
+
+  const requestTransformation = () => {
+    if (!frontImageKey) {
+      router.push("/(modals)/progress-front")
+      return;
+    }
+    imageTransformation({ imageKeys: { front: frontImageKey } })
+    setNextImageTransformationTime()
+  }
 
   // Calculate the overall snatched score as an average of all metrics
   // const snatchedScore = Math.round(
@@ -82,26 +109,22 @@ export const NutritionStats = () => {
           </View>
           <Pressable
             className={`flex-row items-center rounded-full px-4 py-2 ${
-              !currentImage || !snatchedImage
-                ? "bg-gray-100"
-                : "bg-pink-50"
+              (canShow || canRequest) ? "bg-pink-50" : "bg-gray-100"
             }`}
-            onPress={() => router.push("/(modals)/transformation-preview")}
-            disabled={!currentImage || !snatchedImage}
+            onPress={canShow ? () => router.push("/(modals)/transformation-preview") : canRequest ? () => requestTransformation() : undefined}
+            disabled={buttonDisabled}
           >
             <Ionicons 
               name="image" 
               size={18} 
-              color={!currentImage || !snatchedImage ? "#9CA3AF" : "#F472B6"} 
+              color={canShow || canRequest ? "#F472B6" : "#9CA3AF"} 
             />
             <Text 
               className={`font-inter-medium ml-2 text-sm ${
-                !currentImage || !snatchedImage
-                  ? "text-gray-400"
-                  : "text-pink-500"
+                canShow || canRequest ? "text-pink-500" : "text-gray-400"
               }`}
             >
-              See Snatched Transformation
+              {buttonText}
             </Text>
           </Pressable>
         </View>
