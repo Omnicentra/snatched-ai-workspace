@@ -1,3 +1,13 @@
+import { StyledButton } from "@/components/core";
+import { BubbleLetter } from "@/components/core/BubbleLetter";
+import { api } from "@/utils/api";
+import { authClient } from "@/utils/auth";
+import { getOrCreateDeviceId } from "@/utils/device-id";
+import { Ionicons } from "@expo/vector-icons";
+import * as Sentry from "@sentry/react-native";
+import * as Device from "expo-device";
+import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -10,17 +20,6 @@ import {
   View,
 } from "react-native";
 import Purchases from "react-native-purchases";
-import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
-import { StyledButton } from "@/components/core";
-import { BubbleLetter } from "@/components/core/BubbleLetter";
-import { authClient } from "@/utils/auth";
-import { Ionicons } from "@expo/vector-icons";
-import { scheme } from "@/lib/utils";
-import { getOrCreateDeviceId } from "@/utils/device-id";
-import { api } from "@/utils/api";
-import * as Device from "expo-device";
-import * as Sentry from "@sentry/react-native";
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -63,7 +62,7 @@ export default function LoginScreen() {
       await authClient.signIn.social(
         { 
           provider: "apple",
-          callbackURL: `${scheme}:///(tabs)/home`
+          callbackURL: `/(tabs)/home`
         },
         {
           onError: (ctx) => {
@@ -91,7 +90,7 @@ export default function LoginScreen() {
       await authClient.signIn.social(
         { 
           provider: "google",
-          callbackURL: `${scheme}:///(tabs)/home`
+          callbackURL: `/(tabs)/home`
         },
         {
           onError: (ctx) => {

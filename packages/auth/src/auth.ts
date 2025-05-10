@@ -37,6 +37,7 @@ const makeAppleClientSecret = () => {
 };
 
 export const config = {
+  appName: "Snatched AI",
   database: drizzleAdapter(db, {
     provider: "pg",
   }),

@@ -14,7 +14,6 @@ import { OnboardingHeader, StyledButton } from "@/components/core";
 import { authClient } from "@/utils/auth";
 import { Ionicons } from "@expo/vector-icons";
 import Purchases from "react-native-purchases";
-import { scheme } from "@/lib/utils";
 import { getOrCreateDeviceId } from "@/utils/device-id";
 import { api } from "@/utils/api";
 import * as Device from "expo-device";
@@ -57,7 +56,7 @@ export default function SignupScreen() {
       await authClient.signIn.social(
         { 
           provider: "apple",
-          callbackURL: `${scheme}:///(onboarding)/analyzing`
+          callbackURL: `/(onboarding)/analyzing`
         },
         {
           onSuccess: (ctx) => {
@@ -89,7 +88,7 @@ export default function SignupScreen() {
       await authClient.signIn.social(
         { 
           provider: "google",
-          callbackURL: `${scheme}:///(onboarding)/analyzing`
+          callbackURL: `/(onboarding)/analyzing`
         },
         
         {

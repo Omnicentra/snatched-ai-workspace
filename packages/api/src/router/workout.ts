@@ -603,7 +603,7 @@ export const workoutRouter = {
                         durationMinutes: { type: Type.NUMBER },
                         difficultyLevel: { type: Type.STRING },
                         caloriesBurn: { type: Type.NUMBER },
-                        categoryId: { type: Type.NUMBER },
+                        categoryId: { type: Type.NUMBER, minimum: 1, maximum: 6 },
                         exercises: {
                           type: Type.ARRAY,
                           items: {
