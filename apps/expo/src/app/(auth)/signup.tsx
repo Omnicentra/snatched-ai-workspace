@@ -44,7 +44,7 @@ export default function SignupScreen() {
             id: session.user.id,
           });
           if (info.customerInfo.activeSubscriptions.length > 0) {
-            router.push("/(tabs)/home");
+            router.push("/(onboarding)/body-positivity");
           } else {
             router.push("/(onboarding)/paywall");
           }
@@ -61,9 +61,6 @@ export default function SignupScreen() {
       await authClient.signIn.social(
         { provider: "apple" },
         {
-          onSuccess: () => {
-            router.push("/(onboarding)/analyzing");
-          },
           onError: (ctx) => {
             Alert.alert(ctx.error.message);
           },
@@ -86,9 +83,6 @@ export default function SignupScreen() {
       await authClient.signIn.social(
         { provider: "google" },
         {
-          onSuccess: () => {
-            router.push("/(onboarding)/analyzing");
-          },
           onError: (ctx) => {
             Alert.alert("Google Sign In Failed", ctx.error.message);
           },
