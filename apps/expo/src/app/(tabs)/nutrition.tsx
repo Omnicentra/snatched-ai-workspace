@@ -1,9 +1,10 @@
 import type { RouterOutputs } from "@/utils/api";
 import type { GestureResponderEvent } from "react-native";
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import {
   ActivityIndicator,
   Animated,
+  Dimensions,
   Easing,
   Pressable,
   ScrollView,
@@ -17,6 +18,7 @@ import { useRouter } from "expo-router";
 import { MilestoneModal } from "@/app/(modals)/milestone-modal";
 import { api } from "@/utils/api";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import ConfettiCannon from "react-native-confetti-cannon";
 
 // Define types for clarity
 type MealPlanData = RouterOutputs["nutrition"]["getTodaysMealPlan"];
@@ -212,6 +214,8 @@ const MealCard = ({
 export default function NutritionPlanScreen() {
   const router = useRouter();
   const [showMilestone, setShowMilestone] = useState(false);
+  const confettiRef = useRef<ConfettiCannon>(null);
+  const { width: screenWidth } = Dimensions.get("window");
   const utils = api.useUtils();
   const { data: mealPlanData, isLoading: isLoadingMealPlan, refetch } = api.nutrition.getTodaysMealPlan.useQuery();
   const { mutate: toggleMealCompletion } = api.nutrition.toggleMealCompletion.useMutation({
@@ -223,6 +227,13 @@ export default function NutritionPlanScreen() {
       console.error("Failed to toggle meal completion:", error);
     },
   });
+
+  // Check if all meals are completed and trigger confetti
+  useEffect(() => {
+    if (mealPlanData?.meals.length && mealPlanData.meals.every(meal => meal.completed)) {
+      confettiRef.current?.start();
+    }
+  }, [mealPlanData?.meals]);
 
   // Calculate current macros from completed meals
   const calculateMacros = (macroType: "protein" | "carbs" | "fats") => {
@@ -278,6 +289,18 @@ export default function NutritionPlanScreen() {
       colors={["#e5e7eb", "#fff"]}
       style={{ flexGrow: 1, paddingTop: Constants.statusBarHeight }}
     >
+      {/* Confetti Cannon */}
+      <ConfettiCannon
+        ref={confettiRef}
+        count={150}
+        origin={{ x: screenWidth / 2, y: -20 }}
+        autoStart={false}
+        fadeOut={true}
+        explosionSpeed={400}
+        fallSpeed={3000}
+        colors={["#a855f7", "#ec4899", "#f9a8d4", "#ffffff", "#ddd6fe"]}
+      />
+
       {/* Header */}
       <View className="flex-row items-center justify-between px-6 pb-3 pt-6">
         <Text className="font-inter-bold text-2xl text-black">Nutrition</Text>

@@ -59,7 +59,7 @@ const createConfig = ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name,
   slug: "snatched-ai",
-  version: "1.0.8",
+  version: "1.0.9",
   orientation: "portrait",
   icon,
   scheme,
@@ -98,6 +98,8 @@ const createConfig = ({ config }: ConfigContext): ExpoConfig => ({
       "android.permission.ACCESS_MEDIA_LOCATION",
       "android.permission.CAMERA",
       "android.permission.RECORD_AUDIO",
+      "android.permission.BODY_SENSORS",
+      "android.permission.BODY_SENSORS_BACKGROUND",
     ],
     intentFilters: [
       {

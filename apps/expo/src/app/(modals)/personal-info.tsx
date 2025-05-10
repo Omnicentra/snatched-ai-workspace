@@ -21,12 +21,14 @@ const InfoField = ({
   onChangeText,
   placeholder,
   editable = true,
+  readOnly = false,
 }: { 
   label: string
   value: string
   onChangeText: (text: string) => void
   placeholder: string
   editable?: boolean
+  readOnly?: boolean
 }) => (
   <View className="mb-6">
     <Text className="font-inter-medium mb-2 text-sm text-gray-600">{label}</Text>
@@ -37,6 +39,7 @@ const InfoField = ({
       editable={editable}
       className={`rounded-xl border border-gray-200 bg-white px-4 py-3 font-inter text-base text-gray-900 ${!editable ? 'bg-gray-50' : ''}`}
       placeholderTextColor="#9CA3AF"
+      readOnly={readOnly}
     />
   </View>
 )
@@ -127,6 +130,7 @@ export default function PersonalInfoScreen() {
             onChangeText={setEmail}
             placeholder="Enter your email address"
             editable={false}
+            readOnly={true}
           />
           
 
