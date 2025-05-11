@@ -1,14 +1,13 @@
 // app/(onboarding)/results.tsx
-import React, { useEffect, useRef } from "react";
-import { Dimensions, SafeAreaView, ScrollView, Text, View } from "react-native";
-import ConfettiCannon from "react-native-confetti-cannon";
-import { BlurView } from "expo-blur";
-import Constants from "expo-constants";
-import { LinearGradient } from "expo-linear-gradient";
-import { useLocalSearchParams, useRouter } from "expo-router";
 import { StyledButton } from "@/components/core";
 import { transformationStore$ } from "@/stores/transformation.store";
 import { use$ } from "@legendapp/state/react";
+import Constants from "expo-constants";
+import { LinearGradient } from "expo-linear-gradient";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useEffect, useRef } from "react";
+import { Dimensions, SafeAreaView, ScrollView, Text, View } from "react-native";
+import ConfettiCannon from "react-native-confetti-cannon";
 
 const { width: screenWidth } = Dimensions.get("window"); // Get screen width
 
@@ -137,34 +136,24 @@ export default function ResultsScreen() {
               </View>
 
               <View className="space-y-4">
-                {[bodyRating.issue1, bodyRating.issue2, bodyRating.issue3].map(
-                  (issue, index) => (
-                    <View key={index} className="flex-row items-start">
-                      <Text className="font-inter-bold mr-2 text-pink-500">
-                        {index + 1}.
-                      </Text>
-                      {isUnlocked ? (
+                {isUnlocked ? (
+                  [bodyRating.issue1, bodyRating.issue2, bodyRating.issue3].map(
+                    (issue, index) => (
+                      <View key={index} className="flex-row items-start">
+                        <Text className="font-inter-bold mr-2 text-pink-500">
+                          {index + 1}.
+                        </Text>
                         <Text className="font-inter-medium flex-1 text-gray-700">
                           {issue}
                         </Text>
-                      ) : (
-                        <View className="flex-1 rounded-lg">
-                          <Text
-                            style={{
-                              color: 'rgba(255,255,255,0.2)', // Softer white
-                              textShadowColor: "rgba(20,20,20,0.7)", // Softer, more natural shadow
-                              textShadowOffset: { width: 0, height: 0 },
-                              textShadowRadius: 24, // Stronger, softer blur
-                            }}
-                            className="font-inter-medium p-2"
-                          >
-                            This area needs improvement to achieve your snatched
-                            goals
-                          </Text>
-                        </View>
-                      )}
-                    </View>
-                  ),
+                      </View>
+                    ),
+                  )
+                ) : (
+                  <View className="items-center justify-center py-8">
+                    <Text className="text-4xl mb-2">🔒</Text>
+                    <Text className="font-inter-medium text-gray-600">Unlock to view your issues</Text>
+                  </View>
                 )}
               </View>
             </View>

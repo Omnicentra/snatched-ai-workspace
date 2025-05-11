@@ -29,6 +29,7 @@ import * as Sentry from "@sentry/react-native";
 import { isRunningInExpoGo } from "expo";
 import Constants from "expo-constants";
 import { Platform } from "react-native";
+import { vexo } from "vexo-analytics";
 
 const navigationIntegration = Sentry.reactNavigationIntegration({
   enableTimeToInitialDisplay: !isRunningInExpoGo(),
@@ -50,6 +51,10 @@ Sentry.init({
   // uncomment the line below to enable Spotlight (https://spotlightjs.com)
   spotlight: __DEV__,
 });
+
+if (appVariant === "production") {
+  vexo("d78c38b5-7df7-44b0-beca-a067b12c15a5");
+}
 
 export {
   // Catch any errors thrown by the Layout component.
