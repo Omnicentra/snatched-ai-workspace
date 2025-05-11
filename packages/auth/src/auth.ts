@@ -65,12 +65,21 @@ export const config = {
       clientId: env.AUTH_GOOGLE_ID,
       clientSecret: env.AUTH_GOOGLE_SECRET,
       redirectURI: redirectURI + "/google",
+      mapProfileToUser: (profile) => {
+        return {
+          name: `${profile.given_name} ${profile.family_name}`,
+          email: profile.email,
+          image: profile.picture,
+        };
+      },
     },
   },
   trustedOrigins: [
     "snatched-ai://",
     "snatched-ai-preview://",
     "snatched-ai-dev://",
+    "snatched-ai-dev:///(tabs)/home",
+    "snatched-ai-dev:///(onboarding)/analyzing",
     "https://appleid.apple.com",
     "https://snatchedai.com",
     "https://snatched-ai-dev-oh2uj.ondigitalocean.app",
