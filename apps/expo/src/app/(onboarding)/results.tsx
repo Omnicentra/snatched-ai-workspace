@@ -1,131 +1,20 @@
 // app/(onboarding)/results.tsx
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import {
   Dimensions,
-  Pressable,
   SafeAreaView,
   ScrollView,
   Text,
   View,
 } from "react-native";
 import ConfettiCannon from "react-native-confetti-cannon";
-import Svg, { Path, Circle } from "react-native-svg";
 import Constants from "expo-constants";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StyledButton } from "@/components/core";
 import { transformationStore$ } from "@/stores/transformation.store";
 import { use$ } from "@legendapp/state/react";
-import * as Haptics from "expo-haptics";
-// --- GoalTimelineGraph component remains the same ---
-const GoalTimelineGraph = () => {
-  const bodyRating = use$(transformationStore$.bodyRating);
-  const currentScore = bodyRating.currentSnatchedScore ?? 55;
-  const potentialScore = bodyRating.potentialSnatchedScore ?? 98;
-  const isUnlocked = useLocalSearchParams<{ unlocked?: string }>().unlocked === "true";
-
-  // Calculate the normalized scores (0-100 to 0-1)
-  const normalizedCurrent = currentScore / 100;
-  const normalizedPotential = potentialScore / 100;
-
-  // Calculate the curve points
-  const getCurvePoints = () => {
-    const points = [];
-    const steps = 100;
-    
-    for (let i = 0; i <= steps; i++) {
-      const x = i / steps; // x goes from 0 to 1
-      let y;
-      
-      if (x < 0.2) {
-        // Initial rapid improvement phase
-        y = normalizedCurrent + (normalizedPotential - normalizedCurrent) * (x / 0.2) * 0.3;
-      } else if (x < 0.8) {
-        // Middle steady progress phase
-        const middleProgress = (x - 0.2) / 0.6;
-        y = normalizedCurrent + (normalizedPotential - normalizedCurrent) * (0.3 + middleProgress * 0.5);
-      } else {
-        // Final optimization phase
-        const finalProgress = (x - 0.8) / 0.2;
-        y = normalizedCurrent + (normalizedPotential - normalizedCurrent) * (0.8 + finalProgress * 0.2);
-      }
-      
-      points.push({ x, y });
-    }
-    
-    return points;
-  };
-
-  const curvePoints = getCurvePoints();
-  
-  // Convert points to SVG path with padding
-  const pathData = curvePoints.map((point, index) => {
-    const x = point.x * 100;
-    const y = 100 - (point.y * 100); // Invert y for SVG coordinate system
-    return `${index === 0 ? 'M' : 'L'} ${x} ${y}`;
-  }).join(' ');
-
-  return (
-    <View className="relative h-[200px] w-full">
-      <Svg
-        width="100%"
-        height="100%"
-        viewBox="-3 0 107 100" // Added padding to left and right
-        preserveAspectRatio="none"
-      >
-        {/* Background gradient fill */}
-        <Path
-          d={`${pathData} L 100 100 L 0 100 Z`}
-          fill="rgba(243, 232, 255, 0.3)"
-          vectorEffect="non-scaling-stroke"
-        />
-        {/* Main curve */}
-        <Path
-          d={pathData}
-          stroke="#A855F7"
-          strokeWidth="2"
-          fill="none"
-          vectorEffect="non-scaling-stroke"
-        />
-        {/* Current score point - only show when unlocked */}
-        {isUnlocked && (
-          <Circle
-            cx="0"
-            cy={100 - (normalizedCurrent * 100)}
-            r="3"
-            fill="#A855F7"
-          />
-        )}
-        {/* Potential score point - only show when unlocked */}
-        {isUnlocked && (
-          <Circle
-            cx="100"
-            cy={100 - (normalizedPotential * 100)}
-            r="3"
-            fill="#A855F7"
-          />
-        )}
-      </Svg>
-      {/* Lock indicator - only show when locked */}
-      {!isUnlocked && (
-        <View className="absolute" style={{ left: "45%", top: "30%" }}>
-          <View
-            className="h-8 w-8 items-center justify-center rounded-lg bg-purple-500/80"
-            style={{
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 1 },
-              shadowOpacity: 0.2,
-              shadowRadius: 2,
-            }}
-          >
-            <Text className="text-sm text-white">🔒</Text>
-          </View>
-        </View>
-      )}
-    </View>
-  );
-};
-// --- End of GoalTimelineGraph ---
+import { BlurView } from 'expo-blur';
 
 const { width: screenWidth } = Dimensions.get("window"); // Get screen width
 
@@ -135,7 +24,6 @@ export default function ResultsScreen() {
   const bodyRating = use$(transformationStore$.bodyRating);
   const searchParams = useLocalSearchParams<{ unlocked?: string }>();
   const isUnlocked = searchParams.unlocked === "true";
-  const [showIssues, setShowIssues] = useState(false);
 
   // Get the number of issues that are not null
   const issueCount = [
@@ -243,45 +131,41 @@ export default function ResultsScreen() {
                 <View className="flex-row items-center">
                   <View className="mr-2 h-2.5 w-2.5 rounded-full bg-[#A855F7]" />
                   <Text className="font-inter-medium text-gray-600">
-                    {showIssues ? "Areas for Improvement" : "Body shape / Weight"}
+                    Areas for Improvement
                   </Text>
                 </View>
-                {/* Toggle Button */}
-                <Pressable
-                  onPress={() => {
-                    setShowIssues(!showIssues)
-                    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
-                  }}
-                  className="rounded-full bg-red-500/80 px-2.5 py-2"
-                >
+                {/* Issue Count Badge */}
+                <View className="rounded-full bg-red-500/80 px-2.5 py-2">
                   <Text className="font-inter-medium text-xs text-white">
-                    {showIssues ? "Show Progress" : `${issueCount} Issues found`}
+                    {issueCount} Issues found
                   </Text>
-                </Pressable>
+                </View>
               </View>
 
-              {showIssues ? (
-                <View className="space-y-4">
-                  {[
-                    bodyRating.issue1,
-                    bodyRating.issue2,
-                    bodyRating.issue3,
-                  ].map((issue, index) => (
-                    issue ? (
-                      <View key={index} className="flex-row items-start">
-                        <Text className="mr-2 font-inter-bold text-pink-500">
-                          {index + 1}.
+              <View className="space-y-4">
+                {[
+                  bodyRating.issue1,
+                  bodyRating.issue2,
+                  bodyRating.issue3,
+                ].map((issue, index) => (
+                  <View key={index} className="flex-row items-start">
+                    <Text className="mr-2 font-inter-bold text-pink-500">
+                      {index + 1}.
+                    </Text>
+                    {isUnlocked ? (
+                      <Text className="flex-1 font-inter-medium text-gray-700">
+                        {issue}
+                      </Text>
+                    ) : (
+                      <BlurView intensity={20} tint="light" className="flex-1 rounded-lg">
+                        <Text className="font-inter-medium text-gray-700 p-2">
+                          This area needs improvement to achieve your snatched goals
                         </Text>
-                        <Text className="flex-1 font-inter-medium text-gray-700">
-                          {issue}
-                        </Text>
-                      </View>
-                    ) : null
-                  ))}
-                </View>
-              ) : (
-                <GoalTimelineGraph />
-              )}
+                      </BlurView>
+                    )}
+                  </View>
+                ))}
+              </View>
             </View>
 
             {/* Visual Preview Grid */}

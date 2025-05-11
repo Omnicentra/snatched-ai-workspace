@@ -1,5 +1,6 @@
 import { StyledButton } from "@/components/core";
 import { BubbleLetter } from "@/components/core/BubbleLetter";
+import { scheme } from "@/lib/utils";
 import { api } from "@/utils/api";
 import { authClient } from "@/utils/auth";
 import { getOrCreateDeviceId } from "@/utils/device-id";
@@ -62,7 +63,7 @@ export default function LoginScreen() {
       await authClient.signIn.social(
         { 
           provider: "apple",
-          callbackURL: `/(tabs)/home`
+          callbackURL: `${scheme}://`
         },
         {
           onError: (ctx) => {
@@ -90,7 +91,7 @@ export default function LoginScreen() {
       await authClient.signIn.social(
         { 
           provider: "google",
-          callbackURL: `/(tabs)/home`
+          callbackURL: `${scheme}://`
         },
         {
           onError: (ctx) => {

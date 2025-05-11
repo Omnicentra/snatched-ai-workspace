@@ -18,6 +18,7 @@ import { getOrCreateDeviceId } from "@/utils/device-id";
 import { api } from "@/utils/api";
 import * as Device from "expo-device";
 import * as Sentry from "@sentry/react-native";
+import { scheme } from "@/lib/utils";
 
 export default function SignupScreen() {
   const router = useRouter();
@@ -56,7 +57,7 @@ export default function SignupScreen() {
       await authClient.signIn.social(
         { 
           provider: "apple",
-          callbackURL: `/(onboarding)/analyzing`
+          callbackURL: `${scheme}://`
         },
         {
           onSuccess: (ctx) => {
@@ -88,7 +89,7 @@ export default function SignupScreen() {
       await authClient.signIn.social(
         { 
           provider: "google",
-          callbackURL: `/(onboarding)/analyzing`
+          callbackURL: `${scheme}://`
         },
         
         {

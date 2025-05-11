@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Dimensions, Pressable, Text, View } from 'react-native';
+import { Dimensions, Pressable, Text, View, Image } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedProps,
@@ -186,6 +186,8 @@ export default function WorkoutStartScreen() {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  console.log(currentExercise?.imageUrl)
+
   if (!workoutData || !currentExercise) {
     return (
       <SafeAreaView className="flex-1 bg-white items-center justify-center">
@@ -213,16 +215,16 @@ export default function WorkoutStartScreen() {
         </View>
       </View>
 
-      {/* Progress Circle */}
+      {/* Progress Circle with Image inside */}
       <View className="flex-1 items-center justify-center px-4">
-        <View className="relative items-center justify-center">
+        <View style={{ width: CIRCLE_SIZE, height: CIRCLE_SIZE - 30, alignItems: 'center', justifyContent: 'center' }}>
           {/* SVG Progress Ring */}
-          <Svg width={CIRCLE_SIZE} height={CIRCLE_SIZE}>
+          <Svg width={CIRCLE_SIZE} height={CIRCLE_SIZE} style={{ position: 'absolute', top: 0, left: 0 }}>
             {/* Background Circle */}
             <Circle
               cx={CIRCLE_RADIUS}
               cy={CIRCLE_RADIUS}
-              r={CIRCLE_RADIUS - 10}
+              r={CIRCLE_RADIUS - 70}
               stroke="#f3f4f6"
               strokeWidth={12}
               fill="transparent"
@@ -231,7 +233,7 @@ export default function WorkoutStartScreen() {
             <AnimatedCircle
               cx={CIRCLE_RADIUS}
               cy={CIRCLE_RADIUS}
-              r={CIRCLE_RADIUS - 10}
+              r={CIRCLE_RADIUS - 70}
               stroke="#f472b6"
               strokeWidth={12}
               strokeDasharray={CIRCLE_LENGTH}
@@ -242,34 +244,44 @@ export default function WorkoutStartScreen() {
               fill="transparent"
             />
           </Svg>
-
-          {/* Content inside the circle */}
-          <View className="absolute items-center px-8">
-            <Text className="text-xl font-inter-bold mb-2 text-center">
-              {currentExercise.name}
-            </Text>
-            {workoutId !== Number(cooldownWorkoutId) && (
-              <>
-                <Text className="text-gray-600 text-center text-sm mb-4">
-                  {currentExercise.sets} sets × {currentExercise.reps} reps
-                </Text>
-                <Text className="text-gray-600 text-center text-sm mb-8">
-                  {currentExercise.restSeconds}s rest between sets
-                </Text>
-              </>
-            )}
-            
-            {/* Timer */}
-            <Text className="text-7xl font-inter-bold mb-8">
-              {formatTime(timeLeft)}
-            </Text>
-            
-            {nextExercise && (
+          {/* Exercise Image Centered in Circle */}
+          {currentExercise.imageUrl && (
+            <Image
+              source={{ uri: currentExercise.imageUrl }}
+              style={{
+                width: CIRCLE_SIZE * 0.6,
+                height: CIRCLE_SIZE * 0.6,
+                resizeMode: 'contain',
+                borderRadius: (CIRCLE_SIZE * 0.6) / 2,
+                backgroundColor: '#FDF6E3', // Optional: soft background
+              }}
+            />
+          )}
+        </View>
+        {/* Exercise Details and Timer BELOW the circle */}
+        <View className="w-full items-center px-8">
+          <Text className="text-xl font-inter-bold mb-2 text-center">
+            {currentExercise.name}
+          </Text>
+          {workoutId !== Number(cooldownWorkoutId) && (
+            <>
+              <Text className="text-gray-600 text-center text-sm mb-4">
+                {currentExercise.sets} sets × {currentExercise.reps} reps
+              </Text>
+              <Text className="text-gray-600 text-center text-sm mb-8">
+                {currentExercise.restSeconds}s rest between sets
+              </Text>
+            </>
+          )}
+          {/* Timer */}
+          <Text className="text-7xl font-inter-bold mb-8">
+            {formatTime(timeLeft)}
+          </Text>
+          {nextExercise && (
             <Text className="text-gray-500 text-sm">
-                Up Next: {nextExercise.name}
+              Up Next: {nextExercise.name}
             </Text>
-            )}
-          </View>
+          )}
         </View>
       </View>
 
