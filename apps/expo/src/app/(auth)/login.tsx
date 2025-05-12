@@ -163,8 +163,9 @@ export default function LoginScreen() {
                     icon={
                     <Ionicons name="logo-google" size={20} color="#DB4437" />
                   }
-                  className="bg-white"
-                />}
+                    className="bg-white"
+                  />
+                )}
               </View>
             )}
 

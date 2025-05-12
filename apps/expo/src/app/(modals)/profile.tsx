@@ -1,6 +1,5 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
   Alert,
   Linking,
   Pressable,
@@ -8,14 +7,15 @@ import {
   Text,
   View,
 } from "react-native";
+import type { PurchasesEntitlementInfo } from "react-native-purchases";
 import Purchases from "react-native-purchases";
 import Constants from "expo-constants";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { nutritionStore$ } from "@/stores/nutrition.store";
 import { authClient } from "@/utils/auth";
 import { Ionicons } from "@expo/vector-icons";
+import ChatWootWidget from '@chatwoot/react-native-widget';
 
 const MenuItem = ({
   icon,
@@ -46,37 +46,23 @@ const MenuItem = ({
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const [userName, setUserName] = React.useState("");
+  const [userName, setUserName] = useState("");
   const { data: session } = authClient.useSession();
+  const [showWidget, toggleWidget] = useState(false);
+  const [subscriptionStatus, setSubscriptionStatus] = useState<PurchasesEntitlementInfo | null>(null);
+
 
   // Load user data
-  React.useEffect(() => {
+  useEffect(() => {
+    void Purchases.getCustomerInfo().then((customerInfo) => {
+      if (customerInfo.entitlements.active.premium) {
+        setSubscriptionStatus(customerInfo.entitlements.active.premium);
+      }
+    });
     if (session?.user) {
       setUserName(session.user.name);
     }
   }, [session?.user]);
-
-  const handleResetNutrition = () => {
-    Alert.alert(
-      "Reset Nutrition Data",
-      "This will clear all your logged meals. This action cannot be undone.",
-      [
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
-        {
-          text: "Reset",
-          style: "destructive",
-          onPress: () => {
-            // Reset to initial state
-            nutritionStore$.loggedMeals.set({});
-            Alert.alert("Success", "Your nutrition data has been reset");
-          },
-        },
-      ],
-    );
-  };
 
   const menuItems = [
     {
@@ -92,7 +78,7 @@ export default function ProfileScreen() {
     {
       icon: <Ionicons name="help-circle-outline" size={18} color="#1F2937" />,
       label: "Help & Support",
-      onPress: () => console.log("Navigate to Help"),
+      onPress: () => toggleWidget(true),
     },
     {
       icon: <Ionicons name="document-text-outline" size={18} color="#1F2937" />,
@@ -139,6 +125,26 @@ export default function ProfileScreen() {
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
     >
+      {
+        showWidget &&
+          <ChatWootWidget
+            websiteToken='5c1r9tnJ5Qb8eQUTSU8tbyai'
+            locale='en'
+            baseUrl="https://app.chatwoot.com"
+            closeModal={() => toggleWidget(false)}
+            isModalVisible={showWidget}
+            user={{
+              identifier: session?.user.id,
+              name: session?.user.name,
+              email: session?.user.email,
+              avatar_url: session?.user.image ?? '',
+            }}
+            customAttributes={{
+              subscribed: !!subscriptionStatus,
+              plan: subscriptionStatus?.productIdentifier,
+            }}
+          />
+      }
       <StatusBar style="dark" />
       <View className="p-6">
         {/* Header */}
@@ -156,7 +162,7 @@ export default function ProfileScreen() {
         {/* User Info */}
         <View className="mt-8 items-center">
           <Pressable
-            onPress={() => Alert.alert(`User ID: ${session?.user?.id}`)}
+            onPress={() => Alert.alert(`User ID: ${session?.user.id}`)}
             className="mb-4 h-24 w-24 items-center justify-center rounded-full bg-pink-100"
           >
             <Text className="font-inter-bold text-3xl text-pink-500">
