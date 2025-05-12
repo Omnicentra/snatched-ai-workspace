@@ -11,6 +11,7 @@ import {
   StyleSheet,
   Text,
   View,
+  Linking,
 } from "react-native";
 // 20px padding on each side
 import Purchases from "react-native-purchases";
@@ -829,7 +830,7 @@ function PaywallScreen() {
       if (userId) {
         Analytics.trackSubscriptionPurchase(deviceId, userId, {
           planId: productIdentifier,
-          planName: selectedPackage.product.offering.identifier,
+          planName: selectedPackage.product.identifier,
           price: selectedPackage.product.price,
           currency: selectedPackage.product.currencyCode,
           interval: selectedPackage.product.subscriptionPeriod === 'P1Y' ? 'year' : 'month'
@@ -955,6 +956,32 @@ function PaywallScreen() {
 
         {/* Bottom Actions */}
         <View style={styles.footer}>
+          {/* Legal Links */}
+          <View className="mb-4 items-center">
+            <Text className="text-center text-xs text-gray-400">
+              By continuing, you agree to our{' '}
+              <Text
+                className="font-inter-medium text-pink-300 underline"
+                onPress={() => Linking.openURL("https://snatchedai.com/terms")}
+              >
+                Terms
+              </Text>
+              <Text>{', '}</Text>
+              <Text
+                className="font-inter-medium text-pink-300 underline"
+                onPress={() => Linking.openURL("https://snatchedai.com/privacy")}
+              >
+                Privacy Policy
+              </Text>
+              <Text>{', and '}</Text>
+              <Text
+                className="font-inter-medium text-pink-300 underline"
+                onPress={() => Linking.openURL("https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")}
+              >
+                EULA
+              </Text>
+            </Text>
+          </View>
           <StyledButton
             title={isPurchasing ? "Processing..." : "Continue"}
             disabled={!selectedPackage || isPurchasing}
