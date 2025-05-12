@@ -1,21 +1,21 @@
 // app/(onboarding)/body-positivity.tsx
-import React, { useEffect } from 'react'
-import { View, Text, SafeAreaView, Pressable, StyleSheet } from 'react-native'
-import { useRouter } from 'expo-router'
-import Constants from 'expo-constants'
-import Svg, { Rect, Ellipse, Circle, Path, G } from 'react-native-svg' // Import SVG components
-import { LinearGradient } from 'expo-linear-gradient'
-import { Image } from 'expo-image'
 import bodyPositivity from '@/assets/images/body-positivity.png'
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  withDelay,
-  Easing
-} from 'react-native-reanimated'
-import { StyledButton } from '@/components/core' // Assuming you want to use the standard button
+import { StyledButton } from '@/components/core'; // Assuming you want to use the standard button
+import { withOnboardingTracking } from '@/components/core/withOnboardingTracking'
+import Constants from 'expo-constants'
+import { Image } from 'expo-image'
+import { useRouter } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
+import React, { useEffect } from 'react'
+import { StyleSheet, Text, View } from 'react-native'
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withTiming
+} from 'react-native-reanimated'
+import Svg, { Circle, Ellipse, G, Path, Rect } from 'react-native-svg'; // Import SVG components
 
 // Reusable Animated View for Fade-in effect
 const FadeInView = ({
@@ -215,7 +215,7 @@ const BodyPositivityIllustration = () => (
   </Svg>
 )
 
-export default function BodyPositivityScreen() {
+function BodyPositivityScreen() {
   const router = useRouter()
 
   const handleReady = () => {
@@ -316,3 +316,5 @@ const styles = StyleSheet.create({
     right: -50
   }
 })
+
+export default withOnboardingTracking(BodyPositivityScreen, 'body_positivity')

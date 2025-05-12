@@ -17,6 +17,7 @@ import {
   View
 } from 'react-native'
 import { z } from 'zod'
+import { withOnboardingTracking } from '@/components/core/withOnboardingTracking'
 
 type Craving = z.infer<typeof cravingEnum>;
 
@@ -46,7 +47,7 @@ const CravingTag = ({
   </Pressable>
 )
 
-export default function CravingsScreen() {
+function CravingsScreen() {
   const router = useRouter()
   const selectedCravings = use$(onboardingStore$.onboarding.cravings);
   const otherCravings = use$(onboardingStore$.onboarding.otherCravings);
@@ -139,3 +140,5 @@ export default function CravingsScreen() {
     </SafeAreaView>
   )
 }
+
+export default withOnboardingTracking(CravingsScreen, 'cravings');

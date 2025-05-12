@@ -34,6 +34,7 @@ import Animated, {
   withSequence,
   withDelay
 } from 'react-native-reanimated'
+import { withOnboardingTracking } from '@/components/core/withOnboardingTracking'
 
 const AnimatedIcon = Animated.createAnimatedComponent(MaterialCommunityIcons);
 
@@ -126,7 +127,7 @@ const ControlButton = ({ onPress, icon }: { onPress: () => void; icon: React.Rea
   </Pressable>
 )
 
-export default function ScanSideScreen() {
+function ScanSideScreen() {
   const router = useRouter()
   const [type, setType] = useState<CameraType>('back')
   const [cameraPermission, setCameraPermission] =
@@ -466,3 +467,5 @@ export default function ScanSideScreen() {
     </View>
   )
 }
+
+export default withOnboardingTracking(ScanSideScreen, 'scan_side');

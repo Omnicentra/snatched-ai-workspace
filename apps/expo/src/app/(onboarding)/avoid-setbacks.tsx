@@ -11,6 +11,7 @@ import {
 import { previousMethodEnum } from '@omc/validators/onboarding'
 import { onboardingStore$ } from '@/stores/onboarding.store'
 import { use$ } from '@legendapp/state/react'
+import { withOnboardingTracking } from '@/components/core/withOnboardingTracking'
 
 type PreviousMethod = typeof previousMethodEnum.options[number]
 
@@ -44,7 +45,7 @@ const methodMap: MethodMapType = {
   }
 }
 
-export default function AvoidSetbacksScreen() {
+function AvoidSetbacksScreen() {
   const router = useRouter()
   const selectedMethods = use$(onboardingStore$.onboarding.triedInPast)
 
@@ -107,3 +108,5 @@ export default function AvoidSetbacksScreen() {
     </SafeAreaView>
   )
 }
+
+export default withOnboardingTracking(AvoidSetbacksScreen, 'avoid_setbacks')

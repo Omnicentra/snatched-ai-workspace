@@ -9,6 +9,7 @@ import { useRouter } from 'expo-router'
 import React, { useEffect } from 'react'
 import { SafeAreaView, ScrollView, View } from 'react-native'
 import type { z } from 'zod'
+import { withOnboardingTracking } from '@/components/core/withOnboardingTracking'
 
 interface TimelineOption {
   id: z.infer<typeof timelineEnum>
@@ -49,7 +50,7 @@ const timelineOptions: TimelineOption[] = [
   }
 ]
 
-export default function TimelineGoalScreen() {
+function TimelineGoalScreen() {
   const router = useRouter()
   const selectedTimeline = use$(onboardingStore$.onboarding.goalTimeline);
   const { data: session } = authClient.useSession();
@@ -103,3 +104,5 @@ export default function TimelineGoalScreen() {
     </SafeAreaView>
   )
 }
+
+export default withOnboardingTracking(TimelineGoalScreen, 'timeline_goal');

@@ -9,6 +9,7 @@ import { onboardingStore$ } from '@/stores/onboarding.store'
 import { dietaryPreferenceEnum } from '@omc/validators/onboarding'
 import { z } from 'zod'
 import { use$ } from '@legendapp/state/react'
+import { withOnboardingTracking } from '@/components/core/withOnboardingTracking'
 
 type DietaryPreference = z.infer<typeof dietaryPreferenceEnum>;
 
@@ -93,7 +94,7 @@ const DietCard = ({
   )
 }
 
-export default function DietaryPreferencesScreen() {
+function DietaryPreferencesScreen() {
   const router = useRouter()
   const selectedDiet = use$(onboardingStore$.onboarding.diet) 
 
@@ -151,3 +152,5 @@ export default function DietaryPreferencesScreen() {
     </SafeAreaView>
   )
 }
+
+export default withOnboardingTracking(DietaryPreferencesScreen, 'dietary_preferences');

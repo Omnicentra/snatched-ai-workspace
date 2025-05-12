@@ -16,6 +16,7 @@ import * as Haptics from 'expo-haptics'
 import { onboardingStore$ } from '@/stores/onboarding.store'
 import { z } from 'zod'
 import { use$ } from '@legendapp/state/react'
+import { withOnboardingTracking } from '@/components/core/withOnboardingTracking'
 
 // Function to get today's date in YYYY-MM-DD format
 const getTodayDateString = () => {
@@ -32,7 +33,7 @@ const periodDateValidationSchema = z.object({
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format (YYYY-MM-DD)")
 });
 
-export default function PeriodDateScreen() {
+function PeriodDateScreen() {
   const router = useRouter()
   // Use YYYY-MM-DD format for react-native-calendars
   const selectedDate = use$(onboardingStore$.onboarding.lastPeriodDate);
@@ -150,3 +151,5 @@ export default function PeriodDateScreen() {
     </SafeAreaView>
   )
 }
+
+export default withOnboardingTracking(PeriodDateScreen, 'period_date');

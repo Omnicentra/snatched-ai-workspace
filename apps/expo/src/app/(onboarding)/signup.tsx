@@ -13,14 +13,15 @@ import Constants from "expo-constants";
 import * as Device from "expo-device";
 import { useRouter } from "expo-router";
 import { OnboardingHeader, StyledButton } from "@/components/core";
-import { appVariant, scheme } from "@/lib/utils";
+import { appVariant, mixpanel, scheme } from "@/lib/utils";
 import { api } from "@/utils/api";
 import { authClient } from "@/utils/auth";
 import { getOrCreateDeviceId } from "@/utils/device-id";
 import { Ionicons } from "@expo/vector-icons";
 import * as Sentry from "@sentry/react-native";
+import { withOnboardingTracking } from '@/components/core/withOnboardingTracking';
 
-export default function SignupScreen() {
+function SignupScreen() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const { data: session } = authClient.useSession();
@@ -37,7 +38,15 @@ export default function SignupScreen() {
             deviceType: Platform.OS,
             deviceName: Device.deviceName,
           });
-
+          void mixpanel.identify(session.user.id);
+          void mixpanel.getPeople().setOnce({
+            email: session.user.email,
+            name: session.user.name,
+            avatar: session.user.image,
+            device_id: deviceId,
+            device_type: Platform.OS,
+            device_name: Device.deviceName,
+          });
           await Purchases.logIn(session.user.email);
           Sentry.setUser({
             email: session.user.email,
@@ -196,3 +205,5 @@ export default function SignupScreen() {
     </SafeAreaView>
   );
 }
+
+export default withOnboardingTracking(SignupScreen, 'signup');

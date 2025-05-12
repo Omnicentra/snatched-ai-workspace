@@ -12,6 +12,7 @@ import { onboardingStore$ } from '@/stores/onboarding.store'
 import { menstrualCycleStatusEnum } from '@omc/validators/onboarding'
 import { z } from 'zod'
 import { use$ } from '@legendapp/state/react'
+import { withOnboardingTracking } from '@/components/core/withOnboardingTracking'
 
 type MenstrualCycleStatus = z.infer<typeof menstrualCycleStatusEnum>;
 
@@ -19,7 +20,7 @@ const cycleValidationSchema = z.object({
   menstrual_cycle_status: menstrualCycleStatusEnum,
 });
 
-export default function CycleScreen() {
+function CycleScreen() {
   const router = useRouter()
   const selectedCycle = use$(onboardingStore$.onboarding.menstruralCycle);
 
@@ -80,3 +81,5 @@ export default function CycleScreen() {
     </SafeAreaView>
   )
 }
+
+export default withOnboardingTracking(CycleScreen, 'cycle');

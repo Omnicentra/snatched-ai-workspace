@@ -16,6 +16,7 @@ import { StatusBar } from "expo-status-bar";
 import { authClient } from "@/utils/auth";
 import { Ionicons } from "@expo/vector-icons";
 import ChatWootWidget from '@chatwoot/react-native-widget';
+import { mixpanel } from "@/lib/utils";
 
 const MenuItem = ({
   icon,
@@ -81,16 +82,6 @@ export default function ProfileScreen() {
       onPress: () => toggleWidget(true),
     },
     {
-      icon: <Ionicons name="document-text-outline" size={18} color="#1F2937" />,
-      label: "Terms & Privacy",
-      onPress: async () => {
-        await Promise.all([
-          Linking.openURL("https://snatchedai.com/terms"),
-          Linking.openURL("https://snatchedai.com/privacy"),
-        ]);
-      },
-    },
-    {
       icon: (
         <Ionicons name="refresh-circle-outline" size={18} color="#DC2626" />
       ),
@@ -109,6 +100,32 @@ export default function ProfileScreen() {
               style: "destructive",
               onPress: () => {
                 router.replace("/(onboarding)");
+              },
+            },
+          ],
+        );
+      },
+      textColor: "text-red-600",
+    },
+    {
+      icon: (
+        <Ionicons name="trash-outline" size={18} color="#DC2626" />
+      ),
+      label: "Delete Account",
+      onPress: () => {
+        Alert.alert(
+          "Delete Account",
+          "Are you sure you want to delete your account? This action cannot be undone and you will lose all your data.",
+          [
+            {
+              text: "Cancel",
+              style: "cancel",
+            },
+            {
+              text: "Delete",
+              style: "destructive",
+              onPress: () => {
+                void Linking.openURL("https://snatchedai.com/delete-account");
               },
             },
           ],
@@ -202,6 +219,8 @@ export default function ProfileScreen() {
               fetchOptions: {
                 onSuccess: () => {
                   void Purchases.logOut();
+                  void mixpanel.track('log out');
+                  void mixpanel.reset();
                   router.replace("/(auth)/login");
                 },
               },
@@ -210,15 +229,39 @@ export default function ProfileScreen() {
         >
           <Text className="font-inter-medium text-red-500">Log Out</Text>
         </Pressable>
-
-        {/* Version Number */}
-        <Text className="font-inter mt-6 text-center text-sm text-gray-400">
-          Version {Constants.expoConfig?.version ?? "1.0.0"}
-        </Text>
-
-        {/* Bottom Padding */}
-        <View className="h-8" />
       </ScrollView>
+
+      {/* Footer Section */}
+      <View className="px-6 pb-8">
+        {/* Legal Links and Version */}
+        <View className="items-center">
+          <Text className="text-center text-xs text-gray-600">
+            <Text
+              className="font-inter-medium text-black underline"
+              onPress={() => Linking.openURL("https://snatchedai.com/terms")}
+            >
+              Terms
+            </Text>
+            <Text>{', '}</Text>
+            <Text
+              className="font-inter-medium text-black underline"
+              onPress={() => Linking.openURL("https://snatchedai.com/privacy")}
+            >
+              Privacy Policy
+            </Text>
+            <Text>{', and '}</Text>
+            <Text
+              className="font-inter-medium text-black underline"
+              onPress={() => Linking.openURL("https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")}
+            >
+              EULA
+            </Text>
+          </Text>
+          <Text className="font-inter mt-2 text-center text-sm text-gray-400">
+            Version {Constants.expoConfig?.version ?? "1.0.0"}
+          </Text>
+        </View>
+      </View>
     </LinearGradient>
   );
 }

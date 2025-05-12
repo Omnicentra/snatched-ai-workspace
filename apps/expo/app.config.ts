@@ -199,7 +199,8 @@ const createConfig = ({ config }: ConfigContext): ExpoConfig => ({
       ngrokUrl: process.env.NGROK_URL,
       cooldownWorkoutId: process.env.COOLDOWN_WORKOUT_ID,
       revenuecatProjectAppleApiKey: "appl_ihLfvNYWzXDhzMTPQoGLwVGsJKF",
-      revenuecatProjectGoogleApiKey: "goog_zymKRJSOYmVtSusuckLwdQuXgIk"
+      revenuecatProjectGoogleApiKey: "goog_zymKRJSOYmVtSusuckLwdQuXgIk",
+      mixpanelToken: process.env.MIXPANEL_TOKEN,
     },
   },
   owner: "omnicentra",

@@ -21,6 +21,7 @@ import Animated, {
   withDelay,
   useAnimatedProps
 } from 'react-native-reanimated'
+import { withOnboardingTracking } from '@/components/core/withOnboardingTracking'
 
 const SIX_WEEKS_IN_MS = 6 * 7 * 24 * 60 * 60 * 1000;
 
@@ -166,7 +167,7 @@ const IdealBodyGraph = () => {
   )
 }
 
-export default function IdealBodyScreen() {
+function IdealBodyScreen() {
   const router = useRouter()
 
   const handleContinue = () => {
@@ -213,3 +214,5 @@ export default function IdealBodyScreen() {
     </SafeAreaView>
   )
 }
+
+export default withOnboardingTracking(IdealBodyScreen, 'ideal_body');

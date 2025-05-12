@@ -20,6 +20,7 @@ import { onboardingStore$ } from "@/stores/onboarding.store";
 import { medicalConditionResponseEnum } from "@omc/validators/onboarding";
 import { z } from "zod";
 import { use$ } from "@legendapp/state/react";
+import { withOnboardingTracking } from '@/components/core/withOnboardingTracking';
 
 type MedicalConditionResponse = z.infer<typeof medicalConditionResponseEnum>;
 
@@ -28,7 +29,7 @@ const healthValidationSchema = z.object({
   medical_conditions_details: z.string().optional(),
 });
 
-export default function HealthScreen() {
+function HealthScreen() {
   const router = useRouter();
   const [selectedOption, setSelectedOption] = useState<MedicalConditionResponse>();
   const healthDetails = use$(onboardingStore$.onboarding.healthConditions);
@@ -105,3 +106,5 @@ export default function HealthScreen() {
     </TouchableWithoutFeedback>
   );
 }
+
+export default withOnboardingTracking(HealthScreen, 'health');

@@ -9,6 +9,7 @@ import Constants from 'expo-constants'
 import * as Haptics from 'expo-haptics'
 import { useRouter } from 'expo-router'
 import { goalEnum } from "@omc/validators/onboarding"
+import { withOnboardingTracking } from '@/components/core/withOnboardingTracking'
 // Reusable Goal Card Component (put in components/GoalCard.tsx)
 // Use standard components with className
 const GoalCard = ({
@@ -88,7 +89,7 @@ const goalMap: GoalMapType = {
   }
 }
 
-export default function GoalScreen() {
+function GoalScreen() {
   const router = useRouter()
   const selectedGoals = use$(onboardingStore$.onboarding.goals)
   // const [selectedGoals, setSelectedGoals] = useState<string[]>([])
@@ -164,3 +165,5 @@ export default function GoalScreen() {
     </SafeAreaView>
   )
 }
+
+export default withOnboardingTracking(GoalScreen, 'goal');

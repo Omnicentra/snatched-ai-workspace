@@ -8,14 +8,20 @@ import { useRouter } from "expo-router";
 import { BubbleLetter } from "@/components/core/BubbleLetter";
 import { appVariant, cn } from "@/lib/utils";
 import { authClient } from "@/utils/auth";
+import { Analytics } from "@/lib/analytics";
+import { getOrCreateDeviceId } from "@/utils/device-id";
+import { withOnboardingTracking } from '@/components/core/withOnboardingTracking';
 
 import brandLogo from "../../assets/images/logo2.png";
 
-export default function SplashScreen() {
+function SplashScreen() {
   const router = useRouter();
   const { data: session } = authClient.useSession();
 
-  const handleGetStarted = () => {
+  const handleGetStarted = async () => {
+    const deviceId = await getOrCreateDeviceId();
+    Analytics.trackOnboardingStart(deviceId);
+    
     void Haptics.selectionAsync().then(() => {
       router.push("/(onboarding)/body-positivity");
     });
@@ -113,3 +119,5 @@ export default function SplashScreen() {
     </LinearGradient>
   );
 }
+
+export default withOnboardingTracking(SplashScreen, 'get_started');

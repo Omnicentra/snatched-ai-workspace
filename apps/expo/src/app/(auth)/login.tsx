@@ -1,6 +1,6 @@
 import { StyledButton } from "@/components/core";
 import { BubbleLetter } from "@/components/core/BubbleLetter";
-import { appVariant, scheme } from "@/lib/utils";
+import { appVariant, mixpanel, scheme } from "@/lib/utils";
 import { api } from "@/utils/api";
 import { authClient } from "@/utils/auth";
 import { getOrCreateDeviceId } from "@/utils/device-id";
@@ -39,7 +39,15 @@ export default function LoginScreen() {
             deviceType: Platform.OS,
             deviceName: Device.deviceName,
           });
-          
+          void mixpanel.identify(session.user.id);
+          void mixpanel.getPeople().setOnce({
+            email: session.user.email,
+            name: session.user.name,
+            avatar: session.user.image,
+            device_id: deviceId,
+            device_type: Platform.OS,
+            device_name: Device.deviceName,
+          });
           const info = await Purchases.logIn(session.user.email);
           Sentry.setUser({
             email: session.user.email,

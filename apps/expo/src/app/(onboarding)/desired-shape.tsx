@@ -24,6 +24,7 @@ import { Image } from 'expo-image'
 import { onboardingStore$ } from '@/stores/onboarding.store'
 import { desiredBodyShapeEnum } from '@omc/validators/onboarding'
 import type { z } from 'zod'
+import { withOnboardingTracking } from '@/components/core/withOnboardingTracking'
 
 import athletic from '@/assets/images/body-shapes/athletic.png'
 import hourglass from '@/assets/images/body-shapes/hourglass.png'
@@ -171,7 +172,7 @@ const BodyShapeCard = ({
   </Pressable>
 )
 
-const DesiredShape = () => {
+function DesiredShape() {
   const router = useRouter()
   const [currentPageIndex, setCurrentPageIndex] = useState(0)
   const [selectedShapeId, setSelectedShapeId] = useState<BodyShapeId | null>(null)
@@ -312,4 +313,4 @@ const DesiredShape = () => {
   )
 }
 
-export default DesiredShape
+export default withOnboardingTracking(DesiredShape, 'desired_shape')
