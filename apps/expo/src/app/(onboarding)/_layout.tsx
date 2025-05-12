@@ -31,19 +31,7 @@ export default function OnboardingLayout() {
       <Stack.Screen name="analyzing" />
       <Stack.Screen name="results" />
       <Stack.Screen name="signup" />
-      <Stack.Screen name="paywall" />
-      <Stack.Screen name="composition-detail" />
-      <Stack.Screen name="feature-welcome" />
-      <Stack.Screen name="feature-testimonials" />
-      <Stack.Screen name="feature-adjust" />
-      <Stack.Screen name="feature-craft" />
-      <Stack.Screen name="feature-motivated" />
-      <Stack.Screen name="feature-proof" />
-      <Stack.Screen name="feature-setbacks" />
-      <Stack.Screen name="feature-conquer" />
-      <Stack.Screen name="feature-get-snatched" />
-      <Stack.Screen name="plan-generated" />
-      <Stack.Screen name="fine-tune-plan" />
+      <Stack.Screen name="paywall" />      
 
       {/* Index route is automatically included */}
       {/* Add other onboarding screens here if needed, or rely on index naming */}

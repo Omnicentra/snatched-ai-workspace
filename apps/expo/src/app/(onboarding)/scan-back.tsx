@@ -232,7 +232,7 @@ function ScanBackScreen() {
         Analytics.trackAllPhotosScanned(deviceId);
         
         // Navigate to next screen
-        router.push('/(onboarding)/analyzing');
+        router.push('/(onboarding)/desired-shape');
       } else {
         Alert.alert('Upload Failed', 'Failed to upload image. Please try again.');
       }
