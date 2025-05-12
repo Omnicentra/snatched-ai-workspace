@@ -20,6 +20,7 @@ import { getOrCreateDeviceId } from "@/utils/device-id";
 import { api } from "@/utils/api";
 import * as Device from "expo-device";
 import * as Sentry from "@sentry/react-native";
+import { appVariant } from "@/lib/utils";
 export default function SignupScreen() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -140,13 +141,15 @@ export default function SignupScreen() {
                 icon={<Ionicons name="logo-apple" size={20} color="black" />}
                 className="bg-white"
               />
-              <StyledButton
-                title="Continue with Google"
-                onPress={handleGoogleSignIn}
-                variant="secondary"
-                icon={<Ionicons name="logo-google" size={20} color="#DB4437" />}
-                className="bg-white"
-              />
+              {appVariant !== 'production' && (
+                <StyledButton
+                  title="Continue with Google"
+                  onPress={handleGoogleSignIn}
+                  variant="secondary"
+                  icon={<Ionicons name="logo-google" size={20} color="#DB4437" />}
+                  className="bg-white"
+                />
+              )}
             </View>
           )}
 

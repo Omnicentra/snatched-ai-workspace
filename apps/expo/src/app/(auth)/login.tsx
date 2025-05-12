@@ -1,6 +1,6 @@
 import { StyledButton } from "@/components/core";
 import { BubbleLetter } from "@/components/core/BubbleLetter";
-import { scheme } from "@/lib/utils";
+import { appVariant, scheme } from "@/lib/utils";
 import { api } from "@/utils/api";
 import { authClient } from "@/utils/auth";
 import { getOrCreateDeviceId } from "@/utils/device-id";
@@ -155,15 +155,16 @@ export default function LoginScreen() {
                   icon={<Ionicons name="logo-apple" size={20} color="black" />}
                   className="bg-white"
                 />
-                <StyledButton
-                  title="Continue with Google"
-                  onPress={handleGoogleSignIn}
-                  variant="secondary"
-                  icon={
+                {appVariant !== 'production' && (
+                  <StyledButton
+                    title="Continue with Google"
+                    onPress={handleGoogleSignIn}
+                    variant="secondary"
+                    icon={
                     <Ionicons name="logo-google" size={20} color="#DB4437" />
                   }
                   className="bg-white"
-                />
+                />}
               </View>
             )}
 

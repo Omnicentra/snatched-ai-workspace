@@ -217,7 +217,7 @@ export default function WorkoutStartScreen() {
 
       {/* Progress Circle with Image inside */}
       <View className="flex-1 items-center justify-center px-4">
-        <View style={{ width: CIRCLE_SIZE, height: CIRCLE_SIZE - 30, alignItems: 'center', justifyContent: 'center' }}>
+        <View style={{ width: CIRCLE_SIZE, height: CIRCLE_SIZE, alignItems: 'center', justifyContent: 'center' }}>
           {/* SVG Progress Ring */}
           <Svg width={CIRCLE_SIZE} height={CIRCLE_SIZE} style={{ position: 'absolute', top: 0, left: 0 }}>
             {/* Background Circle */}
@@ -246,20 +246,37 @@ export default function WorkoutStartScreen() {
           </Svg>
           {/* Exercise Image Centered in Circle */}
           {currentExercise.imageUrl && (
-            <Image
-              source={{ uri: currentExercise.imageUrl }}
+            <View
               style={{
-                width: CIRCLE_SIZE * 0.6,
-                height: CIRCLE_SIZE * 0.6,
-                resizeMode: 'contain',
-                borderRadius: (CIRCLE_SIZE * 0.6) / 2,
-                backgroundColor: '#FDF6E3', // Optional: soft background
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                width: (CIRCLE_RADIUS - 70) * 2,
+                height: (CIRCLE_RADIUS - 70) * 2,
+                borderRadius: CIRCLE_RADIUS - 70,
+                overflow: 'hidden',
+                backgroundColor: '#FDF6E3',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transform: [
+                  { translateX: -((CIRCLE_RADIUS - 70)) },
+                  { translateY: -((CIRCLE_RADIUS - 70)) },
+                ],
               }}
-            />
+            >
+              <Image
+                source={{ uri: currentExercise.imageUrl }}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  resizeMode: 'cover',
+                }}
+              />
+            </View>
           )}
         </View>
         {/* Exercise Details and Timer BELOW the circle */}
-        <View className="w-full items-center px-8">
+        <View className="w-full items-center px-8 -mt-10">
           <Text className="text-xl font-inter-bold mb-2 text-center">
             {currentExercise.name}
           </Text>

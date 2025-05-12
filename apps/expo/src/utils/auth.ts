@@ -7,6 +7,7 @@ const baseURL = getBaseUrl();
 const scheme = getScheme();
 
 export const authClient = createAuthClient({
+  disableDefaultFetchPlugins: true,
   plugins: [
     expoClient({
       scheme,
