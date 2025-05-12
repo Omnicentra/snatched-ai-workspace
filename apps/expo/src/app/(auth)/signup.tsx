@@ -20,6 +20,7 @@ import { getOrCreateDeviceId } from "@/utils/device-id";
 import { api } from "@/utils/api";
 import * as Device from "expo-device";
 import * as Sentry from "@sentry/react-native";
+import { appVariant, mixpanel } from "@/lib/utils";
 export default function SignupScreen() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -37,7 +38,15 @@ export default function SignupScreen() {
             deviceName: Device.deviceName,
             deviceType: Platform.OS,
           });
-          
+          void mixpanel.identify(session.user.id);
+          void mixpanel.getPeople().setOnce({
+            email: session.user.email,
+            name: session.user.name,
+            avatar: session.user.image,
+            device_id: deviceId,
+            device_type: Platform.OS,
+            device_name: Device.deviceName,
+          });
           const info = await Purchases.logIn(session.user.email);
           Sentry.setUser({
             email: session.user.email,
@@ -140,13 +149,15 @@ export default function SignupScreen() {
                 icon={<Ionicons name="logo-apple" size={20} color="black" />}
                 className="bg-white"
               />
-              <StyledButton
-                title="Continue with Google"
-                onPress={handleGoogleSignIn}
-                variant="secondary"
-                icon={<Ionicons name="logo-google" size={20} color="#DB4437" />}
-                className="bg-white"
-              />
+              {appVariant !== 'production' && (
+                <StyledButton
+                  title="Continue with Google"
+                  onPress={handleGoogleSignIn}
+                  variant="secondary"
+                  icon={<Ionicons name="logo-google" size={20} color="#DB4437" />}
+                  className="bg-white"
+                />
+              )}
             </View>
           )}
 

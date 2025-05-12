@@ -20,6 +20,7 @@ import Animated, {
 } from "react-native-reanimated";
 
 import { prettyPrint } from "@omc/validators";
+import { withOnboardingTracking } from '@/components/core/withOnboardingTracking';
 
 const statusUpdates = [
   { emoji: "🎯", text: "Identifying focus areas..." },
@@ -54,7 +55,7 @@ const StatusUpdate = ({ emoji, text }: { emoji: string; text: string }) => {
   );
 };
 
-export default function AnalyzingScreen() {
+function AnalyzingScreen() {
   const router = useRouter();
   const [progress, setProgress] = useState(0);
   const [currentStatusIndex, setCurrentStatusIndex] = useState(0);
@@ -183,3 +184,5 @@ export default function AnalyzingScreen() {
     </LinearGradient>
   );
 }
+
+export default withOnboardingTracking(AnalyzingScreen, 'analyzing');

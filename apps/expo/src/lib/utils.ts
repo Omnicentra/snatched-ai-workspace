@@ -3,6 +3,7 @@ import { clsx } from "clsx";
 import Constants from "expo-constants";
 import { twMerge } from "tailwind-merge";
 import type { WorkoutWithExercises } from "../types";
+import { Mixpanel } from "mixpanel-react-native";
 
 export const appVariant = String(Constants.expoConfig?.extra?.eas?.appVariant) || 'development'
 
@@ -14,6 +15,10 @@ export const cooldownWorkoutId = String(Constants.expoConfig?.extra?.eas?.cooldo
 
 export const revenuecatProjectAppleApiKey = String(Constants.expoConfig?.extra?.eas?.revenuecatProjectAppleApiKey)
 export const revenuecatProjectGoogleApiKey = String(Constants.expoConfig?.extra?.eas?.revenuecatProjectGoogleApiKey)
+
+const mixpanelToken = String(Constants.expoConfig?.extra?.eas?.mixpanelToken)
+const trackAutomaticEvents = false;
+export const mixpanel = new Mixpanel(mixpanelToken, trackAutomaticEvents);
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));

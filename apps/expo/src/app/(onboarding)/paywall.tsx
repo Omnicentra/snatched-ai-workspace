@@ -23,12 +23,15 @@ import * as SecureStore from "expo-secure-store";
 import beforeAfter from "@/assets/images/before-after.jpeg";
 import { StyledButton } from "@/components/core";
 import { Feather, Ionicons } from "@expo/vector-icons";
-import { appVariant } from "@/lib/utils";
 import { api } from "@/utils/api";
 import { use$ } from "@legendapp/state/react";
 import { transformationStore$ } from "@/stores/transformation.store";
 import * as Sentry from '@sentry/react-native';
 import { onboardingStore$ } from "@/stores/onboarding.store";
+import { Analytics } from "@/lib/analytics";
+import { getOrCreateDeviceId } from "@/utils/device-id";
+import { authClient } from "@/utils/auth";
+import { withOnboardingTracking } from '@/components/core/withOnboardingTracking';
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CAROUSEL_ITEM_WIDTH = SCREEN_WIDTH - 40;
@@ -670,8 +673,9 @@ const PlanSelection = memo(({
   </View>
 ));
 
-export default function PaywallScreen() {
+function PaywallScreen() {
   const router = useRouter();
+  const { data: session } = authClient.useSession();
   const [currentPage, setCurrentPage] = useState(0);
   const scrollViewRef = useRef<ScrollView>(null);
   const autoScrollTimer = useRef<NodeJS.Timeout>();
@@ -695,66 +699,76 @@ export default function PaywallScreen() {
   const frontImageKey = use$(onboardingStore$.onboarding.frontViewPhoto);
 
   useEffect(() => {
-    const fetchPackages = async () => {
+    void (async () => {
       try {
-        const offerings = await Purchases.getOfferings();
-        const availablePackages = offerings.all.default?.availablePackages;
-        
-        if (availablePackages?.length) {
-          // Process packages and create plans
-          const plansObj: Record<string, Plan> = {};
-          
-          // Find weekly package
-          const weeklyPackage = availablePackages.find(
-            (pkg) => 
-              typeof pkg.packageType === "string" && 
-              (pkg.packageType.toUpperCase() === "WEEKLY" || 
-              pkg.product.identifier.toLowerCase().includes("weekly"))
-          );
-          
-          // Find lifetime package
-          const lifetimePackage = availablePackages.find(
-            (pkg) => 
-              typeof pkg.packageType === "string" && 
-              (pkg.packageType.toUpperCase() === "LIFETIME" || 
-              pkg.product.identifier.toLowerCase().includes("lifetime"))
-          );
-          
-          if (weeklyPackage) {
-            plansObj.weekly = {
-              id: weeklyPackage.packageType.toLowerCase(),
-              name: "Weekly",
-              price: weeklyPackage.product.priceString,
-              popular: false,
-              packageId: weeklyPackage.product.identifier,
-            };
-          }
-          
-          if (lifetimePackage) {
-            plansObj.lifetime = {
-              id: "lifetime",
-              name: "Lifetime",
-              price: lifetimePackage.product.priceString,
-              popular: true,
-              packageId: lifetimePackage.product.identifier,
-            };
-          }
-          
-          // Batch state updates
-          setPlans(plansObj);
-          setPackages(availablePackages);
-          
-          // Default select lifetime package if available, otherwise the first package
-          const defaultPackage = lifetimePackage ?? availablePackages[0];
-          setSelectedPackage(defaultPackage);
-        }
+        const deviceId = await getOrCreateDeviceId();
+        const userId = session?.user.id;
+        Analytics.trackPaywallView(deviceId, userId);
+        await fetchPackages();
       } catch (error) {
-        console.error("Error fetching packages:", error);
-        Alert.alert("Error", "Failed to load subscription plans. Please try again.");
+        console.error('Error initializing paywall:', error);
       }
-    };
-    void fetchPackages();
+    })();
   }, []);
+
+  const fetchPackages = async () => {
+    try {
+      const offerings = await Purchases.getOfferings();
+      const availablePackages = offerings.all.default?.availablePackages;
+      
+      if (availablePackages?.length) {
+        // Process packages and create plans
+        const plansObj: Record<string, Plan> = {};
+        
+        // Find weekly package
+        const weeklyPackage = availablePackages.find(
+          (pkg) => 
+            typeof pkg.packageType === "string" && 
+            (pkg.packageType.toUpperCase() === "WEEKLY" || 
+            pkg.product.identifier.toLowerCase().includes("weekly"))
+        );
+        
+        // Find lifetime package
+        const lifetimePackage = availablePackages.find(
+          (pkg) => 
+            typeof pkg.packageType === "string" && 
+            (pkg.packageType.toUpperCase() === "LIFETIME" || 
+            pkg.product.identifier.toLowerCase().includes("lifetime"))
+        );
+        
+        if (weeklyPackage) {
+          plansObj.weekly = {
+            id: weeklyPackage.packageType.toLowerCase(),
+            name: "Weekly",
+            price: weeklyPackage.product.priceString,
+            popular: false,
+            packageId: weeklyPackage.product.identifier,
+          };
+        }
+        
+        if (lifetimePackage) {
+          plansObj.lifetime = {
+            id: "lifetime",
+            name: "Lifetime",
+            price: lifetimePackage.product.priceString,
+            popular: true,
+            packageId: lifetimePackage.product.identifier,
+          };
+        }
+        
+        // Batch state updates
+        setPlans(plansObj);
+        setPackages(availablePackages);
+        
+        // Default select lifetime package if available, otherwise the first package
+        const defaultPackage = lifetimePackage ?? availablePackages[0];
+        setSelectedPackage(defaultPackage);
+      }
+    } catch (error) {
+      console.error("Error fetching packages:", error);
+      Alert.alert("Error", "Failed to load subscription plans. Please try again.");
+    }
+  };
 
   const scrollToNextPage = useCallback(() => {
     if (scrollViewRef.current && !isManualScrolling) {
@@ -807,10 +821,22 @@ export default function PaywallScreen() {
     
     try {
       setIsPurchasing(true);
-      const { customerInfo } = await Purchases.purchasePackage(selectedPackage);
+      const { customerInfo, productIdentifier } = await Purchases.purchasePackage(selectedPackage);
       
-      if (customerInfo.allPurchasedProductIdentifiers.includes(selectedPackage.product.identifier)) {
-        // Set onboarding completion flag and navigate to results with unlocked state
+      const deviceId = await getOrCreateDeviceId();
+      const userId = session?.user.id;
+
+      if (userId) {
+        Analytics.trackSubscriptionPurchase(deviceId, userId, {
+          planId: productIdentifier,
+          planName: selectedPackage.product.offering.identifier,
+          price: selectedPackage.product.price,
+          currency: selectedPackage.product.currencyCode,
+          interval: selectedPackage.product.subscriptionPeriod === 'P1Y' ? 'year' : 'month'
+        });
+      }
+
+      if (customerInfo.entitlements.active.pro) {
         await Promise.all([
           SecureStore.setItemAsync("onboarding_complete", "true"),
           imageTransformation({
@@ -938,16 +964,51 @@ export default function PaywallScreen() {
             variant="primary"
             style={{ backgroundColor: "#f472b6", marginBottom: 15 }}
           />
-          {appVariant !== "production" && (
-            <Pressable onPress={() => router.replace("/(tabs)/home")}>
-              <Text style={styles.restoreText}>Skip</Text>
-            </Pressable>
-          )}
+          <Pressable 
+            onPress={async () => {
+              try {
+                setIsPurchasing(true);
+                const restoredInfo = await Purchases.restorePurchases();
+                if (restoredInfo.activeSubscriptions.length > 0) {
+                  Alert.alert('Success', 'Your purchases have been restored!');
+                  await Promise.all([
+                    SecureStore.setItemAsync("onboarding_complete", "true"),
+                    imageTransformation({
+                      imageKeys: {
+                        front: frontImageKey
+                      }
+                    }),
+                    router.replace({
+                      pathname: "/(onboarding)/results",
+                      params: { unlocked: "true" }
+                    })
+                  ]);
+                } else {
+                  Alert.alert('No Purchases', 'No previous purchases found to restore');
+                }
+              } catch (error) {
+                console.error('Error restoring purchases:', error);
+                if (error instanceof Error) {
+                  Alert.alert('Error', error.message);
+                  Sentry.captureException(error);
+                } else {
+                  Alert.alert('Error', 'Failed to restore purchases');
+                  Sentry.captureException(error);
+                }
+              } finally {
+                setIsPurchasing(false);
+              }
+            }}
+          >
+            <Text style={styles.restoreText}>Restore Purchases</Text>
+          </Pressable>
         </View>
       </SafeAreaView>
     </LinearGradient>
   );
 }
+
+export default withOnboardingTracking(PaywallScreen, 'paywall');
 
 const styles = StyleSheet.create({
   container: {

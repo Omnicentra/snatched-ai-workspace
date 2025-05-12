@@ -31,6 +31,8 @@ import Animated, {
   withSequence,
   withTiming
 } from 'react-native-reanimated';
+import { Analytics } from '@/lib/analytics';
+import { withOnboardingTracking } from '@/components/core/withOnboardingTracking';
 
 const AnimatedIcon = Animated.createAnimatedComponent(MaterialCommunityIcons);
 
@@ -118,7 +120,7 @@ function LoadingDots() {
   );
 }
 
-export default function ScanFrontScreen() {
+function ScanFrontScreen() {
   const router = useRouter()
   const [type, setType] = useState<CameraType>('back')
   const [cameraPermission, requestCameraPermission] = useCameraPermissions()
@@ -135,6 +137,12 @@ export default function ScanFrontScreen() {
   const validateUploadedImage = api.user.validateUploadedImage.useMutation();
 
   useEffect(() => {
+    // Track that user has started scanning their first photo
+    void (async () => {
+      const deviceId = await getOrCreateDeviceId();
+      Analytics.trackPhotoScanStart('front', deviceId);
+    })();
+
     // Request permissions on mount
     void requestCameraPermission()
     void requestMediaPermission()
@@ -467,3 +475,5 @@ export default function ScanFrontScreen() {
     </View>
   )
 }
+
+export default withOnboardingTracking(ScanFrontScreen, 'scan_front');

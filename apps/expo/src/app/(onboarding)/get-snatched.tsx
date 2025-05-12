@@ -11,6 +11,7 @@ import Animated, {
   withSpring,
   withDelay
 } from 'react-native-reanimated'
+import { withOnboardingTracking } from '@/components/core/withOnboardingTracking'
 
 interface ComparisonBlockProps {
   title: string
@@ -91,7 +92,7 @@ const ComparisonBlock = ({
   )
 }
 
-export default function GetSnatchedScreen() {
+function GetSnatchedScreen() {
   const router = useRouter()
 
   const handleContinue = () => {
@@ -147,3 +148,5 @@ export default function GetSnatchedScreen() {
     </SafeAreaView>
   )
 }
+
+export default withOnboardingTracking(GetSnatchedScreen, 'get_snatched')

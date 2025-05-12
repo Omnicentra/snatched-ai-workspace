@@ -8,19 +8,20 @@ import {
   Text,
   View,
 } from "react-native";
+import Purchases from "react-native-purchases";
 import Constants from "expo-constants";
+import * as Device from "expo-device";
 import { useRouter } from "expo-router";
 import { OnboardingHeader, StyledButton } from "@/components/core";
-import { authClient } from "@/utils/auth";
-import { Ionicons } from "@expo/vector-icons";
-import Purchases from "react-native-purchases";
-import { getOrCreateDeviceId } from "@/utils/device-id";
+import { appVariant, mixpanel, scheme } from "@/lib/utils";
 import { api } from "@/utils/api";
-import * as Device from "expo-device";
+import { authClient } from "@/utils/auth";
+import { getOrCreateDeviceId } from "@/utils/device-id";
+import { Ionicons } from "@expo/vector-icons";
 import * as Sentry from "@sentry/react-native";
-import { scheme } from "@/lib/utils";
+import { withOnboardingTracking } from '@/components/core/withOnboardingTracking';
 
-export default function SignupScreen() {
+function SignupScreen() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const { data: session } = authClient.useSession();
@@ -37,7 +38,15 @@ export default function SignupScreen() {
             deviceType: Platform.OS,
             deviceName: Device.deviceName,
           });
-          
+          void mixpanel.identify(session.user.id);
+          void mixpanel.getPeople().setOnce({
+            email: session.user.email,
+            name: session.user.name,
+            avatar: session.user.image,
+            device_id: deviceId,
+            device_type: Platform.OS,
+            device_name: Device.deviceName,
+          });
           await Purchases.logIn(session.user.email);
           Sentry.setUser({
             email: session.user.email,
@@ -55,9 +64,9 @@ export default function SignupScreen() {
     setIsLoading(true);
     try {
       await authClient.signIn.social(
-        { 
+        {
           provider: "apple",
-          callbackURL: `${scheme}://`
+          callbackURL: `${scheme}://`,
         },
         {
           onSuccess: (ctx) => {
@@ -87,11 +96,11 @@ export default function SignupScreen() {
     setIsLoading(true);
     try {
       await authClient.signIn.social(
-        { 
+        {
           provider: "google",
-          callbackURL: `${scheme}://`
+          callbackURL: `${scheme}://`,
         },
-        
+
         {
           onSuccess: (ctx) => {
             console.log("Google sign in success:");
@@ -141,13 +150,17 @@ export default function SignupScreen() {
                 icon={<Ionicons name="logo-apple" size={20} color="black" />}
                 className="bg-white"
               />
-              <StyledButton
-                title="Continue with Google"
-                onPress={handleGoogleSignIn}
-                variant="secondary"
-                icon={<Ionicons name="logo-google" size={20} color="#DB4437" />}
-                className="bg-white"
-              />
+              {appVariant !== "production" && (
+                <StyledButton
+                  title="Continue with Google"
+                  onPress={handleGoogleSignIn}
+                  variant="secondary"
+                  icon={
+                    <Ionicons name="logo-google" size={20} color="#DB4437" />
+                  }
+                  className="bg-white"
+                />
+              )}
             </View>
           )}
 
@@ -192,3 +205,5 @@ export default function SignupScreen() {
     </SafeAreaView>
   );
 }
+
+export default withOnboardingTracking(SignupScreen, 'signup');

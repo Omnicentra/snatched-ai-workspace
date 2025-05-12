@@ -1,6 +1,5 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
   Alert,
   Linking,
   Pressable,
@@ -8,14 +7,16 @@ import {
   Text,
   View,
 } from "react-native";
+import type { PurchasesEntitlementInfo } from "react-native-purchases";
 import Purchases from "react-native-purchases";
 import Constants from "expo-constants";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { nutritionStore$ } from "@/stores/nutrition.store";
 import { authClient } from "@/utils/auth";
 import { Ionicons } from "@expo/vector-icons";
+import ChatWootWidget from '@chatwoot/react-native-widget';
+import { mixpanel } from "@/lib/utils";
 
 const MenuItem = ({
   icon,
@@ -46,37 +47,23 @@ const MenuItem = ({
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const [userName, setUserName] = React.useState("");
+  const [userName, setUserName] = useState("");
   const { data: session } = authClient.useSession();
+  const [showWidget, toggleWidget] = useState(false);
+  const [subscriptionStatus, setSubscriptionStatus] = useState<PurchasesEntitlementInfo | null>(null);
+
 
   // Load user data
-  React.useEffect(() => {
+  useEffect(() => {
+    void Purchases.getCustomerInfo().then((customerInfo) => {
+      if (customerInfo.entitlements.active.premium) {
+        setSubscriptionStatus(customerInfo.entitlements.active.premium);
+      }
+    });
     if (session?.user) {
       setUserName(session.user.name);
     }
   }, [session?.user]);
-
-  const handleResetNutrition = () => {
-    Alert.alert(
-      "Reset Nutrition Data",
-      "This will clear all your logged meals. This action cannot be undone.",
-      [
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
-        {
-          text: "Reset",
-          style: "destructive",
-          onPress: () => {
-            // Reset to initial state
-            nutritionStore$.loggedMeals.set({});
-            Alert.alert("Success", "Your nutrition data has been reset");
-          },
-        },
-      ],
-    );
-  };
 
   const menuItems = [
     {
@@ -92,17 +79,7 @@ export default function ProfileScreen() {
     {
       icon: <Ionicons name="help-circle-outline" size={18} color="#1F2937" />,
       label: "Help & Support",
-      onPress: () => console.log("Navigate to Help"),
-    },
-    {
-      icon: <Ionicons name="document-text-outline" size={18} color="#1F2937" />,
-      label: "Terms & Privacy",
-      onPress: async () => {
-        await Promise.all([
-          Linking.openURL("https://snatchedai.com/terms"),
-          Linking.openURL("https://snatchedai.com/privacy"),
-        ]);
-      },
+      onPress: () => toggleWidget(true),
     },
     {
       icon: (
@@ -130,6 +107,32 @@ export default function ProfileScreen() {
       },
       textColor: "text-red-600",
     },
+    {
+      icon: (
+        <Ionicons name="trash-outline" size={18} color="#DC2626" />
+      ),
+      label: "Delete Account",
+      onPress: () => {
+        Alert.alert(
+          "Delete Account",
+          "Are you sure you want to delete your account? This action cannot be undone and you will lose all your data.",
+          [
+            {
+              text: "Cancel",
+              style: "cancel",
+            },
+            {
+              text: "Delete",
+              style: "destructive",
+              onPress: () => {
+                void Linking.openURL("https://snatchedai.com/delete-account");
+              },
+            },
+          ],
+        );
+      },
+      textColor: "text-red-600",
+    },
   ];
 
   return (
@@ -139,6 +142,26 @@ export default function ProfileScreen() {
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
     >
+      {
+        showWidget &&
+          <ChatWootWidget
+            websiteToken='5c1r9tnJ5Qb8eQUTSU8tbyai'
+            locale='en'
+            baseUrl="https://app.chatwoot.com"
+            closeModal={() => toggleWidget(false)}
+            isModalVisible={showWidget}
+            user={{
+              identifier: session?.user.id,
+              name: session?.user.name,
+              email: session?.user.email,
+              avatar_url: session?.user.image ?? '',
+            }}
+            customAttributes={{
+              subscribed: !!subscriptionStatus,
+              plan: subscriptionStatus?.productIdentifier,
+            }}
+          />
+      }
       <StatusBar style="dark" />
       <View className="p-6">
         {/* Header */}
@@ -156,7 +179,7 @@ export default function ProfileScreen() {
         {/* User Info */}
         <View className="mt-8 items-center">
           <Pressable
-            onPress={() => Alert.alert(`User ID: ${session?.user?.id}`)}
+            onPress={() => Alert.alert(`User ID: ${session?.user.id}`)}
             className="mb-4 h-24 w-24 items-center justify-center rounded-full bg-pink-100"
           >
             <Text className="font-inter-bold text-3xl text-pink-500">
@@ -196,6 +219,8 @@ export default function ProfileScreen() {
               fetchOptions: {
                 onSuccess: () => {
                   void Purchases.logOut();
+                  void mixpanel.track('log out');
+                  void mixpanel.reset();
                   router.replace("/(auth)/login");
                 },
               },
@@ -204,15 +229,39 @@ export default function ProfileScreen() {
         >
           <Text className="font-inter-medium text-red-500">Log Out</Text>
         </Pressable>
-
-        {/* Version Number */}
-        <Text className="font-inter mt-6 text-center text-sm text-gray-400">
-          Version {Constants.expoConfig?.version ?? "1.0.0"}
-        </Text>
-
-        {/* Bottom Padding */}
-        <View className="h-8" />
       </ScrollView>
+
+      {/* Footer Section */}
+      <View className="px-6 pb-8">
+        {/* Legal Links and Version */}
+        <View className="items-center">
+          <Text className="text-center text-xs text-gray-600">
+            <Text
+              className="font-inter-medium text-black underline"
+              onPress={() => Linking.openURL("https://snatchedai.com/terms")}
+            >
+              Terms
+            </Text>
+            <Text>{', '}</Text>
+            <Text
+              className="font-inter-medium text-black underline"
+              onPress={() => Linking.openURL("https://snatchedai.com/privacy")}
+            >
+              Privacy Policy
+            </Text>
+            <Text>{', and '}</Text>
+            <Text
+              className="font-inter-medium text-black underline"
+              onPress={() => Linking.openURL("https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")}
+            >
+              EULA
+            </Text>
+          </Text>
+          <Text className="font-inter mt-2 text-center text-sm text-gray-400">
+            Version {Constants.expoConfig?.version ?? "1.0.0"}
+          </Text>
+        </View>
+      </View>
     </LinearGradient>
   );
 }

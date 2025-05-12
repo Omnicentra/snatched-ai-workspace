@@ -15,12 +15,13 @@ import Svg, { Circle, Path } from "react-native-svg";
 import Constants from "expo-constants";
 import { useRouter } from "expo-router";
 import { OnboardingHeader, StyledButton } from "@/components/core"; // Assuming core components path
+import { withOnboardingTracking } from '@/components/core/withOnboardingTracking';
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 // const AnimatedCircle = Animated.createAnimatedComponent(Circle); // Option 1: Animate Circle directly
 // Option 2: Wrap Circle in Animated.View (often simpler for opacity/transform)
 
-export default function TransformationIntroScreen() {
+function TransformationIntroScreen() {
   const router = useRouter();
   const { width: screenWidth } = Dimensions.get("window");
   const progress = useSharedValue(0); // Animation driver (0 to 1)
@@ -277,3 +278,5 @@ export default function TransformationIntroScreen() {
     </SafeAreaView>
   );
 }
+
+export default withOnboardingTracking(TransformationIntroScreen, 'transformation_intro');

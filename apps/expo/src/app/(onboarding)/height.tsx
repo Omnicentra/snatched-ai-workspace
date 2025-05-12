@@ -14,6 +14,7 @@ import { useRouter } from "expo-router";
 import { OnboardingHeader, StyledButton } from "@/components/core";
 import { onboardingStore$ } from "@/stores/onboarding.store";
 import { z } from "zod";
+import { withOnboardingTracking } from '@/components/core/withOnboardingTracking';
 
 import { heightUnitEnum } from "@omc/validators/onboarding";
 
@@ -31,7 +32,7 @@ const heightValidationSchema = z.object({
   unit: heightUnitEnum,
 });
 
-export default function HeightScreen() {
+function HeightScreen() {
   const router = useRouter();
   const { height: HEIGHT } = useWindowDimensions();
   const [unit, setUnit] = useState<HeightUnit>("ft/in");
@@ -213,3 +214,5 @@ export default function HeightScreen() {
     </SafeAreaView>
   );
 }
+
+export default withOnboardingTracking(HeightScreen, 'height');

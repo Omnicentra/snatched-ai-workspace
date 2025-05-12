@@ -31,6 +31,8 @@ import Animated, {
   withDelay
 } from 'react-native-reanimated'
 import { uploadToS3 } from '@/utils/s3'
+import { Analytics } from '@/lib/analytics'
+import { withOnboardingTracking } from '@/components/core/withOnboardingTracking'
 
 const AnimatedIcon = Animated.createAnimatedComponent(MaterialCommunityIcons);
 
@@ -123,7 +125,7 @@ const ControlButton = ({ onPress, icon }: { onPress: () => void; icon: React.Rea
   </Pressable>
 )
 
-export default function ScanBackScreen() {
+function ScanBackScreen() {
   const router = useRouter()
   const [type, setType] = useState<CameraType>('back')
   const [cameraPermission] = useCameraPermissions()
@@ -226,8 +228,11 @@ export default function ScanBackScreen() {
         onboardingStore$.onboarding.backViewPhoto.set(result.key);
         console.log('Stored image key in LegendState:', result.key);
         
+        // Track completion of all photos
+        Analytics.trackAllPhotosScanned(deviceId);
+        
         // Navigate to next screen
-        router.push('/(onboarding)/desired-shape');
+        router.push('/(onboarding)/analyzing');
       } else {
         Alert.alert('Upload Failed', 'Failed to upload image. Please try again.');
       }
@@ -436,3 +441,5 @@ export default function ScanBackScreen() {
     </View>
   )
 }
+
+export default withOnboardingTracking(ScanBackScreen, 'scan_back');

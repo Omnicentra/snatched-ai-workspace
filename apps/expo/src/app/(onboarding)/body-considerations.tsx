@@ -17,6 +17,7 @@ import { onboardingStore$ } from "@/stores/onboarding.store";
 import { bodyConcernEnum } from "@omc/validators/onboarding";
 import { z } from "zod";
 import { use$ } from "@legendapp/state/react";
+import { withOnboardingTracking } from '@/components/core/withOnboardingTracking';
 
 type BodyConcern = z.infer<typeof bodyConcernEnum>;
 
@@ -113,7 +114,7 @@ const ConsiderationCard = ({
   );
 };
 
-export default function BodyConsiderationsScreen() {
+function BodyConsiderationsScreen() {
   const router = useRouter();
   const [customConsideration, setCustomConsideration] = useState("");
   const selectedConcerns = use$(onboardingStore$.onboarding.bodyDescription);
@@ -207,3 +208,5 @@ export default function BodyConsiderationsScreen() {
     </SafeAreaView>
   );
 }
+
+export default withOnboardingTracking(BodyConsiderationsScreen, 'body_considerations');

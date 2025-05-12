@@ -11,6 +11,7 @@ import Constants from 'expo-constants'
 import { useRouter } from 'expo-router'
 import React from 'react'
 import { SafeAreaView, ScrollView, View } from 'react-native'
+import { withOnboardingTracking } from '@/components/core/withOnboardingTracking'
 
 type ActivityLevel = typeof activityLevelEnum.options[number]
 
@@ -39,7 +40,7 @@ const activityMap: ActivityMapType = {
   }
 }
 
-export default function FrequencyScreen() {
+function FrequencyScreen() {
   const router = useRouter()
   const selectedFrequency = use$(onboardingStore$.onboarding.frequency)
 
@@ -101,3 +102,5 @@ export default function FrequencyScreen() {
     </SafeAreaView>
   )
 }
+
+export default withOnboardingTracking(FrequencyScreen, 'frequency')

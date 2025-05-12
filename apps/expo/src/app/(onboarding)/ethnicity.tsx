@@ -7,12 +7,13 @@ import { useRouter } from "expo-router";
 import React from "react";
 import { SafeAreaView, ScrollView, View } from "react-native";
 import { z } from "zod";
+import { withOnboardingTracking } from '@/components/core/withOnboardingTracking';
 
 const ethnicityValidationSchema = z.object({
   ethnicity: ethnicityEnum.optional(),
 });
 
-export default function EthnicityScreen() {
+function EthnicityScreen() {
   const router = useRouter();
   const selectedEthnicity = use$(onboardingStore$.onboarding.ethnicity);
 
@@ -74,3 +75,5 @@ export default function EthnicityScreen() {
     </SafeAreaView>
   );
 }
+
+export default withOnboardingTracking(EthnicityScreen, 'ethnicity');

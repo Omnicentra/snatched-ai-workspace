@@ -1,13 +1,13 @@
 // app/(onboarding)/blockers.tsx
-import React from 'react'
-import { View, SafeAreaView, ScrollView } from 'react-native'
-import { useRouter } from 'expo-router'
-import Constants from 'expo-constants'
 import { OnboardingHeader, OptionCard, StyledButton } from '@/components/core'
-import { challengeEnum } from '@omc/validators/onboarding'
 import { onboardingStore$ } from '@/stores/onboarding.store'
 import { use$ } from '@legendapp/state/react'
-import * as Haptics from 'expo-haptics'
+import { challengeEnum } from '@omc/validators/onboarding'
+import Constants from 'expo-constants'
+import { useRouter } from 'expo-router'
+import React from 'react'
+import { SafeAreaView, ScrollView, View } from 'react-native'
+import { withOnboardingTracking } from '@/components/core/withOnboardingTracking'
 
 type Challenge = typeof challengeEnum.options[number]
 
@@ -36,7 +36,7 @@ const challengeMap: ChallengeMapType = {
   }
 }
 
-export default function BlockersScreen() {
+function BlockersScreen() {
   const router = useRouter()
   const selectedBlockers = use$(onboardingStore$.onboarding.blockers)
 
@@ -100,3 +100,5 @@ export default function BlockersScreen() {
     </SafeAreaView>
   )
 }
+
+export default withOnboardingTracking(BlockersScreen, 'blockers')

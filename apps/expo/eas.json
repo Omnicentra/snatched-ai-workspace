@@ -22,7 +22,8 @@
       "distribution": "internal",
       "env": {
         "APP_VARIANT": "development",
-        "COOLDOWN_WORKOUT_ID": "47"
+        "COOLDOWN_WORKOUT_ID": "47",
+        "MIXPANEL_TOKEN": "b28be037875318bfaa4422b70f9666f7"
       },
       "channel": "development"
     },
@@ -35,7 +36,8 @@
       },
       "env": {
         "APP_VARIANT": "development",
-        "COOLDOWN_WORKOUT_ID": "47"
+        "COOLDOWN_WORKOUT_ID": "47",
+        "MIXPANEL_TOKEN": "b28be037875318bfaa4422b70f9666f7"
       },
       "channel": "development"
     },
@@ -45,7 +47,8 @@
       "distribution": "internal",
       "env": {
         "APP_VARIANT": "preview",
-        "COOLDOWN_WORKOUT_ID": "47"
+        "COOLDOWN_WORKOUT_ID": "47",
+        "MIXPANEL_TOKEN": "b28be037875318bfaa4422b70f9666f7"
       }
     },
     "production": {
@@ -54,7 +57,8 @@
       "channel": "production",
       "env": {
         "APP_VARIANT": "production",
-        "COOLDOWN_WORKOUT_ID": "25"
+        "COOLDOWN_WORKOUT_ID": "25",
+        "MIXPANEL_TOKEN": "bd438b6e0190e73b24cc6f7637cb9507"
       }
     }
   },

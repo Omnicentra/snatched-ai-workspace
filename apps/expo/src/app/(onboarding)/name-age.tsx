@@ -14,10 +14,11 @@ import {
 import { onboardingStore$ } from '@/stores/onboarding.store'
 import { nameAgeSchema } from '@omc/validators/onboarding'
 import { use$ } from '@legendapp/state/react'
-export default function NameAgeScreen() {
+import { withOnboardingTracking } from '@/components/core/withOnboardingTracking'
+
+function NameAgeScreen() {
   const router = useRouter()
   const name = use$(onboardingStore$.onboarding.name);
-  const age = use$(onboardingStore$.onboarding.age);
   const [validationError, setValidationError] = useState<string>()
 
   const [_age, _setAge] = useState<string>('');
@@ -119,3 +120,5 @@ export default function NameAgeScreen() {
     </SafeAreaView>
   )
 }
+
+export default withOnboardingTracking(NameAgeScreen, 'name_age');

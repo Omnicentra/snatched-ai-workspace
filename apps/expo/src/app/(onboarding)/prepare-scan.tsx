@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router'
 import Constants from 'expo-constants'
 import { OnboardingHeader, StyledButton, InfoCard } from '@/components/core'
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'
+import { withOnboardingTracking } from '@/components/core/withOnboardingTracking'
 
 // Reusable Tip Card Component
 const TipCard = ({ icon, text }: { icon: React.ReactNode; text: string }) => (
@@ -15,7 +16,7 @@ const TipCard = ({ icon, text }: { icon: React.ReactNode; text: string }) => (
   </View>
 )
 
-export default function StayMotivatedScreen() {
+function PrepareScanScreen() {
   const router = useRouter()
 
   const handleContinue = () => {
@@ -29,6 +30,9 @@ export default function StayMotivatedScreen() {
   const openTerms = () => {
     // Replace with your actual URL
     void Linking.openURL('https://snatchedai.com/terms')
+  }
+  const openEULA = () => {
+    void Linking.openURL('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/')
   }
 
   return (
@@ -150,12 +154,19 @@ export default function StayMotivatedScreen() {
             >
               Terms
             </Text>
-            <Text>{' & '}</Text>
+            <Text>{', '}</Text>
             <Text
               className="font-inter-medium text-black underline"
               onPress={openPrivacyPolicy}
             >
               Privacy Policy
+            </Text>
+            <Text>{', and '}</Text>
+            <Text
+              className="font-inter-medium text-black underline"
+              onPress={openEULA}
+            >
+              EULA
             </Text>
           </Text>
         </View>
@@ -163,3 +174,5 @@ export default function StayMotivatedScreen() {
     </SafeAreaView>
   )
 }
+
+export default withOnboardingTracking(PrepareScanScreen, 'prepare_scan')

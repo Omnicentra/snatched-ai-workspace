@@ -1,6 +1,6 @@
 import { StyledButton } from "@/components/core";
 import { BubbleLetter } from "@/components/core/BubbleLetter";
-import { scheme } from "@/lib/utils";
+import { appVariant, mixpanel, scheme } from "@/lib/utils";
 import { api } from "@/utils/api";
 import { authClient } from "@/utils/auth";
 import { getOrCreateDeviceId } from "@/utils/device-id";
@@ -39,7 +39,15 @@ export default function LoginScreen() {
             deviceType: Platform.OS,
             deviceName: Device.deviceName,
           });
-          
+          void mixpanel.identify(session.user.id);
+          void mixpanel.getPeople().setOnce({
+            email: session.user.email,
+            name: session.user.name,
+            avatar: session.user.image,
+            device_id: deviceId,
+            device_type: Platform.OS,
+            device_name: Device.deviceName,
+          });
           const info = await Purchases.logIn(session.user.email);
           Sentry.setUser({
             email: session.user.email,
@@ -155,15 +163,17 @@ export default function LoginScreen() {
                   icon={<Ionicons name="logo-apple" size={20} color="black" />}
                   className="bg-white"
                 />
-                <StyledButton
-                  title="Continue with Google"
-                  onPress={handleGoogleSignIn}
-                  variant="secondary"
-                  icon={
+                {appVariant !== 'production' && (
+                  <StyledButton
+                    title="Continue with Google"
+                    onPress={handleGoogleSignIn}
+                    variant="secondary"
+                    icon={
                     <Ionicons name="logo-google" size={20} color="#DB4437" />
                   }
-                  className="bg-white"
-                />
+                    className="bg-white"
+                  />
+                )}
               </View>
             )}
 

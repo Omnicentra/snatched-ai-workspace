@@ -8,6 +8,7 @@ import { calculateBMI } from "@/lib/utils";
 import { use$ } from "@legendapp/state/react";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
+import { withOnboardingTracking } from '@/components/core/withOnboardingTracking';
 
 const BMI_CATEGORIES = [
   { label: "Underweight", min: 0, max: 18.5, color: "#60A5FA", emoji: "🦴" },
@@ -22,7 +23,7 @@ function getBMICategory(bmi: number) {
   );
 }
 
-export default function BMIScreen() {
+function BMIScreen() {
   const router = useRouter();
   const weight = use$(onboardingStore$.onboarding.weight)
   const weightUnit = use$(onboardingStore$.onboarding.weightUnit)
@@ -220,4 +221,6 @@ export default function BMIScreen() {
         </ScrollView>
       </SafeAreaView>
   );
-} 
+}
+
+export default withOnboardingTracking(BMIScreen, 'bmi'); 

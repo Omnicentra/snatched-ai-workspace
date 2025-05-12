@@ -1,5 +1,11 @@
 import "@bacons/text-decoder/install";
 
+import { useCallback, useEffect } from "react";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import Purchases, { LOG_LEVEL } from "react-native-purchases";
+import { Stack, useNavigationContainerRef } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
+import { StatusBar } from "expo-status-bar";
 import {
   Inter_400Regular,
   Inter_500Medium,
@@ -7,12 +13,6 @@ import {
   Inter_700Bold,
   useFonts,
 } from "@expo-google-fonts/inter";
-import { Stack, useNavigationContainerRef } from "expo-router";
-import * as SplashScreen from "expo-splash-screen";
-import { StatusBar } from "expo-status-bar";
-import { useCallback, useEffect } from "react";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
-import Purchases, { LOG_LEVEL } from "react-native-purchases";
 
 import "react-native-reanimated";
 
@@ -20,16 +20,18 @@ import { TRPCProvider } from "~/utils/api";
 
 import "../styles.css";
 
+import { Platform } from "react-native";
+import { isRunningInExpoGo } from "expo";
+import Constants from "expo-constants";
 import {
   appVariant,
+  mixpanel,
   revenuecatProjectAppleApiKey,
   revenuecatProjectGoogleApiKey,
 } from "@/lib/utils";
 import * as Sentry from "@sentry/react-native";
-import { isRunningInExpoGo } from "expo";
-import Constants from "expo-constants";
-import { Platform } from "react-native";
 import { vexo } from "vexo-analytics";
+import { getOrCreateDeviceId } from "@/utils/device-id";
 
 const navigationIntegration = Sentry.reactNavigationIntegration({
   enableTimeToInitialDisplay: !isRunningInExpoGo(),
@@ -56,9 +58,13 @@ if (appVariant === "production") {
   vexo("d78c38b5-7df7-44b0-beca-a067b12c15a5");
 }
 
+// Set up an instance of Mixpanel
+void mixpanel.init();
+mixpanel.track("app_opened");
+
 export {
   // Catch any errors thrown by the Layout component.
-  ErrorBoundary
+  ErrorBoundary,
 } from "expo-router";
 
 export const unstable_settings = {
@@ -95,6 +101,7 @@ function RootLayout() {
   }, []);
 
   useEffect(() => {
+    void getOrCreateDeviceId();
     void initRevenueCat();
   }, []);
 

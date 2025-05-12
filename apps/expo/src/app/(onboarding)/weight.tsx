@@ -9,6 +9,7 @@ import { OnboardingHeader, StyledButton } from "@/components/core";
 import { onboardingStore$ } from "@/stores/onboarding.store";
 import { z } from "zod";
 import { weightUnitEnum } from "@omc/validators/onboarding";
+import { withOnboardingTracking } from '@/components/core/withOnboardingTracking';
 
 type WeightUnit = z.infer<typeof weightUnitEnum>;
 const options: { label: string; value: WeightUnit }[] = [
@@ -24,7 +25,7 @@ const weightValidationSchema = z.object({
   unit: weightUnitEnum,
 });
 
-export default function WeightScreen() {
+function WeightScreen() {
   const router = useRouter();
   const [unit, setUnit] = useState<WeightUnit>("lb");
   const [weightInLbs, setWeightInLbs] = useState(155);
@@ -172,3 +173,5 @@ export default function WeightScreen() {
     </SafeAreaView>
   );
 }
+
+export default withOnboardingTracking(WeightScreen, 'weight');

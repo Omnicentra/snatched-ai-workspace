@@ -8,15 +8,20 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useRef } from "react";
 import { Dimensions, SafeAreaView, ScrollView, Text, View } from "react-native";
 import ConfettiCannon from "react-native-confetti-cannon";
+import { Analytics } from "@/lib/analytics";
+import { authClient } from "@/utils/auth";
+import { getOrCreateDeviceId } from "@/utils/device-id";
+import { withOnboardingTracking } from '@/components/core/withOnboardingTracking';
 
 const { width: screenWidth } = Dimensions.get("window"); // Get screen width
 
-export default function ResultsScreen() {
+function ResultsScreen() {
   const router = useRouter();
   const confettiRef = useRef<ConfettiCannon>(null); // Create a ref for the confetti cannon
   const bodyRating = use$(transformationStore$.bodyRating);
   const searchParams = useLocalSearchParams<{ unlocked?: string }>();
   const isUnlocked = searchParams.unlocked === "true";
+  const { data: session } = authClient.useSession();
 
   // Get the number of issues that are not null
   const issueCount = [
@@ -32,6 +37,21 @@ export default function ResultsScreen() {
       void router.push("/(onboarding)/paywall");
     }
   };
+
+  // Track onboarding completion when unlocked is true
+  useEffect(() => {
+    if (isUnlocked) {
+      void (async () => {
+        try {
+          const deviceId = await getOrCreateDeviceId();
+          const userId = session?.user.id;
+          Analytics.trackOnboardingComplete(deviceId, userId);
+        } catch (error) {
+          console.error('Failed to track onboarding completion:', error);
+        }
+      })();
+    }
+  }, [isUnlocked, session]);
 
   // Trigger confetti shortly after the component mounts
   useEffect(() => {
@@ -259,3 +279,5 @@ export default function ResultsScreen() {
     </LinearGradient> // Close LinearGradient
   );
 }
+
+export default withOnboardingTracking(ResultsScreen, 'results');
