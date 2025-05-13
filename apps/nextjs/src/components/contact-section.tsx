@@ -155,8 +155,8 @@ export default function ContactSection() {
             Get support instantly and track your progress with our mobile app
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4">
-            <AppStoreButton href="#" variant="apple" className="mx-auto sm:mx-0" />
-            <AppStoreButton href="#" variant="google" className="mx-auto sm:mx-0" />
+            <AppStoreButton href="https://apps.apple.com/us/app/snatched-ai-slay-your-shape/id6744844397" variant="apple" className="mx-auto sm:mx-0" />
+            <AppStoreButton href="#" variant="google" className="mx-auto sm:mx-0" comingSoon={true} />
           </div>
         </div>
       </div>

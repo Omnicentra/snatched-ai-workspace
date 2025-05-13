@@ -15,8 +15,8 @@ export default function HeroSection() {
               nutrition, body analysis, and styling tips.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
-              <AppStoreButton href="#" variant="apple" lightGradient={true} />
-              <AppStoreButton href="#" variant="google" lightGradient={true} />
+              <AppStoreButton href="https://apps.apple.com/us/app/snatched-ai-slay-your-shape/id6744844397" variant="apple" lightGradient={true} />
+              <AppStoreButton href="#" variant="google" lightGradient={true} comingSoon={true} />
             </div>
           </div>
           <div className="md:w-1/2 flex justify-center">

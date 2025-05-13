@@ -7,20 +7,12 @@ interface AppStoreButtonProps {
   variant: "apple" | "google"
   gradient?: boolean
   lightGradient?: boolean
+  comingSoon?: boolean
 }
 
-export function AppStoreButton({ href, className, variant, gradient, lightGradient }: AppStoreButtonProps) {
-  return (
-    <Link
-      href={href}
-      className={cn(
-        "inline-flex items-center rounded-full px-6 py-3 transition-all hover:shadow-lg",
-        gradient ? "gradient-bg text-white" : "",
-        lightGradient ? "gradient-bg-light text-black" : "",
-        !gradient && !lightGradient ? "bg-white text-black" : "",
-        className,
-      )}
-    >
+export function AppStoreButton({ href, className, variant, gradient, lightGradient, comingSoon }: AppStoreButtonProps) {
+  const buttonContent = (
+    <>
       {variant === "apple" ? (
         <>
           <span className="mr-3">
@@ -40,19 +32,19 @@ export function AppStoreButton({ href, className, variant, gradient, lightGradie
               <g clipPath="url(#a)">
                 <path
                   d="M13.519 15.256.12 29.294a3.634 3.634 0 0 0 5.322 2.156l15.075-8.586-6.998-7.608Z"
-                  fill="#EA4335"
+                  fill="currentColor"
                 ></path>
                 <path
                   d="m27.067 12.87-6.52-3.734-7.338 6.44 7.368 7.268 6.47-3.694a3.544 3.544 0 0 0 0-6.28h.02Z"
-                  fill="#FBBC04"
+                  fill="currentColor"
                 ></path>
                 <path
                   d="M.12 2.656c-.081.3-.121.609-.12.919v24.8c0 .31.041.619.12.919l13.858-13.678L.12 2.655Z"
-                  fill="#4285F4"
+                  fill="currentColor"
                 ></path>
                 <path
                   d="m13.618 15.975 6.93-6.84L5.491.51A3.714 3.714 0 0 0 3.624 0 3.634 3.634 0 0 0 .12 2.646l13.498 13.329Z"
-                  fill="#34A853"
+                  fill="currentColor"
                 ></path>
               </g>
               <defs>
@@ -63,11 +55,44 @@ export function AppStoreButton({ href, className, variant, gradient, lightGradie
             </svg>
           </span>
           <div className="flex flex-col items-start">
-            <span className="text-xs leading-none">Get it on</span>
+            <span className="text-xs leading-none">{comingSoon ? "Coming Soon on" : "Get it on"}</span>
             <span className="text-xl font-bold leading-tight">Google Play</span>
           </div>
         </>
       )}
+    </>
+  )
+
+  if (comingSoon && variant === "google") {
+    return (
+      <div
+        className={cn(
+          "inline-flex items-center rounded-full px-6 py-3 opacity-70 cursor-not-allowed",
+          gradient ? "gradient-bg text-white" : "",
+          lightGradient ? "gradient-bg-light text-black" : "",
+          !gradient && !lightGradient ? "bg-white text-black" : "",
+          className,
+        )}
+      >
+        {buttonContent}
+      </div>
+    )
+  }
+
+  return (
+    <Link
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={cn(
+        "inline-flex items-center rounded-full px-6 py-3 transition-all hover:shadow-lg",
+        gradient ? "gradient-bg text-white" : "",
+        lightGradient ? "gradient-bg-light text-black" : "",
+        !gradient && !lightGradient ? "bg-white text-black" : "",
+        className,
+      )}
+    >
+      {buttonContent}
     </Link>
   )
 }
