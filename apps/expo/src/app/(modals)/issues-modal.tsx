@@ -105,7 +105,7 @@ export const IssuesModal: React.FC<IssuesModalProps> = ({
                   </TouchableOpacity>
                 </View>
 
-                <View className="space-y-4">
+                <View className="gap-y-4">
                   {issues.map((issue, index) => (
                     issue ? (
                       <View key={index} className="flex-row items-start">

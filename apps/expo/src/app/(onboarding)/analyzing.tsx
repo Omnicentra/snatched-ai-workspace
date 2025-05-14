@@ -1,14 +1,3 @@
-import Silhouette from "@/assets/images/logo2.png";
-import { CircleProgress } from "@/components/core/CircleProgress";
-import { onboardingStore$ } from "@/stores/onboarding.store";
-import { transformationStore$ } from "@/stores/transformation.store";
-import { api } from "@/utils/api";
-import { use$ } from "@legendapp/state/react";
-import Constants from "expo-constants";
-import * as Haptics from "expo-haptics";
-import { Image } from "expo-image";
-import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { Text, View } from "react-native";
 import Animated, {
@@ -18,9 +7,20 @@ import Animated, {
   withSequence,
   withTiming,
 } from "react-native-reanimated";
+import Constants from "expo-constants";
+import * as Haptics from "expo-haptics";
+import { Image } from "expo-image";
+import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
+import Silhouette from "@/assets/images/logo2.png";
+import { CircleProgress } from "@/components/core/CircleProgress";
+import { withOnboardingTracking } from "@/components/core/withOnboardingTracking";
+import { onboardingStore$ } from "@/stores/onboarding.store";
+import { transformationStore$ } from "@/stores/transformation.store";
+import { api } from "@/utils/api";
+import { use$ } from "@legendapp/state/react";
 
 import { prettyPrint } from "@omc/validators";
-import { withOnboardingTracking } from '@/components/core/withOnboardingTracking';
 
 const statusUpdates = [
   { emoji: "🎯", text: "Identifying focus areas..." },
@@ -70,39 +70,61 @@ function AnalyzingScreen() {
     },
   });
 
-  const { mutate: generateMealPlan } = api.nutrition.generateMealPlan.useMutation({
-    onSuccess: (data) => {
-      prettyPrint(JSON.stringify(data, null, 2));
-    },
-    onError: (error) => {
-      console.error(error);
-    },
-  });
-  const { mutate: generateWorkoutPlan } = api.workout.generateWeeklyPlan.useMutation({
-    onSuccess: (data) => {
-      prettyPrint(JSON.stringify(data, null, 2));
-    },
-    onError: (error) => {
-      console.error(error);
-    }
-  });
+  const { mutate: generateMealPlan } =
+    api.nutrition.generateMealPlan.useMutation({
+      onSuccess: (data) => {
+        prettyPrint(JSON.stringify(data, null, 2));
+      },
+      onError: (error) => {
+        console.error(error);
+      },
+    });
+  const { mutate: generateBlurredImage } =
+    api.user.generateBlurredImage.useMutation({
+      onSuccess: (data) => {
+        prettyPrint(JSON.stringify(data, null, 2));
+        transformationStore$.currentImage.set(data.originalImageUrl);
+        transformationStore$.snatchedImage.set(data.blurredImageUrl);
+      },
+      onError: (error) => {
+        console.error(error);
+      },
+    });
+  const { mutate: generateWorkoutPlan } =
+    api.workout.generateWeeklyPlan.useMutation({
+      onSuccess: (data) => {
+        prettyPrint(JSON.stringify(data, null, 2));
+      },
+      onError: (error) => {
+        console.error(error);
+      },
+    });
 
+  const { currentSnatchedScore, potentialSnatchedScore } = use$(
+    transformationStore$.bodyRating,
+  );
   const frontImageKey = use$(onboardingStore$.onboarding.frontViewPhoto);
   const sideImageKey = use$(onboardingStore$.onboarding.sideViewPhoto);
   const backImageKey = use$(onboardingStore$.onboarding.backViewPhoto);
   const desiredBodyShape = use$(onboardingStore$.onboarding.desiredShape);
 
   useEffect(() => {
-    getBodyRating({
-      imageKeys: {
-        front: frontImageKey,
-        side: sideImageKey,
-        back: backImageKey,
-      },
-      desiredBodyShape,
-    });
-    generateMealPlan()
-    generateWorkoutPlan()
+    if (
+      !currentSnatchedScore ||
+      !potentialSnatchedScore
+    ) {
+      getBodyRating({
+        imageKeys: {
+          front: frontImageKey,
+          side: sideImageKey,
+          back: backImageKey,
+        },
+        desiredBodyShape,
+      });
+    }
+    generateBlurredImage({ imageKey: frontImageKey, blurAmount: 50 });
+    generateMealPlan();
+    generateWorkoutPlan();
 
     // Status update animation
     const statusInterval = setInterval(() => {
@@ -185,4 +207,4 @@ function AnalyzingScreen() {
   );
 }
 
-export default withOnboardingTracking(AnalyzingScreen, 'analyzing');
+export default withOnboardingTracking(AnalyzingScreen, "analyzing");

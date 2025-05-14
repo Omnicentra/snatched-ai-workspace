@@ -1,9 +1,10 @@
 import type { NativeScrollEvent, NativeSyntheticEvent } from "react-native";
 import type { PurchasesPackage } from "react-native-purchases";
-import React, { useCallback, useEffect, useRef, useState, memo } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
   Dimensions,
+  Linking,
   Platform,
   Pressable,
   SafeAreaView,
@@ -11,34 +12,38 @@ import {
   StyleSheet,
   Text,
   View,
-  Linking,
 } from "react-native";
-// 20px padding on each side
 import Purchases from "react-native-purchases";
 import Svg, { Path } from "react-native-svg";
 import Constants from "expo-constants";
-import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
-import beforeAfter from "@/assets/images/before-after.jpeg";
+// 20px padding on each side
 import { StyledButton } from "@/components/core";
-import { Feather, Ionicons } from "@expo/vector-icons";
-import { api } from "@/utils/api";
-import { use$ } from "@legendapp/state/react";
-import { transformationStore$ } from "@/stores/transformation.store";
-import * as Sentry from '@sentry/react-native';
-import { onboardingStore$ } from "@/stores/onboarding.store";
+import { PlanSelection } from "@/components/core/PlanSelection";
+import { withOnboardingTracking } from "@/components/core/withOnboardingTracking";
+import {
+  NutritionPlanSection,
+  SnatchHacksSection,
+  VisualizeGoalSection,
+  WorkoutPlanSection,
+} from "@/components/paywall";
 import { Analytics } from "@/lib/analytics";
-import { getOrCreateDeviceId } from "@/utils/device-id";
+import { onboardingStore$ } from "@/stores/onboarding.store";
+import { transformationStore$ } from "@/stores/transformation.store";
+import { api } from "@/utils/api";
 import { authClient } from "@/utils/auth";
-import { withOnboardingTracking } from '@/components/core/withOnboardingTracking';
+import { getOrCreateDeviceId } from "@/utils/device-id";
+import { Feather, Ionicons } from "@expo/vector-icons";
+import { use$ } from "@legendapp/state/react";
+import * as Sentry from "@sentry/react-native";
+
+import { logger } from "~/lib/logger";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
-const CAROUSEL_ITEM_WIDTH = SCREEN_WIDTH - 40;
-
-// Add a constant for uniform section height
-const SECTION_HEIGHT = 400; // This will be the uniform height for all sections
+const CAROUSEL_ITEM_WIDTH = SCREEN_WIDTH - 40; // 20px padding on each side
+const SECTION_HEIGHT = 400;
 
 // Re-usable component for the feature graph (adapted from results screen)
 const _PredictionGraph = () => {
@@ -257,304 +262,119 @@ const _CommunitySection = () => {
   );
 };
 
-// Visualize Goal Section
-const VisualizeGoalSection = () => {
-  return (
-    <View className="rounded-2xl bg-gray-900 p-4">
-      <Text className="font-inter-bold mb-4 text-2xl text-white">
-        Visualize your goal
-      </Text>
-      <View className="rounded-xl bg-gray-800/80 p-4">
-        {/* Single Before-After Image */}
-        <View className="mb-4">
-          <View className="h-[280px] w-full overflow-hidden rounded-xl">
-            <Image
-              source={beforeAfter}
-              className="h-full w-full"
-              style={{
-                width: "100%",
-                height: "100%",
-                resizeMode: "cover",
-              }}
-              contentFit="cover"
-            />
-            {/* Labels */}
-            <View className="absolute bottom-3 left-3 rounded-full bg-pink-400/20 px-3 py-1">
-              <Text className="font-inter-medium text-xs text-pink-200">
-                Before
-              </Text>
-            </View>
-            <View className="absolute bottom-3 right-3 rounded-full bg-pink-400/20 px-3 py-1">
-              <Text className="font-inter-medium text-xs text-pink-200">
-                After
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Stats Row */}
-        <View className="flex-row justify-between rounded-xl bg-gray-700/50 p-4">
-          <View className="items-center">
-            <Text className="font-inter-medium text-sm text-gray-400">
-              Starting
-            </Text>
-            <Text className="font-inter-bold text-xl text-white">32"</Text>
-            <Text className="font-inter-medium text-xs text-gray-500">
-              waist
-            </Text>
-          </View>
-          <View className="items-center">
-            <Text className="font-inter-medium text-sm text-gray-400">
-              Goal
-            </Text>
-            <Text className="font-inter-bold text-xl text-white">26"</Text>
-            <Text className="font-inter-medium text-xs text-gray-500">
-              waist
-            </Text>
-          </View>
-          <View className="items-center">
-            <Text className="font-inter-medium text-sm text-gray-400">
-              Timeline
-            </Text>
-            <Text className="font-inter-bold text-xl text-white">12</Text>
-            <Text className="font-inter-medium text-xs text-gray-500">
-              weeks
-            </Text>
-          </View>
-        </View>
-
-        {/* Motivation Text */}
-        <Text className="font-inter-medium mt-3 text-center text-sm text-gray-400">
-          Join thousands of women who have achieved their dream figure with our
-          proven program
-        </Text>
-      </View>
-    </View>
-  );
-};
-
-// Optimal Workout Section
-const WorkoutPlanSection = () => {
-  const workouts = [
+// Add new Testimonial Component
+const TestimonialCarousel = () => {
+  const testimonials = [
     {
-      day: "Day 1",
-      focus: "Core & Waist",
-      duration: "45 min",
-      intensity: "High",
+      quote:
+        "I have seen incredible results in just 3 weeks! My confidence is through the roof.",
+      name: "Jessica L.",
+      status: "Verified Member",
+      image: null,
     },
     {
-      day: "Day 2",
-      focus: "Lower Body",
-      duration: "40 min",
-      intensity: "Medium",
-    },
-    { day: "Day 3", focus: "Recovery", duration: "30 min", intensity: "Low" },
-  ];
-
-  return (
-    <View
-      style={{ height: SECTION_HEIGHT }}
-      className="rounded-2xl bg-gray-900 p-4"
-    >
-      <Text className="font-inter-bold mb-4 text-2xl text-white">
-        Optimal workout plan
-      </Text>
-      <View className="flex-1 justify-between">
-        {workouts.map((workout, index) => (
-          <View key={index} className="mb-3 rounded-xl bg-gray-800/80 p-4">
-            <View className="mb-2 flex-row items-center justify-between">
-              <Text className="font-inter-semibold text-base text-white">
-                {workout.day}
-              </Text>
-              <View className="rounded-full bg-pink-400/20 px-3 py-1">
-                <Text className="font-inter-medium text-sm text-pink-200">
-                  {workout.duration}
-                </Text>
-              </View>
-            </View>
-            <View className="flex-row items-center justify-between">
-              <Text className="font-inter-medium text-sm text-gray-400">
-                {workout.focus}
-              </Text>
-              <View
-                className={`rounded-full px-2 py-1 ${
-                  workout.intensity === "High"
-                    ? "bg-red-500/20"
-                    : workout.intensity === "Medium"
-                      ? "bg-yellow-500/20"
-                      : "bg-green-500/20"
-                }`}
-              >
-                <Text
-                  className={`font-inter-medium text-xs ${
-                    workout.intensity === "High"
-                      ? "text-red-300"
-                      : workout.intensity === "Medium"
-                        ? "text-yellow-300"
-                        : "text-green-300"
-                  }`}
-                >
-                  {workout.intensity}
-                </Text>
-              </View>
-            </View>
-          </View>
-        ))}
-      </View>
-    </View>
-  );
-};
-
-// Nutrition Plan Section
-const NutritionPlanSection = () => {
-  const meals = [
-    {
-      type: "Breakfast",
-      calories: "400",
-      protein: "25g",
-      example: "Greek yogurt + berries",
+      quote:
+        "The personalized workout plan really helped me stay consistent. Amazing results!",
+      name: "Sarah M.",
+      status: "Verified Member",
+      image: null,
     },
     {
-      type: "Lunch",
-      calories: "500",
-      protein: "30g",
-      example: "Grilled chicken salad",
-    },
-    {
-      type: "Dinner",
-      calories: "450",
-      protein: "28g",
-      example: "Salmon + quinoa",
+      quote:
+        "Best investment I've made for my fitness journey. The community is so supportive!",
+      name: "Emily R.",
+      status: "Verified Member",
+      image: null,
     },
   ];
 
+  const [currentTestimonial, setCurrentTestimonial] = useState(0);
+
+  const onTestimonialScroll = (
+    event: NativeSyntheticEvent<NativeScrollEvent>,
+  ) => {
+    const offsetX = event.nativeEvent.contentOffset.x;
+    const page = Math.round(offsetX / CAROUSEL_ITEM_WIDTH);
+    if (page !== currentTestimonial) {
+      setCurrentTestimonial(page);
+    }
+  };
+
   return (
-    <View
-      style={{ height: SECTION_HEIGHT }}
-      className="rounded-2xl bg-gray-900 p-4"
-    >
-      <Text className="font-inter-bold mb-4 text-2xl text-white">
-        Optimal nutrition plan
-      </Text>
-      <View className="flex-1">
-        <View className="mb-4 flex-row justify-between rounded-xl bg-pink-500/20 p-3">
-          <View className="items-center">
-            <Text className="font-inter-medium text-sm text-pink-200">
-              Daily Calories
+    <View className="mb-8">
+      <ScrollView
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        onScroll={onTestimonialScroll}
+        scrollEventThrottle={16}
+        decelerationRate="fast"
+        snapToInterval={CAROUSEL_ITEM_WIDTH + 20}
+        contentContainerStyle={styles.carouselContent}
+      >
+        {testimonials.map((testimonial, index) => (
+          <View
+            key={index}
+            style={[
+              styles.carouselItem,
+              {
+                shadowColor: "#F6ADCE",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.15,
+                shadowRadius: 6,
+                elevation: 3,
+                transform: [{ scale: 1 }],
+                width: CAROUSEL_ITEM_WIDTH,
+              },
+            ]}
+            className="rounded-2xl bg-white/90 p-6 shadow-lg shadow-purple-500/30"
+          >
+            {/* Large pink quote mark */}
+            <Text className="font-inter-bold text-5xl text-pink-200">
+              "
             </Text>
-            <Text className="font-inter-bold text-lg text-pink-300">1,800</Text>
-          </View>
-          <View className="items-center">
-            <Text className="font-inter-medium text-sm text-pink-200">
-              Protein
-            </Text>
-            <Text className="font-inter-bold text-lg text-pink-300">90g</Text>
-          </View>
-          <View className="items-center">
-            <Text className="font-inter-medium text-sm text-pink-200">
-              Water
-            </Text>
-            <Text className="font-inter-bold text-lg text-pink-300">2.5L</Text>
-          </View>
-        </View>
-        <View className="flex-1 justify-between">
-          {meals.map((meal, index) => (
-            <View key={index} className="mb-3 rounded-xl bg-gray-800/80 p-4">
-              <View className="mb-2 flex-row items-center justify-between">
-                <Text className="font-inter-semibold text-base text-white">
-                  {meal.type}
-                </Text>
-                <View className="rounded-full bg-pink-500/20 px-3 py-1">
-                  <Text className="font-inter-medium text-sm text-pink-200">
-                    {meal.calories} cal
+
+            <View className="mb-6">
+              <Text className="font-inter-medium text-lg leading-8 text-gray-900">
+                {testimonial.quote}
+              </Text>
+            </View>
+
+            <View className="flex-row items-center">
+              <View className="h-12 w-12 overflow-hidden rounded-full">
+                <View className="h-full w-full items-center justify-center rounded-full bg-pink-100">
+                  <Text className="font-inter-medium text-lg text-pink-500">
+                    {testimonial.name[0]}
                   </Text>
                 </View>
               </View>
-              <Text className="font-inter-medium text-sm text-gray-400">
-                {meal.example}
-              </Text>
-              <Text className="font-inter-medium mt-1 text-xs text-pink-300">
-                {meal.protein} protein
-              </Text>
-            </View>
-          ))}
-        </View>
-      </View>
-    </View>
-  );
-};
-
-// Daily Snatch Hacks Section
-const SnatchHacksSection = () => {
-  const hacks = [
-    { title: "Morning ritual", tip: "Warm lemon water + ACV", icon: "🍋" },
-    { title: "Posture check", tip: "Set hourly reminders", icon: "⏰" },
-    { title: "Waist training", tip: "6-8 hours daily", icon: "⌛" },
-    { title: "Recovery", tip: "Epsom salt bath", icon: "🛁" },
-  ];
-
-  return (
-    <View
-      style={{ height: SECTION_HEIGHT }}
-      className="rounded-2xl bg-gray-900 p-4"
-    >
-      <Text className="font-inter-bold mb-4 text-2xl text-white">
-        Daily snatch hacks
-      </Text>
-      <View className="flex-1 justify-between">
-        {hacks.map((hack, index) => (
-          <View
-            key={index}
-            className="mb-3 flex-row items-center rounded-xl bg-gray-800/80 p-4"
-          >
-            <Text className="mr-3 text-2xl">{hack.icon}</Text>
-            <View className="flex-1">
-              <Text className="font-inter-semibold text-base text-white">
-                {hack.title}
-              </Text>
-              <Text className="font-inter-medium text-sm text-gray-400">
-                {hack.tip}
-              </Text>
-            </View>
-          </View>
-        ))}
-      </View>
-    </View>
-  );
-};
-
-// Styling Tips Section
-const _StylingTipsSection = () => {
-  const tips = [
-    { category: "Tops", tip: "High-waisted everything", icon: "👚" },
-    { category: "Dresses", tip: "Wrap styles & A-line cuts", icon: "👗" },
-    { category: "Accessories", tip: "Statement belts", icon: "👜" },
-    { category: "Layering", tip: "Cropped jackets", icon: "🧥" },
-  ];
-
-  return (
-    <View
-      style={{ height: SECTION_HEIGHT }}
-      className="rounded-2xl bg-gray-900 p-4"
-    >
-      <Text className="font-inter-bold mb-4 text-2xl text-white">
-        Daily styling tips
-      </Text>
-      <View className="flex-1 justify-between">
-        {tips.map((tip, index) => (
-          <View key={index} className="mb-3 rounded-xl bg-gray-800/80 p-4">
-            <View className="flex-row items-center">
-              <Text className="mr-3 text-2xl">{tip.icon}</Text>
-              <View className="flex-1">
-                <Text className="font-inter-semibold text-base text-white">
-                  {tip.category}
+              <View className="ml-3">
+                <Text className="font-inter-bold text-base text-gray-900">
+                  {testimonial.name}
                 </Text>
-                <Text className="font-inter-medium text-sm text-gray-400">
-                  {tip.tip}
-                </Text>
+                <View className="flex-row items-center">
+                  <Feather name="check-circle" size={14} color="#10B981" />
+
+                  <Text className="ml-1 font-inter-medium text-sm text-gray-500">
+                    {testimonial.status}
+                  </Text>
+                </View>
               </View>
             </View>
           </View>
+        ))}
+      </ScrollView>
+
+      {/* Pagination Dots */}
+      <View style={styles.paginationDots}>
+        {testimonials.map((_, index) => (
+          <View
+            key={index}
+            style={[
+              styles.dot,
+              currentTestimonial === index && styles.activeDot,
+            ]}
+          />
         ))}
       </View>
     </View>
@@ -610,70 +430,6 @@ interface Plan {
   packageId: string;
 }
 
-// Memoize the plan selection component
-const PlanSelection = memo(({ 
-  plans, 
-  packages, 
-  selectedPackage, 
-  onSelectPackage 
-}: { 
-  plans: Record<string, Plan>;
-  packages: PurchasesPackage[];
-  selectedPackage?: PurchasesPackage;
-  onSelectPackage: (pkg: PurchasesPackage) => void;
-}) => (
-  <View style={styles.planContainer}>
-    {Object.keys(plans).length > 0 ? (
-      Object.values(plans).map((plan) => (
-        <Pressable
-          key={plan.id}
-          onPress={() => {
-            const pkg = packages.find(
-              (pkg) => pkg.product.identifier === plan.packageId,
-            );
-            if (pkg) {
-              onSelectPackage(pkg);
-            }
-          }}
-          style={[
-            styles.planBox,
-            selectedPackage?.product.identifier === plan.packageId &&
-              styles.selectedPlanBox,
-            plan.id === "weekly" ? { marginRight: 8 } : { marginLeft: 8 },
-          ]}
-        >
-          {plan.popular && (
-            <View style={styles.popularBadge}>
-              <Text style={styles.popularText}>Popular</Text>
-            </View>
-          )}
-          <View style={styles.planContent}>
-            <View>
-              <Text style={styles.planName}>{plan.name}</Text>
-              <Text style={styles.planPrice}>{plan.price}</Text>
-            </View>
-            <View
-              style={[
-                styles.radioOuter,
-                selectedPackage?.product.identifier === plan.packageId &&
-                  styles.selectedRadioOuter,
-              ]}
-            >
-              {selectedPackage?.product.identifier === plan.packageId && (
-                <View style={styles.radioInner} />
-              )}
-            </View>
-          </View>
-        </Pressable>
-      ))
-    ) : (
-      <View style={[styles.planBox, { flex: 1, justifyContent: 'center', alignItems: 'center' }]}>
-        <Text style={[styles.planName, { color: 'rgba(255,255,255,0.5)' }]}>Loading plans...</Text>
-      </View>
-    )}
-  </View>
-));
-
 function PaywallScreen() {
   const router = useRouter();
   const { data: session } = authClient.useSession();
@@ -686,17 +442,20 @@ function PaywallScreen() {
   const [packages, setPackages] = useState<PurchasesPackage[]>([]);
   const [selectedPackage, setSelectedPackage] = useState<PurchasesPackage>();
   const [plans, setPlans] = useState<Record<string, Plan>>({});
-  const { mutate: imageTransformation } = api.user.imageTransformation.useMutation({
-    onSuccess: (data) => {
-      transformationStore$.currentImage.set(data.currentImageUri);
-      transformationStore$.snatchedImage.set(data.transformedImageUri);
-    },
-    onError: (error) => {
-      console.error(error);
-      Sentry.captureException(error);
-    }
-  });
-  
+  const { mutate: imageTransformation } =
+    api.user.imageTransformation.useMutation({
+      onSuccess: (data) => {
+        transformationStore$.currentImage.set(data.currentImageUri);
+        transformationStore$.snatchedImage.set(data.transformedImageUri);
+      },
+      onError: (error) => {
+        logger.error("Failed to transform image", error);
+        Sentry.captureException(error);
+      },
+    });
+  const currentImage = use$(transformationStore$.currentImage);
+  const snatchedImage = use$(transformationStore$.snatchedImage);
+
   const frontImageKey = use$(onboardingStore$.onboarding.frontViewPhoto);
 
   useEffect(() => {
@@ -707,7 +466,7 @@ function PaywallScreen() {
         Analytics.trackPaywallView(deviceId, userId);
         await fetchPackages();
       } catch (error) {
-        console.error('Error initializing paywall:', error);
+        logger.error("Error initializing paywall:", error);
       }
     })();
   }, []);
@@ -716,27 +475,27 @@ function PaywallScreen() {
     try {
       const offerings = await Purchases.getOfferings();
       const availablePackages = offerings.all.default?.availablePackages;
-      
+
       if (availablePackages?.length) {
         // Process packages and create plans
         const plansObj: Record<string, Plan> = {};
-        
+
         // Find weekly package
         const weeklyPackage = availablePackages.find(
-          (pkg) => 
-            typeof pkg.packageType === "string" && 
-            (pkg.packageType.toUpperCase() === "WEEKLY" || 
-            pkg.product.identifier.toLowerCase().includes("weekly"))
+          (pkg) =>
+            typeof pkg.packageType === "string" &&
+            (pkg.packageType.toUpperCase() === "WEEKLY" ||
+              pkg.product.identifier.toLowerCase().includes("weekly")),
         );
-        
+
         // Find lifetime package
         const lifetimePackage = availablePackages.find(
-          (pkg) => 
-            typeof pkg.packageType === "string" && 
-            (pkg.packageType.toUpperCase() === "LIFETIME" || 
-            pkg.product.identifier.toLowerCase().includes("lifetime"))
+          (pkg) =>
+            typeof pkg.packageType === "string" &&
+            (pkg.packageType.toUpperCase() === "LIFETIME" ||
+              pkg.product.identifier.toLowerCase().includes("lifetime")),
         );
-        
+
         if (weeklyPackage) {
           plansObj.weekly = {
             id: weeklyPackage.packageType.toLowerCase(),
@@ -746,7 +505,7 @@ function PaywallScreen() {
             packageId: weeklyPackage.product.identifier,
           };
         }
-        
+
         if (lifetimePackage) {
           plansObj.lifetime = {
             id: "lifetime",
@@ -756,18 +515,21 @@ function PaywallScreen() {
             packageId: lifetimePackage.product.identifier,
           };
         }
-        
+
         // Batch state updates
         setPlans(plansObj);
         setPackages(availablePackages);
-        
+
         // Default select lifetime package if available, otherwise the first package
         const defaultPackage = lifetimePackage ?? availablePackages[0];
         setSelectedPackage(defaultPackage);
       }
     } catch (error) {
       console.error("Error fetching packages:", error);
-      Alert.alert("Error", "Failed to load subscription plans. Please try again.");
+      Alert.alert(
+        "Error",
+        "Failed to load subscription plans. Please try again.",
+      );
     }
   };
 
@@ -781,17 +543,6 @@ function PaywallScreen() {
       setCurrentPage(nextPage);
     }
   }, [currentPage, isManualScrolling]);
-
-  // Set up auto-scrolling
-  useEffect(() => {
-    autoScrollTimer.current = setInterval(scrollToNextPage, 3000); // Change slide every 3 seconds
-
-    return () => {
-      if (autoScrollTimer.current) {
-        clearInterval(autoScrollTimer.current);
-      }
-    };
-  }, [scrollToNextPage]);
 
   const onScrollBegin = () => {
     setIsManualScrolling(true);
@@ -819,11 +570,12 @@ function PaywallScreen() {
 
   const makePurchase = async () => {
     if (!selectedPackage || isPurchasing) return;
-    
+
     try {
       setIsPurchasing(true);
-      const { customerInfo, productIdentifier } = await Purchases.purchasePackage(selectedPackage);
-      
+      const { customerInfo, productIdentifier } =
+        await Purchases.purchasePackage(selectedPackage);
+
       const deviceId = await getOrCreateDeviceId();
       const userId = session?.user.id;
 
@@ -833,7 +585,10 @@ function PaywallScreen() {
           planName: selectedPackage.product.identifier,
           price: selectedPackage.product.price,
           currency: selectedPackage.product.currencyCode,
-          interval: selectedPackage.product.subscriptionPeriod === 'P1Y' ? 'year' : 'month'
+          interval:
+            selectedPackage.product.subscriptionPeriod === "P1Y"
+              ? "year"
+              : "month",
         });
       }
 
@@ -842,22 +597,25 @@ function PaywallScreen() {
           SecureStore.setItemAsync("onboarding_complete", "true"),
           imageTransformation({
             imageKeys: {
-              front: frontImageKey
-            }
+              front: frontImageKey,
+            },
           }),
           router.replace({
             pathname: "/(onboarding)/results",
-            params: { unlocked: "true" }
-          })
+            params: { unlocked: "true" },
+          }),
         ]);
       }
     } catch (error) {
-      console.error("Error purchasing:", error);
+      logger.error("Error processing purchase:", error);
       if (error instanceof Error) {
         Alert.alert("Purchase Failed", error.message);
         Sentry.captureException(error);
       } else {
-        Alert.alert("Purchase Failed", "An error occurred while processing your purchase. Please try again.");
+        Alert.alert(
+          "Purchase Failed",
+          "An error occurred while processing your purchase. Please try again.",
+        );
         Sentry.captureException(error);
       }
     } finally {
@@ -870,172 +628,187 @@ function PaywallScreen() {
   }, []);
 
   return (
-    <LinearGradient colors={["#1f1f1f", "#111"]} style={styles.container}>
+    <LinearGradient colors={["#f472b6", "#FED0E2"]} style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.scrollViewContent}>
-          <View style={styles.header}>
-            <View className="flex-row items-center justify-center">
-              <Pressable
-                onPress={() => router.back()}
-                hitSlop={20}
-                className="absolute left-0 -translate-y-1"
-              >
-                <Feather name="arrow-left" size={24} color="white" />
-              </Pressable>
-              <Text style={styles.title}>Snatched AI Premium</Text>
+        <View style={styles.mainContainer}>
+          <ScrollView contentContainerStyle={styles.scrollViewContent}>
+            <View style={styles.header}>
+              <View className="flex-row items-center justify-center">
+                <Pressable
+                  onPress={() => router.back()}
+                  hitSlop={20}
+                  className="absolute left-0 -translate-y-1"
+                >
+                  <Feather name="arrow-left" size={24} color="white" />
+                </Pressable>
+                <Text style={styles.title}>Snatched AI Premium</Text>
+              </View>
             </View>
-          </View>
 
-          <Text style={styles.subtitle}>
-            Unlimited access including: Daily routine, personalized prediction &
-            exercises to help you maximize your potential.
-          </Text>
-
-          {/* Subscription Options */}
-          <PlanSelection
-            plans={plans}
-            packages={packages}
-            selectedPackage={selectedPackage}
-            onSelectPackage={handleSelectPackage}
-          />
-
-          <Text style={styles.featuresTitle}>Here's what you'll get:</Text>
-
-          {/* Benefits Carousel */}
-          <View style={styles.carouselContainer}>
-            <ScrollView
-              ref={scrollViewRef}
-              horizontal
-              pagingEnabled
-              showsHorizontalScrollIndicator={false}
-              onScroll={onScroll}
-              onScrollBeginDrag={onScrollBegin}
-              onScrollEndDrag={onScrollEnd}
-              onMomentumScrollEnd={onScrollEnd}
-              scrollEventThrottle={16}
-              decelerationRate="fast"
-              snapToInterval={CAROUSEL_ITEM_WIDTH + 20}
-              contentContainerStyle={styles.carouselContent}
-            >
-              <View
-                style={[styles.carouselItem, { width: CAROUSEL_ITEM_WIDTH }]}
-              >
-                <VisualizeGoalSection />
-              </View>
-              <View
-                style={[styles.carouselItem, { width: CAROUSEL_ITEM_WIDTH }]}
-              >
-                <WorkoutPlanSection />
-              </View>
-              <View
-                style={[styles.carouselItem, { width: CAROUSEL_ITEM_WIDTH }]}
-              >
-                <NutritionPlanSection />
-              </View>
-              <View
-                style={[styles.carouselItem, { width: CAROUSEL_ITEM_WIDTH }]}
-              >
-                <SnatchHacksSection />
-              </View>
-            </ScrollView>
-
-            {/* Pagination Dots */}
-            <View style={styles.paginationDots}>
-              {[0, 1, 2, 3].map((index) => (
-                <View
-                  key={index}
-                  style={[
-                    styles.dot,
-                    currentPage === index && styles.activeDot,
-                  ]}
-                />
-              ))}
-            </View>
-          </View>
-        </ScrollView>
-
-        {/* Bottom Actions */}
-        <View style={styles.footer}>
-          {/* Legal Links */}
-          <View className="mb-4 items-center">
-            <Text className="text-center text-xs text-gray-400">
-              By continuing, you agree to our{' '}
-              <Text
-                className="font-inter-medium text-pink-300 underline"
-                onPress={() => Linking.openURL("https://snatchedai.com/terms")}
-              >
-                Terms
-              </Text>
-              <Text>{', '}</Text>
-              <Text
-                className="font-inter-medium text-pink-300 underline"
-                onPress={() => Linking.openURL("https://snatchedai.com/privacy")}
-              >
-                Privacy Policy
-              </Text>
-              <Text>{', and '}</Text>
-              <Text
-                className="font-inter-medium text-pink-300 underline"
-                onPress={() => Linking.openURL("https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")}
-              >
-                EULA
-              </Text>
+            <Text style={styles.subtitle}>
+              Unlimited access including: Daily routine, personalized prediction
+              & exercises to help you maximize your potential.
             </Text>
+
+            {/* Subscription Options */}
+            <PlanSelection
+              plans={plans}
+              packages={packages}
+              selectedPackage={selectedPackage}
+              onSelectPackage={handleSelectPackage}
+            />
+
+            <Text style={styles.featuresTitle}>Success Stories:</Text>
+
+            {/* Add Testimonial Carousel here */}
+            <TestimonialCarousel />
+
+            <Text style={styles.featuresTitle}>Here's what you'll get:</Text>
+
+            {/* Single Visualize Goal Section */}
+            <View style={{ marginBottom: 20 }}>
+              <VisualizeGoalSection 
+                currentImage={currentImage} 
+                snatchedImage={snatchedImage} 
+              />
+            </View>
+
+            {/* Features List */}
+            <View className="gap-y-4 px-1">
+              <View className="flex-row items-center space-x-4 rounded-xl bg-white/90 p-4">
+                <Text className="text-2xl">💪 </Text>
+                <Text className="font-inter-medium text-lg text-gray-900">
+                  Personalized workout plan
+                </Text>
+              </View>
+
+              <View className="flex-row items-center space-x-4 rounded-xl bg-white/90 p-4">
+                <Text className="text-2xl">🥗 </Text>
+                <Text className="font-inter-medium text-lg text-gray-900">
+                  Nutrition and Diet Plan
+                </Text>
+              </View>
+
+              <View className="flex-row items-center space-x-4 rounded-xl bg-white/90 p-4">
+                <Text className="text-2xl">📊 </Text>
+                <Text className="font-inter-medium text-lg text-gray-900">
+                  Calories Tracking
+                </Text>
+              </View>
+
+              <View className="flex-row items-center space-x-4 rounded-xl bg-white/90 p-4">
+                <Text className="text-2xl">😎 </Text>
+                <Text className="font-inter-medium text-lg text-gray-900">
+                  Secret snatched tips
+                </Text>
+              </View>
+
+              <View className="flex-row items-center space-x-4 rounded-xl bg-white/90 p-4">
+                <Text className="text-2xl">📈 </Text>
+                <Text className="font-inter-medium text-lg text-gray-900">
+                  Body analysis
+                </Text>
+              </View>
+            </View>
+          </ScrollView>
+
+          {/* Footer */}
+          <View style={styles.footer}>
+            {/* Legal Links */}
+            <View className="mb-4 items-center">
+              <Text className="text-center text-xs text-gray-400">
+                By continuing, you agree to our{" "}
+                <Text
+                  className="font-inter-medium text-primary underline"
+                  onPress={() =>
+                    Linking.openURL("https://snatchedai.com/terms")
+                  }
+                >
+                  Terms
+                </Text>
+                <Text>{", "}</Text>
+                <Text
+                  className="font-inter-medium text-primary underline"
+                  onPress={() =>
+                    Linking.openURL("https://snatchedai.com/privacy")
+                  }
+                >
+                  Privacy Policy
+                </Text>
+                <Text>{", and "}</Text>
+                <Text
+                  className="font-inter-medium text-primary underline"
+                  onPress={() =>
+                    Linking.openURL(
+                      "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/",
+                    )
+                  }
+                >
+                  EULA
+                </Text>
+              </Text>
+            </View>
+            <StyledButton
+              title={isPurchasing ? "Processing..." : "Continue"}
+              disabled={!selectedPackage || isPurchasing}
+              onPress={() => {
+                void makePurchase();
+              }}
+              variant="primary"
+              style={{ backgroundColor: "#f472b6", marginBottom: 20 }}
+            />
+            <Pressable
+              onPress={async () => {
+                try {
+                  setIsPurchasing(true);
+                  const restoredInfo = await Purchases.restorePurchases();
+                  if (restoredInfo.activeSubscriptions.length > 0) {
+                    Alert.alert(
+                      "Success",
+                      "Your purchases have been restored!",
+                    );
+                    await Promise.all([
+                      SecureStore.setItemAsync("onboarding_complete", "true"),
+                      imageTransformation({
+                        imageKeys: {
+                          front: frontImageKey,
+                        },
+                      }),
+                      router.replace({
+                        pathname: "/(onboarding)/results",
+                        params: { unlocked: "true" },
+                      }),
+                    ]);
+                  } else {
+                    Alert.alert(
+                      "No Purchases",
+                      "No previous purchases found to restore",
+                    );
+                  }
+                } catch (error) {
+                  console.error("Error restoring purchases:", error);
+                  if (error instanceof Error) {
+                    Alert.alert("Error", error.message);
+                    Sentry.captureException(error);
+                  } else {
+                    Alert.alert("Error", "Failed to restore purchases");
+                    Sentry.captureException(error);
+                  }
+                } finally {
+                  setIsPurchasing(false);
+                }
+              }}
+            >
+              <Text style={styles.restoreText}>Restore Purchases</Text>
+            </Pressable>
           </View>
-          <StyledButton
-            title={isPurchasing ? "Processing..." : "Continue"}
-            disabled={!selectedPackage || isPurchasing}
-            onPress={() => {
-              void makePurchase();
-            }}
-            variant="primary"
-            style={{ backgroundColor: "#f472b6", marginBottom: 15 }}
-          />
-          <Pressable 
-            onPress={async () => {
-              try {
-                setIsPurchasing(true);
-                const restoredInfo = await Purchases.restorePurchases();
-                if (restoredInfo.activeSubscriptions.length > 0) {
-                  Alert.alert('Success', 'Your purchases have been restored!');
-                  await Promise.all([
-                    SecureStore.setItemAsync("onboarding_complete", "true"),
-                    imageTransformation({
-                      imageKeys: {
-                        front: frontImageKey
-                      }
-                    }),
-                    router.replace({
-                      pathname: "/(onboarding)/results",
-                      params: { unlocked: "true" }
-                    })
-                  ]);
-                } else {
-                  Alert.alert('No Purchases', 'No previous purchases found to restore');
-                }
-              } catch (error) {
-                console.error('Error restoring purchases:', error);
-                if (error instanceof Error) {
-                  Alert.alert('Error', error.message);
-                  Sentry.captureException(error);
-                } else {
-                  Alert.alert('Error', 'Failed to restore purchases');
-                  Sentry.captureException(error);
-                }
-              } finally {
-                setIsPurchasing(false);
-              }
-            }}
-          >
-            <Text style={styles.restoreText}>Restore Purchases</Text>
-          </Pressable>
         </View>
       </SafeAreaView>
     </LinearGradient>
   );
 }
 
-export default withOnboardingTracking(PaywallScreen, 'paywall');
+export default withOnboardingTracking(PaywallScreen, "paywall");
 
 const styles = StyleSheet.create({
   container: {
@@ -1044,11 +817,17 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     paddingTop: Constants.statusBarHeight,
+    backgroundColor: "transparent",
+  },
+  mainContainer: {
+    flex: 1,
+    display: "flex",
+    flexDirection: "column",
   },
   scrollViewContent: {
     flexGrow: 1,
     paddingHorizontal: 20,
-    paddingBottom: 120, // Space for footer
+    paddingBottom: 20, // Reduced padding to not overlap with footer
   },
   header: {
     paddingTop: 10,
@@ -1065,7 +844,7 @@ const styles = StyleSheet.create({
   subtitle: {
     fontFamily: "inter-medium",
     fontSize: 15,
-    color: "rgb(156 163 175)", // gray-400
+    color: "white", // Updated for better contrast on pink background
     textAlign: "center",
     marginBottom: 30,
     lineHeight: 22,
@@ -1076,23 +855,23 @@ const styles = StyleSheet.create({
   },
   planBox: {
     flex: 1,
-    backgroundColor: "rgb(55 65 81)", // gray-700
+    backgroundColor: "rgba(255, 255, 255, 0.9)", // Semi-transparent white
     borderRadius: 16,
     borderWidth: 2,
     borderColor: "transparent",
     paddingHorizontal: 15,
-    paddingVertical: 20, // Increased vertical padding
-    position: "relative", // For popular badge positioning
+    paddingVertical: 20,
+    position: "relative",
   },
   selectedPlanBox: {
-    borderColor: "#f472b6", // Primary pink color
-    backgroundColor: "rgba(244, 114, 182, 0.1)", // Slight pink background tint
+    borderColor: "white",
+    backgroundColor: "rgba(255, 255, 255, 0.95)", // Slightly more opaque when selected
   },
   popularBadge: {
     position: "absolute",
-    top: -12, // Position above the box
+    top: -12,
     right: 12,
-    backgroundColor: "#f472b6", // Primary pink color
+    backgroundColor: "white",
     borderRadius: 12,
     paddingHorizontal: 10,
     paddingVertical: 3,
@@ -1100,47 +879,48 @@ const styles = StyleSheet.create({
   popularText: {
     fontFamily: "inter-semibold",
     fontSize: 11,
-    color: "white",
+    color: "#f472b6", // Pink text on white badge
   },
   planContent: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginTop: 5, // Space below potential popular badge
+    marginTop: 5,
   },
   planName: {
     fontFamily: "inter-semibold",
     fontSize: 16,
-    color: "white",
+    color: "#1f1f1f", // Dark text for contrast on white background
     marginBottom: 4,
   },
   planPrice: {
     fontFamily: "inter-medium",
     fontSize: 14,
-    color: "rgb(156 163 175)", // gray-400
+    color: "#4b5563", // Gray-600 for secondary text
   },
   radioOuter: {
     width: 24,
     height: 24,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: "rgb(107 114 128)", // gray-500
+    borderColor: "#f472b6",
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "white",
   },
   selectedRadioOuter: {
-    borderColor: "#f472b6", // Primary pink color
+    borderColor: "#f472b6",
   },
   radioInner: {
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: "#f472b6", // Primary pink color
+    backgroundColor: "#f472b6",
   },
   featuresTitle: {
     fontFamily: "inter-semibold",
-    fontSize: 16,
-    color: "rgb(209 213 219)", // gray-300
+    fontSize: 20,
+    color: "white",
     textAlign: "center",
     marginBottom: 20,
   },
@@ -1151,7 +931,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
   },
   carouselItem: {
-    marginRight: 20, // Space between items
+    marginRight: 20,
   },
   paginationDots: {
     flexDirection: "row",
@@ -1163,27 +943,25 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: "rgba(107, 114, 128, 0.5)",
+    backgroundColor: "rgba(255, 255, 255, 0.3)",
     marginHorizontal: 4,
   },
   activeDot: {
-    backgroundColor: "#f472b6", // Primary pink color
-    width: 24, // Make active dot wider
+    backgroundColor: "white",
+    width: 24,
   },
   footer: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
+    width: "100%",
     paddingHorizontal: 20,
-    paddingBottom: Platform.OS === "ios" ? 30 : 20, // Adjust for bottom safe area/nav bar
+    paddingBottom: Platform.OS === "ios" ? 15 : 20,
     paddingTop: 15,
-    backgroundColor: "transparent", // Matches LinearGradient background
+    backgroundColor: "rgba(255, 255, 255, 0)",
+    backdropFilter: "blur(8px)",
   },
   restoreText: {
     fontFamily: "inter-medium",
     fontSize: 15,
-    color: "#f472b6", // Primary pink color
+    color: "white",
     textAlign: "center",
   },
 });

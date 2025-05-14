@@ -155,7 +155,7 @@ function ResultsScreen() {
                 </View>
               </View>
 
-              <View className="space-y-4">
+              <View className="gap-y-4">
                 {isUnlocked ? (
                   [bodyRating.issue1, bodyRating.issue2, bodyRating.issue3].map(
                     (issue, index) => (

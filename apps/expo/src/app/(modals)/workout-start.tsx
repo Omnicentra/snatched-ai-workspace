@@ -22,8 +22,6 @@ const CIRCLE_Y = CIRCLE_SIZE / 2;
 const CIRCLE_RADIUS = (CIRCLE_SIZE / 2) - 70; // Radius
 const CIRCLE_LENGTH = 2 * Math.PI * CIRCLE_RADIUS; // Circumference of the actual progress ring
 
-console.log({CIRCLE_LENGTH,CIRCLE_X, CIRCLE_Y, CIRCLE_RADIUS, CIRCLE_SIZE})
-
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 export default function WorkoutStartScreen() {

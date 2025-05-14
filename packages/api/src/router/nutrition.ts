@@ -17,7 +17,7 @@ import {
   recipes,
   user,
 } from "@omc/db/schema";
-import { slugify } from "@omc/validators";
+import { prettyPrint, slugify } from "@omc/validators";
 
 import { protectedProcedure, publicProcedure } from "../trpc";
 
@@ -353,15 +353,28 @@ export const nutritionRouter = {
   generateMealPlan: protectedProcedure
     .output(createSelectSchema(mealPlans))
     .mutation(async ({ ctx }) => {
-      // Get user
-      const [dbUser] = await db
+      const userId = Number(ctx.session.user.id);
+
+      if (!userId) {
+        throw new Error("User not found");
+      }
+
+      // Check if user has already generated a meal plan for today
+      const [existingMealPlan] = await db
         .select()
-        .from(user)
-        .where(eq(user.email, ctx.session.user.email))
+        .from(mealPlans)
+        .where(
+          and(
+            eq(mealPlans.userId, userId),
+            sql`DATE(${mealPlans.date}) = CURRENT_DATE`
+          )
+        )
         .execute();
 
-      if (!dbUser) {
-        throw new Error("User not found");
+      if (existingMealPlan) {
+        console.log("Found existing meal plan for today");
+        prettyPrint(JSON.stringify(existingMealPlan, null, 2));
+        return existingMealPlan;
       }
 
       // Generate meal plan
@@ -371,7 +384,7 @@ export const nutritionRouter = {
       const [dbMealPlan] = await db
         .insert(mealPlans)
         .values({
-          userId: dbUser.id,
+          userId,
           date: new Date().toISOString(),
           targetCalories: genMealPlan.targetCalories,
           targetProtein: genMealPlan.targetProtein,
