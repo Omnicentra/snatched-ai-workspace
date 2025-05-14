@@ -27,7 +27,8 @@
     "lint:ws": "pnpm dlx sherif@latest",
     "postinstall": "pnpm lint:ws",
     "typecheck": "turbo run typecheck",
-    "ui-add": "turbo run ui-add"
+    "ui-add": "turbo run ui-add",
+    "doppler:secrets:prd": "doppler secrets -c prd download --no-file --format env > .env.prod"
   },
   "devDependencies": {
     "@omc/prettier-config": "workspace:*",

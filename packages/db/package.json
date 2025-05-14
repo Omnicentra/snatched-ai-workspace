@@ -29,6 +29,7 @@
     "migrate": "pnpm with-env drizzle-kit migrate",
     "migrate:prod": "doppler run -p snatched-ai-backend -c prd -- drizzle-kit migrate",
     "push": "pnpm with-env drizzle-kit push",
+    "push:prod": "doppler run -p snatched-ai-backend -c prd -- pnpm with-env drizzle-kit push",
     "pull": "pnpm with-env drizzle-kit pull",
     "drop": "pnpm with-env drizzle-kit drop",
     "studio": "pnpm with-env drizzle-kit studio",
@@ -40,7 +41,6 @@
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.0",
-    "@vercel/postgres": "^0.10.0",
     "drizzle-orm": "^0.41.0",
     "drizzle-zod": "^0.7.0",
     "pg": "^8.14.1",

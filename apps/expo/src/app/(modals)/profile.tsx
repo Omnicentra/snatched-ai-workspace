@@ -17,6 +17,7 @@ import { authClient } from "@/utils/auth";
 import { Ionicons } from "@expo/vector-icons";
 import ChatWootWidget from '@chatwoot/react-native-widget';
 import { mixpanel } from "@/lib/utils";
+import * as SecureStore from 'expo-secure-store';
 
 const MenuItem = ({
   icon,
@@ -99,6 +100,7 @@ export default function ProfileScreen() {
               text: "Reset",
               style: "destructive",
               onPress: () => {
+                void SecureStore.setItemAsync('onboarding_complete', 'false');
                 router.replace("/(onboarding)");
               },
             },

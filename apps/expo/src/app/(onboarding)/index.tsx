@@ -41,8 +41,6 @@ function SplashScreen() {
     });
   };
 
-  console.log("appVariant", appVariant);
-
   return (
     <LinearGradient
       colors={["#f472b6", "#FED0E2"]}

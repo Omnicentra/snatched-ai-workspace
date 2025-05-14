@@ -33,6 +33,11 @@ export async function seedWorkoutCategories() {
       name: 'Cardio',
       description: 'High-intensity workouts that focus on improving cardiovascular health and endurance.',
     },
+    {
+      id: 7,
+      name: 'Recovery',
+      description: 'Low-intensity workouts designed to promote relaxation and recovery, helping to prevent overtraining and injury.',
+    },
   ] as const
 
   console.log('🌱 Seeding workout categories...')

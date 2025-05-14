@@ -53,7 +53,7 @@ export default function SignupScreen() {
             id: session.user.id,
           });
           if (info.customerInfo.activeSubscriptions.length > 0) {
-            router.push("/(onboarding)/body-positivity");
+            router.push("/(onboarding)");
           } else {
             router.push("/(onboarding)/paywall");
           }
