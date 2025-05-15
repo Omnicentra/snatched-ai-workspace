@@ -7,6 +7,7 @@ import sharp from "sharp";
 import { Readable } from "stream";
 
 import { prettyPrint } from "@omc/validators";
+import { userBodyRatings } from "@omc/db/schema";
 
 import type { ImageScansKey } from "../utils/types";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "../trpc";
@@ -34,7 +35,7 @@ export const userRouter = createTRPCRouter({
    * bodyRating
    * Accepts image URLs and desired body shape to calculate various body-rating scores
    */
-  bodyRating: publicProcedure
+  bodyRating: protectedProcedure
     .input(
       z.object({
         imageKeys: z.object({
@@ -45,7 +46,7 @@ export const userRouter = createTRPCRouter({
         desiredBodyShape: z.enum(Object.keys(images) as [BodyShapeEnum]),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       console.log(JSON.stringify(input, null, 2));
       // Extract urls for each body angle
       const { imageKeys, desiredBodyShape } = input;
@@ -59,7 +60,16 @@ export const userRouter = createTRPCRouter({
 
       // Run body analyzer with image URLs and desired shape
       try {
-        return await analyzeBodyImages(imageData, desiredBodyShape);
+        const result = await analyzeBodyImages(imageData, desiredBodyShape);
+        // Write the data to userBodyRatings
+        await ctx.db.insert(userBodyRatings).values({
+          userId: Number(ctx.session.user.id),
+          frontImageKey: imageKeys.front,
+          sideImageKey: imageKeys.side,
+          backImageKey: imageKeys.back,
+          bodyRating: result,
+        });
+        return result;
       } catch (error) {
         console.error(error);
         throw new TRPCError({
