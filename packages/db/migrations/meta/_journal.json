@@ -78,6 +78,13 @@
       "when": 1746717600576,
       "tag": "0010_absurd_snowbird",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1747331095790,
+      "tag": "0011_striped_malice",
+      "breakpoints": true
     }
   ]
 }
