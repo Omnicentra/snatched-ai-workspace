@@ -17,6 +17,7 @@ function getAppConfig() {
           },
         ],
         associatedDomains: ["applinks:painfully-classic-egret.ngrok-free.app"],
+        apsEnvironment: "development",
       };
     case "preview":
       return {
@@ -32,6 +33,7 @@ function getAppConfig() {
           },
         ],
         associatedDomains: ["applinks:snatched-ai-dev-oh2uj.ondigitalocean.app"],
+        apsEnvironment: "production",
       };
     case "production":
     default:
@@ -48,11 +50,12 @@ function getAppConfig() {
           },
         ],
         associatedDomains: ["applinks:snatchedai.com"],
+        apsEnvironment: "production",
       };
   }
 }
 
-const { name, scheme, androidPackage, iosBundleIdentifier, intentFilters, associatedDomains, icon } =
+const { name, scheme, androidPackage, iosBundleIdentifier, intentFilters, associatedDomains, icon, apsEnvironment } =
   getAppConfig();
 
 const createConfig = ({ config }: ConfigContext): ExpoConfig => ({
@@ -81,6 +84,8 @@ const createConfig = ({ config }: ConfigContext): ExpoConfig => ({
     associatedDomains: associatedDomains,
     entitlements: {
       "com.apple.developer.applesignin": ["Default"],
+      "com.apple.developer.usernotifications.time-sensitive": true,
+      "aps-environment": apsEnvironment,
     },
   },
   androidStatusBar: {
@@ -178,7 +183,16 @@ const createConfig = ({ config }: ConfigContext): ExpoConfig => ({
           "com.zhiliaoapp.musically",
         ]
       }
-    ]
+    ],
+    [
+      "expo-notifications",
+      {
+        "icon": "./assets/notification_icon.png",
+        "color": "#ffffff",
+        "defaultChannel": "default",
+        enableBackgroundRemoteNotifications: true,
+      },
+    ],
   ],
   experiments: {
     typedRoutes: true,

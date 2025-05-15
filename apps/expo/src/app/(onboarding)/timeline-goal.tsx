@@ -64,7 +64,7 @@ function TimelineGoalScreen() {
     if (session) {
       router.push('/(onboarding)/analyzing')
     } else {
-      router.push('/(onboarding)/testimonials')
+      router.push('/(onboarding)/signup')
     }
   }
 

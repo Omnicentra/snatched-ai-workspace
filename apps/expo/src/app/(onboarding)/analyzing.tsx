@@ -122,7 +122,7 @@ function AnalyzingScreen() {
         desiredBodyShape,
       });
     }
-    generateBlurredImage({ imageKey: frontImageKey, blurAmount: 50 });
+    generateBlurredImage({ imageKey: frontImageKey, blurAmount: 100 });
     generateMealPlan();
     generateWorkoutPlan();
 

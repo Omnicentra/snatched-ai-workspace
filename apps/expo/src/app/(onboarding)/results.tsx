@@ -12,6 +12,7 @@ import { Analytics } from "@/lib/analytics";
 import { authClient } from "@/utils/auth";
 import { getOrCreateDeviceId } from "@/utils/device-id";
 import { withOnboardingTracking } from '@/components/core/withOnboardingTracking';
+import Purchases from "react-native-purchases";
 
 const { width: screenWidth } = Dimensions.get("window"); // Get screen width
 
@@ -32,7 +33,8 @@ function ResultsScreen() {
 
   const handleViewDetails = () => {
     if (isUnlocked) {
-      void router.push("/(tabs)/home");
+      // When unlocked, navigate to notifications screen first
+      void router.push("/(onboarding)/notifications");
     } else {
       void router.push("/(onboarding)/paywall");
     }
@@ -50,6 +52,12 @@ function ResultsScreen() {
           console.error('Failed to track onboarding completion:', error);
         }
       })();
+    } else {
+      void Purchases.getOfferings().then((offerings) => {
+        const availablePackages = offerings.all.default?.availablePackages;
+        // TODO: Cache the packages in the store
+        // paywallStore$.packages.set(availablePackages);
+      });
     }
   }, [isUnlocked, session]);
 

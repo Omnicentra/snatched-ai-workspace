@@ -1,6 +1,6 @@
 import "@bacons/text-decoder/install";
 
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Purchases, { LOG_LEVEL } from "react-native-purchases";
 import { Stack, useNavigationContainerRef } from "expo-router";
@@ -32,6 +32,9 @@ import {
 import * as Sentry from "@sentry/react-native";
 import { vexo } from "vexo-analytics";
 import { getOrCreateDeviceId } from "@/utils/device-id";
+import { checkNotificationPermissions, initializeNotifications } from "@/lib/notifications";
+import { logger } from "@/lib/logger";
+import * as Notifications from "expo-notifications";
 
 const navigationIntegration = Sentry.reactNavigationIntegration({
   enableTimeToInitialDisplay: !isRunningInExpoGo(),
@@ -77,6 +80,9 @@ void SplashScreen.preventAutoHideAsync();
 
 function RootLayout() {
   const ref = useNavigationContainerRef();
+  // Use a ref to track whether notifications were initialized in this session
+  const notificationsInitialized = useRef(false);
+  
   const [fontsLoaded, fontError] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
@@ -100,10 +106,75 @@ function RootLayout() {
     }
   }, []);
 
+  // Set up notification response listeners only once
+  const setupNotificationListeners = useCallback(() => {
+    // Set up listener for notification received while app is running
+    const foregroundSubscription = Notifications.addNotificationReceivedListener(
+      (notification) => {
+        logger.info("Notification received in foreground:", notification);
+      },
+    );
+    
+    // Set up listener for notification interactions
+    const responseSubscription = Notifications.addNotificationResponseReceivedListener(
+      (response) => {
+        const data = response.notification.request.content.data;
+        logger.info("Notification interaction:", data);
+        // Handle notification interaction here
+      },
+    );
+    
+    // Return cleanup function
+    return () => {
+      foregroundSubscription.remove();
+      responseSubscription.remove();
+    };
+  }, []);
+
+  const checkAndSetupNotifications = useCallback(async () => {
+    try {
+      // Only run once per app session
+      if (notificationsInitialized.current) {
+        return;
+      }
+      
+      // Check if notifications permission is granted
+      const permissionGranted = await checkNotificationPermissions();
+      
+      // Only verify notifications if permission is granted
+      if (permissionGranted) {
+        // Check for pending notifications to see if we need to reschedule
+        const pendingNotifications = await Notifications.getAllScheduledNotificationsAsync();
+        
+        // Initialize only if there are no pending notifications
+        if (pendingNotifications.length === 0) {
+          logger.info("No scheduled notifications found, initializing now");
+          await initializeNotifications();
+        } else {
+          logger.info(`Found ${pendingNotifications.length} scheduled notifications, skipping initialization`);
+        }
+      } else {
+        logger.info("Notifications not initialized: no permission");
+      }
+      
+      // Mark as initialized for this session
+      notificationsInitialized.current = true;
+    } catch (error) {
+      logger.error("Error checking notifications:", error instanceof Error ? error.message : String(error));
+    }
+  }, []);
+
   useEffect(() => {
     void getOrCreateDeviceId();
     void initRevenueCat();
-  }, []);
+    void checkAndSetupNotifications();
+    
+    // Set up notification listeners
+    const cleanupListeners = setupNotificationListeners();
+    
+    // Return cleanup function
+    return cleanupListeners;
+  }, [initRevenueCat, checkAndSetupNotifications, setupNotificationListeners]);
 
   useEffect(() => {
     if (ref) {
@@ -131,7 +202,7 @@ function RootLayout() {
         <Stack screenOptions={{ headerShown: false }}>
           {/* The `app/index.tsx` will handle redirection logic */}
           <Stack.Screen name="index" />
-          <Stack.Screen name="(auth)" />
+          <Stack.Screen name="(auth)/login" />
           <Stack.Screen name="(onboarding)" />
           <Stack.Screen name="(tabs)" />
           {/* <Stack.Screen name="(modals)" options={{ presentation: "modal" }} /> */}

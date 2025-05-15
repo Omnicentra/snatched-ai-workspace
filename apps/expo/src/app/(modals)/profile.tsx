@@ -78,6 +78,11 @@ export default function ProfileScreen() {
       onPress: () => router.push("/(modals)/subscription"),
     },
     {
+      icon: <Ionicons name="notifications-outline" size={18} color="#1F2937" />,
+      label: "Notifications",
+      onPress: () => router.push("/(onboarding)/notification-time"),
+    },
+    {
       icon: <Ionicons name="help-circle-outline" size={18} color="#1F2937" />,
       label: "Help & Support",
       onPress: () => toggleWidget(true),

@@ -74,7 +74,8 @@
     "APPLE_AUTH_PRIVATE_KEY",
     "APPLE_AUTH_TEAM_ID",
     "APPLE_AUTH_KEY_ID",
-    "SENTRY_AUTH_TOKEN"
+    "SENTRY_AUTH_TOKEN",
+    "DOPPLER_ENVIRONMENT"
   ],
   "globalPassThroughEnv": [
     "NODE_ENV",
