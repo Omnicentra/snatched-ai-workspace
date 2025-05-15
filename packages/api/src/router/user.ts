@@ -7,7 +7,8 @@ import sharp from "sharp";
 import { Readable } from "stream";
 
 import { prettyPrint } from "@omc/validators";
-import { userBodyRatings } from "@omc/db/schema";
+import { userBodyRatings, userImageTransformations } from "@omc/db/schema";
+import { eq } from "drizzle-orm";
 
 import type { ImageScansKey } from "../utils/types";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "../trpc";
@@ -155,6 +156,23 @@ export const userRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       const { imageKeys } = input;
+
+      // Insert initial record with 'pending' status
+      const [newTransformation] = await ctx.db.insert(userImageTransformations).values({
+        userId: Number(ctx.session.user.id),
+        inputImageKey: imageKeys.front,
+        status: 'pending',
+      }).returning({ id: userImageTransformations.id });
+
+      if (!newTransformation) {
+         throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to create initial transformation record",
+        });
+      }
+
+      const transformationId = newTransformation.id;
+
       try {
         // Get face coordinates and image buffer from Gemini
         const { coordinates, imageBuffer } = await detectFace(imageKeys.front);
@@ -170,6 +188,17 @@ export const userRouter = createTRPCRouter({
         const { transformedImageKey, transformedImageUri } =
           await transformImage(imageBuffer, coordinates);
 
+        // Update record with 'success' status and transformed image key
+        await ctx.db.update(userImageTransformations)
+          .set({
+            transformedImageKey: transformedImageKey,
+            faceCoordinates: coordinates, // Store coordinates for debugging if needed
+            status: 'success',
+            updatedAt: new Date().toISOString(),
+          })
+          .where(eq(userImageTransformations.id, transformationId));
+
+
         return {
           currentImageUri,
           transformedImageKey,
@@ -177,9 +206,29 @@ export const userRouter = createTRPCRouter({
         };
       } catch (error) {
         console.error(error);
+
+        let status = 'failed';
+        let errorMessage = 'Unknown error';
+
+        if (error instanceof Error) {
+          errorMessage = error.message;
+          // Check for moderation error structure if available
+          if ('error' in error && typeof error.error === 'object' && error.error !== null && 'code' in error.error && error.error.code === 'moderation_blocked') {
+             status = 'moderated';
+          }
+        }
+
+        // Update record with error status
+        await ctx.db.update(userImageTransformations)
+          .set({
+            status: status,
+            updatedAt: new Date().toISOString(),
+          })
+          .where(eq(userImageTransformations.id, transformationId));
+
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to transform image",
+          message: `Failed to transform image: ${errorMessage}`,
         });
       }
     }),
