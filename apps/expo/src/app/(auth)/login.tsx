@@ -1,26 +1,24 @@
-import { StyledButton } from "@/components/core";
-import { BubbleLetter } from "@/components/core/BubbleLetter";
-import { appVariant, mixpanel, scheme } from "@/lib/utils";
-import { api } from "@/utils/api";
-import { authClient } from "@/utils/auth";
-import { getOrCreateDeviceId } from "@/utils/device-id";
-import { Ionicons } from "@expo/vector-icons";
-import * as Sentry from "@sentry/react-native";
-import * as Device from "expo-device";
-import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   Linking,
   Platform,
-  Pressable,
-  ScrollView,
   Text,
   View,
 } from "react-native";
 import Purchases from "react-native-purchases";
+import * as Device from "expo-device";
+import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
+import { StyledButton } from "@/components/core";
+import { Wreath } from "@/components/core/Wreath";
+import { appVariant, mixpanel, scheme } from "@/lib/utils";
+import { api } from "@/utils/api";
+import { authClient } from "@/utils/auth";
+import { getOrCreateDeviceId } from "@/utils/device-id";
+import { Ionicons } from "@expo/vector-icons";
+import * as Sentry from "@sentry/react-native";
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -69,9 +67,9 @@ export default function LoginScreen() {
     setIsLoading(true);
     try {
       await authClient.signIn.social(
-        { 
+        {
           provider: "apple",
-          callbackURL: `${scheme}://`
+          callbackURL: `${scheme}://`,
         },
         {
           onError: (ctx) => {
@@ -97,9 +95,9 @@ export default function LoginScreen() {
     setIsLoading(true);
     try {
       await authClient.signIn.social(
-        { 
+        {
           provider: "google",
-          callbackURL: `${scheme}://`
+          callbackURL: `${scheme}://`,
         },
         {
           onError: (ctx) => {
@@ -122,102 +120,78 @@ export default function LoginScreen() {
   };
 
   return (
-    <>
-      <LinearGradient
-        colors={["#fdf2f8", "#fce7f3", "#fbcfe8"]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{ flex: 1, width: "100%", height: "100%" }}
-      >
-        <ScrollView contentContainerStyle={{ flexGrow: 1 }} className="p-8">
-          <View className="flex-1 justify-center">
-            {/* Logo or App Name */}
-            <View className="mb-12 items-center">
-              <View className="mb-2 flex-row">
-                <BubbleLetter _delay={1}>S</BubbleLetter>
-                <BubbleLetter _delay={2}>n</BubbleLetter>
-                <BubbleLetter _delay={3}>a</BubbleLetter>
-                <BubbleLetter _delay={4}>t</BubbleLetter>
-                <BubbleLetter _delay={5}>c</BubbleLetter>
-                <BubbleLetter _delay={6}>h</BubbleLetter>
-                <BubbleLetter _delay={7}>e</BubbleLetter>
-                <BubbleLetter _delay={8}>d</BubbleLetter>
-                <BubbleLetter _delay={9}> </BubbleLetter>
-                <BubbleLetter _delay={10}>A</BubbleLetter>
-                <BubbleLetter _delay={11}>I</BubbleLetter>
-              </View>
-              <Text className="font-inter mt-2 text-base text-gray-600">
-                Welcome back! Sign in to continue
-              </Text>
-            </View>
+    <LinearGradient
+      colors={["#f472b6", "#ec4899"]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={{ flex: 1, width: "100%", height: "100%" }}
+    >
+      <View className="flex-1 px-8 pt-12">
+        <View className="flex-1 items-center justify-center">
+          {/* Wreath and Title */}
+          <View className="mb-12 items-center w-full">
+            <Wreath />
+            <Text className="font-inter-bold uppercase text-white">
+              #1 Women's Snatched Body App
+            </Text>
+          </View>
 
-            {/* Social Login Buttons */}
-            {isLoading ? (
-              <ActivityIndicator size="large" color="#EC4899" />
-            ) : (
-              <View className="gap-y-4">
+          {/* Main Copy */}
+          <View className="mb-12 items-center">
+            <Text className="font-inter-bold mb-6 text-center text-3xl text-white">
+              Slay your dream body girl
+            </Text>
+            <Text className="font-inter text-center text-base text-white">
+              90% of users lose an average 5lbs and reach their goals within 3
+              months of using Snatched AI
+            </Text>
+          </View>
+
+          {/* Login Buttons */}
+          {isLoading ? (
+            <ActivityIndicator size="large" color="#FFFFFF" />
+          ) : (
+            <View className="w-full gap-y-4">
+              <StyledButton
+                title="Login with Apple"
+                onPress={handleAppleSignIn}
+                variant="secondary"
+                icon={<Ionicons name="logo-apple" size={20} color="black" />}
+                className="bg-white"
+              />
+              {appVariant !== "production" && (
                 <StyledButton
-                  title="Continue with Apple"
-                  onPress={handleAppleSignIn}
+                  title="Login with Google"
+                  onPress={handleGoogleSignIn}
                   variant="secondary"
-                  icon={<Ionicons name="logo-apple" size={20} color="black" />}
-                  className="bg-white"
-                />
-                {appVariant !== 'production' && (
-                  <StyledButton
-                    title="Continue with Google"
-                    onPress={handleGoogleSignIn}
-                    variant="secondary"
-                    icon={
+                  icon={
                     <Ionicons name="logo-google" size={20} color="#DB4437" />
                   }
-                    className="bg-white"
-                  />
-                )}
-              </View>
-            )}
-
-            {/* Sign Up Link */}
-            <View className="mt-8">
-              <Pressable
-                onPress={() => router.push("/(auth)/signup")}
-                className="flex-row items-center justify-center"
-              >
-                <Text className="font-inter text-sm text-gray-600">
-                  Don't have an account?{" "}
-                  <Text className="font-inter-medium text-pink-500">
-                    Sign up
-                  </Text>
-                </Text>
-              </Pressable>
+                  className="bg-white"
+                />
+              )}
             </View>
+          )}
 
-            {/* Privacy Notice */}
-            <View className="mt-8">
-              <Text className="text-center text-xs text-gray-600">
-                By continuing, you agree to our{" "}
-                <Text
-                  className="font-inter-medium text-gray-900 underline"
-                  onPress={() =>
-                    Linking.openURL("https://snatchedai.com/terms")
-                  }
-                >
-                  Terms
-                </Text>
-                {" & "}
-                <Text
-                  className="font-inter-medium text-gray-900 underline"
-                  onPress={() =>
-                    Linking.openURL("https://snatchedai.com/privacy")
-                  }
-                >
-                  Privacy Policy
-                </Text>
-              </Text>
-            </View>
-          </View>
-        </ScrollView>
-      </LinearGradient>
-    </>
+          {/* Terms and Privacy */}
+          <Text className="font-inter mt-8 text-center text-xs text-white">
+            By continuing, you agree to our{" "}
+            <Text
+              className="font-inter-medium underline"
+              onPress={() => Linking.openURL("https://snatchedai.com/terms")}
+            >
+              Terms of Service
+            </Text>
+            {" and "}
+            <Text
+              className="font-inter-medium underline"
+              onPress={() => Linking.openURL("https://snatchedai.com/privacy")}
+            >
+              Privacy Policy
+            </Text>
+          </Text>
+        </View>
+      </View>
+    </LinearGradient>
   );
 }

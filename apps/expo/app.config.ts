@@ -62,7 +62,7 @@ const createConfig = ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name,
   slug: "snatched-ai",
-  version: "1.1.2",
+  version: "1.1.3",
   orientation: "portrait",
   icon,
   scheme,
@@ -81,6 +81,7 @@ const createConfig = ({ config }: ConfigContext): ExpoConfig => ({
     config: {
       usesNonExemptEncryption: false,
     },
+    appStoreUrl: "https://apps.apple.com/app/snatched-ai-slay-your-shape/id6744844397",
     associatedDomains: associatedDomains,
     entitlements: {
       "com.apple.developer.applesignin": ["Default"],
@@ -105,6 +106,7 @@ const createConfig = ({ config }: ConfigContext): ExpoConfig => ({
       "android.permission.RECORD_AUDIO",
       "android.permission.BODY_SENSORS",
       "android.permission.BODY_SENSORS_BACKGROUND",
+      "android.permission.POST_NOTIFICATIONS",
     ],
     intentFilters: [
       {

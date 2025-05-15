@@ -20,6 +20,7 @@ export default function OnboardingLayout() {
       <Stack.Screen name="cycle" />
       <Stack.Screen name="period-date" />
       <Stack.Screen name="cravings" />
+      <Stack.Screen name="community" />
       <Stack.Screen name="name-age" />
       <Stack.Screen name="prepare-scan" />
       <Stack.Screen name="scan-front" />
@@ -30,6 +31,7 @@ export default function OnboardingLayout() {
       <Stack.Screen name="timeline-goal" />
       <Stack.Screen name="analyzing" />
       <Stack.Screen name="results" />
+      <Stack.Screen name="review" />
       <Stack.Screen name="signup" />
       <Stack.Screen name="paywall" />
       <Stack.Screen name="notifications" />
