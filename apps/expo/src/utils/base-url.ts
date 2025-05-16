@@ -1,6 +1,6 @@
 import { appVariant, ngrokUrl } from "@/lib/utils";
 import Constants from "expo-constants";
-
+import { logger } from "@/lib/logger";
 /**
  * Extend this function when going to production by
  * setting the baseUrl to your production API URL.
@@ -16,8 +16,8 @@ export const getBaseUrl = (isNgrok = false) => {
    */
   const debuggerHost = Constants.expoConfig?.hostUri;
   const localhost = debuggerHost?.split(":")[0];
-  console.log("localhost", localhost);
-  console.log("ngrokUrl", ngrokUrl);
+  logger.info("localhost", localhost);
+  logger.info("ngrokUrl", ngrokUrl);
   if (localhost) {
     if (localhost.includes("ngrok") || isNgrok) {
       return ngrokUrl;

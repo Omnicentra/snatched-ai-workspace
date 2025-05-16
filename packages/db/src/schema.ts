@@ -6,19 +6,19 @@ import {
   foreignKey,
   index,
   integer,
+  jsonb,
   numeric,
   pgTable,
+  primaryKey,
   serial,
   text,
   time,
   timestamp,
   unique,
   varchar,
-  primaryKey,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
-
 
 export const bodyMeasurements = pgTable(
   "body_measurements",
@@ -784,7 +784,7 @@ export const recipeCategories = pgTable(
   {
     id: serial().primaryKey().notNull(),
     name: varchar({ length: 50 }).notNull(),
-    slug: varchar({ length: 50 }).notNull().default('breakfast'),
+    slug: varchar({ length: 50 }).notNull().default("breakfast"),
     description: text(),
     createdAt: timestamp("created_at", {
       withTimezone: true,
@@ -951,7 +951,9 @@ export const workoutPlans = pgTable(
     startDate: date("start_date").notNull(),
     endDate: date("end_date").notNull(),
     targetCaloriesBurn: integer("target_calories_burn"),
-    status: varchar("status", { enum: ["active", "completed", "cancelled"] }).default("active").notNull(),
+    status: varchar("status", { enum: ["active", "completed", "cancelled"] })
+      .default("active")
+      .notNull(),
     createdAt: timestamp("created_at", {
       withTimezone: true,
       mode: "string",
@@ -972,10 +974,7 @@ export const workoutPlans = pgTable(
       foreignColumns: [user.id],
       name: "workout_plans_user_id_fkey",
     }),
-    check(
-      "workout_plans_date_check",
-      sql`end_date >= start_date`,
-    ),
+    check("workout_plans_date_check", sql`end_date >= start_date`),
   ],
 );
 
@@ -1022,6 +1021,114 @@ export const workoutPlanDays = pgTable(
     check(
       "workout_plan_days_day_number_check",
       sql`day_number > 0 AND day_number <= 7`,
+    ),
+  ],
+);
+
+export const userBodyRatings = pgTable(
+  "user_body_ratings",
+  {
+    id: serial().primaryKey().notNull(),
+    userId: integer("user_id").notNull(),
+    frontImageKey: text("front_image_key").notNull(),
+    sideImageKey: text("side_image_key").notNull(),
+    backImageKey: text("back_image_key").notNull(),
+    bodyRating: jsonb("body_rating"),
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+      mode: "string",
+    }).default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    index("idx_user_body_ratings_user").using("btree", table.userId),
+    foreignKey({
+      columns: [table.userId],
+      foreignColumns: [user.id],
+      name: "user_body_ratings_user_id_fkey",
+    }),
+  ],
+);
+
+export const userImageTransformations = pgTable(
+  "user_image_transformations",
+  {
+    id: serial().primaryKey().notNull(),
+    userId: integer("user_id").notNull(),
+    inputImageKey: text("input_image_key").notNull(),
+    transformedImageKey: text("transformed_image_key"), // This can be null if transformation fails
+    faceCoordinates: jsonb("face_coordinates"), // Store coordinates for debugging
+    status: varchar("status", { length: 50 }).default("pending").notNull(), // e.g., 'pending', 'success', 'failed', 'moderated'
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+      mode: "string",
+    }).default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: timestamp("updated_at", {
+      withTimezone: true,
+      mode: "string",
+    }),
+  },
+  (table) => [
+    index("idx_user_image_transformations_user").using("btree", table.userId),
+    foreignKey({
+      columns: [table.userId],
+      foreignColumns: [user.id],
+      name: "user_image_transformations_user_id_fkey",
+    }),
+  ],
+);
+
+export const snatchHacks = pgTable("snatch_hacks", {
+  id: serial().primaryKey().notNull(),
+  title: varchar({ length: 100 }).notNull(),
+  description: text().notNull(),
+  icon: varchar({ length: 50 }),
+  color: varchar({ length: 20 }),
+  bgColor: varchar({ length: 20 }),
+  benefits: jsonb("benefits"),
+  instructions: jsonb("instructions"),
+  createdAt: timestamp("created_at", {
+    withTimezone: true,
+    mode: "string",
+  }).default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const userSnatchHacks = pgTable(
+  "user_snatch_hacks",
+  {
+    id: serial().primaryKey().notNull(),
+    userId: integer("user_id").notNull(),
+    snatchHackId: integer("snatch_hack_id").notNull(),
+    completedAt: timestamp("completed_at", {
+      withTimezone: true,
+      mode: "string",
+    })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+    completedDate: date("completed_date").notNull(),
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+      mode: "string",
+    }).default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    index("idx_user_snatch_hacks_user_day").using(
+      "btree",
+      table.userId.asc().nullsLast().op("int4_ops"),
+      table.completedDate.asc().nullsLast().op("date_ops"),
+    ),
+    foreignKey({
+      columns: [table.userId],
+      foreignColumns: [user.id],
+      name: "user_snatch_hacks_user_id_fkey",
+    }),
+    foreignKey({
+      columns: [table.snatchHackId],
+      foreignColumns: [snatchHacks.id],
+      name: "user_snatch_hacks_snatch_hack_id_fkey",
+    }),
+    unique("user_snatch_hacks_user_id_date_key").on(
+      table.userId,
+      table.completedDate,
     ),
   ],
 );

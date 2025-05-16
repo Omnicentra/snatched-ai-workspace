@@ -193,7 +193,6 @@ const MealCard = ({
         <View className="h-36 w-36">
           <Image
             source={{ uri: imageUrl ?? defaultImage }}
-            allowDownscaling={false}
             style={{
               position: "absolute",
               top: 0,
@@ -204,6 +203,9 @@ const MealCard = ({
               borderBottomRightRadius: 16,
             }}
             contentFit="cover"
+            cachePolicy="memory-disk"
+            transition={200}
+            placeholder={defaultImage}
           />
         </View>
       </View>

@@ -15,6 +15,7 @@ import { snatchHackStore$ } from '@/stores/snatch-hack.store'
 import { use$ } from '@legendapp/state/react'
 import { SNATCH_HACKS } from '@/constants/snatch-hacks'
 import type { SnatchHackBenefit } from '@/types'
+import { api } from '@/utils/api'
 
 // Reusable Component for Instructions/Benefits
 const ListItem = ({
@@ -66,10 +67,20 @@ export default function SnatchHackDetailScreen() {
   const completedHacks = snatchHackStore.completedHacks;
   const todaysHack = completedHacks[today]
   const isCompleted = todaysHack?.hackId === hackId
+  
+  // Mutations
+  const utils = api.useUtils();
+  const { mutate: completeHack, isLoading } = api.snatchHack.completeSnatchHack.useMutation({
+    onSuccess: () => {
+      // Invalidate the query to get fresh data
+      void utils.snatchHack.getUserCompletedHackForToday.invalidate();
+    }
+  });
 
   const handleMarkComplete = () => {
     if (!hack) return;
 
+    // Update local store
     if (isCompleted) {
       // Remove completion status
       const updatedHacks = { ...completedHacks }
@@ -88,6 +99,13 @@ export default function SnatchHackDetailScreen() {
         }
       })
     }
+    
+    // Update in database - only if user is authenticated
+    completeHack({
+      hackId: hack.id,
+      completed: !isCompleted
+    });
+    
     router.back()
   }
 
@@ -191,6 +209,7 @@ export default function SnatchHackDetailScreen() {
           title={isCompleted ? "Mark as Incomplete" : "Mark as Completed"}
           onPress={handleMarkComplete}
           variant={isCompleted ? "secondary" : "primary"}
+          loading={isLoading}
         />
       </View>
     </SafeAreaView>

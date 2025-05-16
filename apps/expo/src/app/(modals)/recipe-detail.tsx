@@ -1,6 +1,5 @@
 import React, { useRef } from "react";
 import {
-  ActivityIndicator,
   Animated,
   Image,
   Pressable,
@@ -12,6 +11,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { api } from "@/utils/api";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { LoadingScreen } from "@/components/core/LoadingScreen";
 
 import { formatPostgresTimestamp } from "@omc/validators";
 
@@ -95,12 +95,7 @@ const RecipeDetailScreen = () => {
 
   if (isLoading || isLoadingStatus) {
     return (
-      <View className="flex-1 items-center justify-center bg-background">
-        <ActivityIndicator size="large" color="#EC4899" />
-        <Text className="font-inter-medium mt-4 text-gray-500">
-          Loading recipe...
-        </Text>
-      </View>
+      <LoadingScreen message="Loading recipe..." />
     );
   }
 

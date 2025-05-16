@@ -36,7 +36,8 @@ function ResultsScreen() {
       // When unlocked, navigate to notifications screen first
       void router.push("/(onboarding)/notifications");
     } else {
-      void router.push("/(onboarding)/paywall");
+      // Navigate to review screen first, then paywall
+      void router.push("/(onboarding)/review");
     }
   };
 
@@ -53,11 +54,8 @@ function ResultsScreen() {
         }
       })();
     } else {
-      void Purchases.getOfferings().then((offerings) => {
-        const availablePackages = offerings.all.default?.availablePackages;
-        // TODO: Cache the packages in the store
-        // paywallStore$.packages.set(availablePackages);
-      });
+      // Pre-fetch packages for paywall
+      void Purchases.getOfferings();
     }
   }, [isUnlocked, session]);
 
@@ -272,7 +270,7 @@ function ResultsScreen() {
         <View className="bg-transparent px-5 pb-4 pt-4">
           {/* Adjusted Button Styling - Assuming StyledButton handles variants */}
           <StyledButton
-            title="Continue"
+            title={isUnlocked ? "Continue" : "Unlock your results"}
             onPress={handleViewDetails}
             variant="primary" // Assuming a primary variant exists with appropriate styling
             style={{

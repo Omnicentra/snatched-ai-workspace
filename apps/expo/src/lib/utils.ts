@@ -4,7 +4,9 @@ import Constants from "expo-constants";
 import { twMerge } from "tailwind-merge";
 import type { WorkoutWithExercises } from "../types";
 import { Mixpanel } from "mixpanel-react-native";
-
+import { Asset } from "expo-asset";
+import { Image } from "expo-image";
+// EXPO CONFIG
 export const appVariant = String(Constants.expoConfig?.extra?.eas?.appVariant) || 'development'
 
 export const ngrokUrl = String(Constants.expoConfig?.extra?.eas?.ngrokUrl)
@@ -20,6 +22,10 @@ const mixpanelToken = String(Constants.expoConfig?.extra?.eas?.mixpanelToken)
 const trackAutomaticEvents = false;
 export const mixpanel = new Mixpanel(mixpanelToken, trackAutomaticEvents);
 
+
+
+
+// UTIL FUNCTIONS
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
@@ -30,6 +36,16 @@ export const formatDate = (date: Date): string => {
     month: 'long', 
     day: 'numeric' 
   });
+}
+
+export function cacheImages(images: (string | number)[]) {
+  return Promise.all(images.map(async (image) => {
+    if (typeof image === 'string') {
+      return await Image.prefetch(image);
+    } else {
+      return await Asset.fromModule(image).downloadAsync();
+    }
+  }));
 }
 
 export const estimateDuration = (workoutData: WorkoutWithExercises) => {

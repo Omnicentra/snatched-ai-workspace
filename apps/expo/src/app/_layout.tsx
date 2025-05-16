@@ -13,6 +13,7 @@ import {
   Inter_700Bold,
   useFonts,
 } from "@expo-google-fonts/inter";
+import { useAssets } from 'expo-asset';
 
 import "react-native-reanimated";
 
@@ -94,6 +95,28 @@ function RootLayout() {
     "Fredoka-SemiBold": require("../assets/fonts/Fredoka/Fredoka-SemiBold.ttf"),
     "Fredoka-Bold": require("../assets/fonts/Fredoka/Fredoka-Bold.ttf"), // Load custom font
   });
+
+  const [assetsLoaded, assetsError] = useAssets([
+    require('@/assets/images/yoga-pose.png'),
+    require('@/assets/images/wreath.png'),
+    require('@/assets/images/logo-dark.png'),
+    require('@/assets/images/body-silhouette.png'),
+    require('@/assets/images/logo2.png'),
+    require('@/assets/images/silhouette-back.png'),
+    require('@/assets/images/body-positivity.png'),
+    require('@/assets/images/silhouette-front.png'),
+    require('@/assets/images/before-after.jpeg'),
+    require('@/assets/images/silhouette-side.png'),
+    require('@/assets/images/testimonials/image1.jpeg'),
+    require('@/assets/images/testimonials/image2.jpeg'),
+    require('@/assets/images/testimonials/image3.jpeg'),
+    require('@/assets/icons/body-parts/Waist Definition.png'),
+    require('@/assets/icons/body-parts/Arm Shape.png'),
+    require('@/assets/icons/body-parts/Glute Shape.png'),
+    require('@/assets/icons/body-parts/Hip Curve.png'),
+    require('@/assets/icons/body-parts/Back Definition.png'),
+    require('@/assets/icons/body-parts/Posture.png'),
+  ]);
 
   const initRevenueCat = useCallback(async () => {
     if (appVariant !== "production") {
@@ -183,14 +206,13 @@ function RootLayout() {
   }, [ref]);
 
   useEffect(() => {
-    if (fontsLoaded || fontError) {
-      // Hide the splash screen after the fonts have loaded or an error occurred
+    if ((fontsLoaded || fontError) && assetsLoaded) {
       void SplashScreen.hideAsync();
     }
-  }, [fontsLoaded, fontError]);
+  }, [fontsLoaded, fontError, assetsLoaded]);
 
-  // Prevent rendering until the fonts have loaded or an error occurred
-  if (!fontsLoaded && !fontError) {
+  // Prevent rendering until the fonts and assets have loaded or an error occurred
+  if ((!fontsLoaded && !fontError) || !assetsLoaded) {
     return null;
   }
 

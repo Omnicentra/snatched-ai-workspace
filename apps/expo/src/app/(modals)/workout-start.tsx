@@ -4,15 +4,18 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Dimensions, Pressable, Text, View, Image } from 'react-native';
+import { Dimensions, Pressable, Text, View } from 'react-native';
+import { Image } from 'expo-image';
 import Animated, {
   Easing,
   useAnimatedProps,
   useSharedValue,
   withTiming,
+  useAnimatedStyle,
 } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Circle, Svg } from 'react-native-svg';
+import { LoadingScreen } from "@/components/core/LoadingScreen";
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const PADDING = 34; // Total horizontal padding
@@ -21,13 +24,17 @@ const CIRCLE_X = CIRCLE_SIZE / 2;
 const CIRCLE_Y = CIRCLE_SIZE / 2;
 const CIRCLE_RADIUS = (CIRCLE_SIZE / 2) - 70; // Radius
 const CIRCLE_LENGTH = 2 * Math.PI * CIRCLE_RADIUS; // Circumference of the actual progress ring
+const PRE_WORKOUT_COUNTDOWN = 5; // 5 seconds countdown
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+const AnimatedText = Animated.createAnimatedComponent(Text);
 
 export default function WorkoutStartScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const [isPaused, setIsPaused] = useState(false);
+  const [isPreWorkout, setIsPreWorkout] = useState(true);
+  const [preWorkoutTimeLeft, setPreWorkoutTimeLeft] = useState(PRE_WORKOUT_COUNTDOWN);
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(
     typeof params.exerciseIndex === 'string' ? parseInt(params.exerciseIndex, 10) : 0
   );
@@ -35,11 +42,13 @@ export default function WorkoutStartScreen() {
   const [totalTimeElapsed, setTotalTimeElapsed] = useState(0);
   const [caloriesBurned, setCaloriesBurned] = useState(0);
   const progress = useSharedValue(1);
+  const scaleAnim = useSharedValue(1);
 
   const interval = useRef<NodeJS.Timeout>();
   
   // Get workout ID from params
   const workoutId = typeof params.workoutId === 'string' ? parseInt(params.workoutId, 10) : undefined;
+  const isCooldown = workoutId === Number(cooldownWorkoutId);
 
   const { mutateAsync: completeWorkoutPlan } = api.workout.completeWorkoutPlan.useMutation()
   // Fetch workout details with exercises
@@ -58,22 +67,22 @@ export default function WorkoutStartScreen() {
   
   // Calculate exercise duration (work time + rest time)
   const calculateExerciseDuration = useCallback((exercise: NonNullable<typeof currentExercise>) => {
-    if (workoutId === Number(cooldownWorkoutId)) {
+    if (isCooldown) {
       return 120; // 2 minutes for cooldown workout
     }
     // Each set takes: (time for reps) + rest time
     const timePerRep = 3; // Assume 3 seconds per rep
     return exercise.sets * ((exercise.reps * timePerRep) + exercise.restSeconds);
-  }, [workoutId]);
+  }, [isCooldown]);
 
   // Initialize timer when exercise changes
   useEffect(() => {
-    if (currentExercise) {
+    if (!isPreWorkout && currentExercise) {
       const duration = calculateExerciseDuration(currentExercise);
       setTimeLeft(duration);
       progress.value = withTiming(1, { duration: 300 });
     }
-  }, [currentExercise, calculateExerciseDuration, progress]);
+  }, [currentExercise, calculateExerciseDuration, progress, isPreWorkout]);
 
   // Timer effect
   useEffect(() => {
@@ -152,6 +161,47 @@ export default function WorkoutStartScreen() {
     }
   };
 
+  // Get the appropriate color based on workout type and state
+  const getProgressColor = () => {
+    if (isPreWorkout) return '#FF7F50'; // Blue for pre-workout
+    if (isCooldown) return '#3B82F6'; // Different blue for cooldown
+    return '#f472b6'; // Pink for regular workout
+  };
+
+  // Pre-workout countdown effect
+  useEffect(() => {
+    if (isPreWorkout) {
+      // Trigger initial animation immediately
+      scaleAnim.value = 1.6;
+      scaleAnim.value = withTiming(0.7, {
+        duration: 1000,
+        easing: Easing.out(Easing.ease),
+      });
+
+      if (preWorkoutTimeLeft > 0) {
+        const preWorkoutInterval = setInterval(() => {
+          // Update counter and animation simultaneously
+          setPreWorkoutTimeLeft(prev => prev - 1);
+          scaleAnim.value = 1.6;
+          scaleAnim.value = withTiming(0.8, {
+            duration: 1000,
+            easing: Easing.out(Easing.ease),
+          });
+        }, 1000);
+
+        return () => clearInterval(preWorkoutInterval);
+      } else {
+        setIsPreWorkout(false);
+        progress.value = 1;
+      }
+    }
+  }, [isPreWorkout, preWorkoutTimeLeft, progress, scaleAnim]);
+
+  const countdownStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scaleAnim.value }],
+    opacity: scaleAnim.value, // Fade in/out with the scale
+  }));
+
   const animatedProps = useAnimatedProps(() => ({
     strokeDashoffset: CIRCLE_LENGTH * (1 - progress.value),
   }));
@@ -187,11 +237,7 @@ export default function WorkoutStartScreen() {
   };
 
   if (!workoutData || !currentExercise) {
-    return (
-      <SafeAreaView className="flex-1 bg-white items-center justify-center">
-        <Text className="font-inter text-gray-500">Loading workout...</Text>
-      </SafeAreaView>
-    );
+    return <LoadingScreen message="Loading workout..." />;
   }
 
   return (
@@ -203,9 +249,11 @@ export default function WorkoutStartScreen() {
         <Pressable onPress={handleBack} className="p-2">
           <Ionicons name="arrow-back" size={24} color="black" />
         </Pressable>
-        <Text className="text-base font-inter-medium">
-          Exercise {currentExerciseIndex + 1} of {totalExercises}
-        </Text>
+        {!isPreWorkout && (
+          <Text className="text-base font-inter-medium">
+            Exercise {currentExerciseIndex + 1} of {totalExercises}
+          </Text>
+        )}
         <View className="bg-pink-100 px-3 py-1 rounded-full">
           <Text className="text-pink-600 font-inter-medium">
             {workoutData.title.toUpperCase()}
@@ -232,7 +280,7 @@ export default function WorkoutStartScreen() {
               cx={CIRCLE_X}
               cy={CIRCLE_Y}
               r={CIRCLE_RADIUS}
-              stroke="#f472b6"
+              stroke={getProgressColor()}
               strokeWidth={12}
               strokeDasharray={CIRCLE_LENGTH}
               animatedProps={animatedProps}
@@ -242,95 +290,120 @@ export default function WorkoutStartScreen() {
               fill="transparent"
             />
           </Svg>
-          {/* Exercise Image Centered in Circle */}
-          {currentExercise.imageUrl && (
-            <Image
-              source={{ uri: currentExercise.imageUrl }}
-              style={{
-                width: CIRCLE_SIZE * 0.6,
-                height: CIRCLE_SIZE * 0.6,
-                resizeMode: 'cover',
-                borderRadius: (CIRCLE_SIZE * 0.6) / 2,
-                backgroundColor: '#FDF6E3', // Optional: soft background
-              }}
-            />
+          {/* Exercise Image or Get Ready Text */}
+          {isPreWorkout ? (
+            <View className="items-center">
+              <Text className="text-4xl font-inter-bold mb-4">Get Ready!</Text>
+              <View className="items-center justify-center">
+                <AnimatedText 
+                  style={[countdownStyle]} 
+                  className="text-8xl font-inter-bold text-orange-500"
+                >
+                  {preWorkoutTimeLeft}
+                </AnimatedText>
+              </View>
+            </View>
+          ) : (
+            currentExercise.imageUrl && (
+              <Image
+                source={{ uri: currentExercise.imageUrl }}
+                style={{
+                  width: CIRCLE_SIZE * 0.6,
+                  height: CIRCLE_SIZE * 0.6,
+                  resizeMode: 'cover',
+                  borderRadius: (CIRCLE_SIZE * 0.6) / 2,
+                  backgroundColor: '#FDF6E3',
+                }}
+                cachePolicy="memory-disk"
+              />
+            )
           )}
         </View>
         {/* Exercise Details and Timer BELOW the circle */}
-        <View className="w-full items-center px-8">
-          <Text className="text-xl font-inter-bold mb-2 text-center">
-            {currentExercise.name}
-          </Text>
-          {workoutId !== Number(cooldownWorkoutId) && (
-            <>
-              <Text className="text-gray-600 text-center text-sm mb-4">
-                {currentExercise.sets} sets × {currentExercise.reps} reps
-              </Text>
-              <Text className="text-gray-600 text-center text-sm mb-8">
-                {currentExercise.restSeconds}s rest between sets
-              </Text>
-            </>
-          )}
-          {/* Timer */}
-          <Text className="text-7xl font-inter-bold mb-8">
-            {formatTime(timeLeft)}
-          </Text>
-          {nextExercise && (
-            <Text className="text-gray-500 text-sm">
-              Up Next: {nextExercise.name}
+        {!isPreWorkout && (
+          <View className="w-full items-center px-8">
+            <Text className="text-xl font-inter-bold mb-2 text-center">
+              {currentExercise.name}
             </Text>
-          )}
-        </View>
+            {!isCooldown && (
+              <>
+                <Text className="text-gray-600 text-center text-sm mb-4">
+                  {currentExercise.sets} sets × {currentExercise.reps} reps
+                </Text>
+                <Text className="text-gray-600 text-center text-sm mb-8">
+                  {currentExercise.restSeconds}s rest between sets
+                </Text>
+              </>
+            )}
+            {/* Timer */}
+            <Text 
+              className={`text-7xl font-inter-bold mb-8 ${
+                isCooldown ? 'text-blue-500' : 'text-black'
+              }`}
+            >
+              {formatTime(timeLeft)}
+            </Text>
+            {nextExercise && (
+              <Text className="text-gray-500 text-sm">
+                Up Next: {nextExercise.name}
+              </Text>
+            )}
+          </View>
+        )}
       </View>
 
       {/* Stats */}
-      <View className="flex-row justify-around px-6 mb-8">
-        <View className="items-center">
-          <Text className="font-inter-bold text-2xl text-black">
-            {Math.round(caloriesBurned)}
-          </Text>
-          <Text className="font-inter text-sm text-gray-500">Cal Burned</Text>
+      {!isPreWorkout && (
+        <View className="flex-row justify-around px-6 mb-8">
+          <View className="items-center">
+            <Text className="font-inter-bold text-2xl text-black">
+              {Math.round(caloriesBurned)}
+            </Text>
+            <Text className="font-inter text-sm text-gray-500">Cal Burned</Text>
+          </View>
+          <View className="items-center">
+            <Text className="font-inter-bold text-2xl text-black">
+              {formatTime(totalTimeElapsed)}
+            </Text>
+            <Text className="font-inter text-sm text-gray-500">Duration</Text>
+          </View>
         </View>
-        <View className="items-center">
-          <Text className="font-inter-bold text-2xl text-black">
-            {formatTime(totalTimeElapsed)}
-          </Text>
-          <Text className="font-inter text-sm text-gray-500">Duration</Text>
-        </View>
-      </View>
+      )}
 
       {/* Control Buttons */}
-      <View className="flex-row items-center justify-center gap-x-8 pb-8">
-        <Pressable 
-          onPress={handlePrevious}
-          className="w-16 h-16 rounded-full bg-gray-100 items-center justify-center"
-          disabled={currentExerciseIndex === 0}
-        >
-          <Ionicons 
-            name="play-skip-back" 
-            size={24} 
-            color={currentExerciseIndex === 0 ? "#9CA3AF" : "black"} 
-          />
-        </Pressable>
-        
-        <Pressable 
-          onPress={togglePause}
-          className="w-20 h-20 rounded-full bg-black items-center justify-center"
-        >
-          <Ionicons 
-            name={isPaused ? "play" : "pause"} 
-            size={32} 
-            color="white" 
-          />
-        </Pressable>
-        
-        <Pressable 
-          onPress={handleNext}
-          className="w-16 h-16 rounded-full bg-gray-100 items-center justify-center"
-        >
-          <Ionicons name="play-skip-forward" size={24} color="black" />
-        </Pressable>
-      </View>
+      {!isPreWorkout && (
+        <View className="flex-row items-center justify-center gap-x-8 pb-8">
+          <Pressable 
+            onPress={handlePrevious}
+            className="w-16 h-16 rounded-full bg-gray-100 items-center justify-center"
+            disabled={currentExerciseIndex === 0}
+          >
+            <Ionicons 
+              name="play-skip-back" 
+              size={24} 
+              color={currentExerciseIndex === 0 ? "#9CA3AF" : "black"} 
+            />
+          </Pressable>
+          
+          <Pressable 
+            onPress={togglePause}
+            className="w-20 h-20 rounded-full bg-black items-center justify-center"
+          >
+            <Ionicons 
+              name={isPaused ? "play" : "pause"} 
+              size={32} 
+              color="white" 
+            />
+          </Pressable>
+          
+          <Pressable 
+            onPress={handleNext}
+            className="w-16 h-16 rounded-full bg-gray-100 items-center justify-center"
+          >
+            <Ionicons name="play-skip-forward" size={24} color="black" />
+          </Pressable>
+        </View>
+      )}
     </SafeAreaView>
   );
 } 

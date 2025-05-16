@@ -96,7 +96,7 @@ function GetSnatchedScreen() {
   const router = useRouter()
 
   const handleContinue = () => {
-    router.push('/(onboarding)/name-age')
+    router.push('/(onboarding)/community')
   }
 
   return (

@@ -2,14 +2,13 @@
 import type { RouterOutputs } from "@/utils/api";
 import React, { useState } from "react";
 import {
-  ActivityIndicator,
-  Image,
   Pressable,
   RefreshControl,
   ScrollView,
   Text,
   View,
 } from "react-native";
+import { Image } from "expo-image";
 import Constants from "expo-constants";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
@@ -18,6 +17,8 @@ import { StyledButton } from "@/components/core";
 import { TodaysPlanCard } from "@/components/home/TodaysPlanCard";
 import { api } from "@/utils/api";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { LoadingScreen } from "@/components/core/LoadingScreen";
+import defaultImage from "@/assets/images/placeholders/workout-placeholder.png";
 
 type UserWorkoutStats = RouterOutputs["workout"]["getUserWorkoutStats"];
 
@@ -117,8 +118,14 @@ const WorkoutCardLarge = ({
     <View className="h-48 w-full bg-gray-100">
       <Image
         source={{ uri: imageUrl }}
-        className="h-full w-full"
-        resizeMode="cover"
+        style={{
+          width: "100%",
+          height: "100%",
+        }}
+        contentFit="cover"
+        cachePolicy="memory-disk"
+        transition={200}
+        placeholder={defaultImage}
       />
       <LinearGradient
         colors={["rgba(0,0,0,0.5)", "transparent"]}
@@ -166,8 +173,14 @@ const WorkoutCardSmall = ({
     <View className="h-32 bg-gray-100">
       <Image
         source={{ uri: imageUrl }}
-        className="h-full w-full"
-        resizeMode="cover"
+        style={{
+          width: "100%",
+          height: "100%",
+        }}
+        contentFit="cover"
+        cachePolicy="memory-disk"
+        transition={200}
+        placeholder={defaultImage}
       />
       <LinearGradient
         colors={["rgba(0,0,0,0.4)", "transparent"]}
@@ -293,20 +306,6 @@ export default function WorkoutLibraryScreen() {
       >
         <TodaysPlanCard />
 
-        {/* Search and Filter */}
-        {/* <View className="relative mb-6">
-          <TextInput
-            placeholder="Search workouts..."
-            className="rounded-2xl bg-gray-100 px-5 py-4 pr-12 text-base text-black"
-            placeholderTextColor="#9CA3AF"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-          <View className="absolute right-4 top-4">
-            <Ionicons name="search-outline" size={24} color="#9CA3AF" />
-          </View>
-        </View> */}
-
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -328,12 +327,7 @@ export default function WorkoutLibraryScreen() {
         <StatsSummary stats={stats} />
 
         {isLoading ? (
-          <View className="items-center justify-center py-12">
-            <ActivityIndicator size="large" color="#f472b6" />
-            <Text className="font-inter mt-4 text-gray-500">
-              Loading workouts...
-            </Text>
-          </View>
+          <LoadingScreen message="Loading workouts..." />
         ) : (
           <>
             <Text className="font-inter-bold mb-4 text-lg text-black">
