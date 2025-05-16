@@ -262,7 +262,7 @@ function NotificationTimeScreen() {
       <View className="px-8 mb-8">
         <FadeInView delay={1500} duration={1000}>
           <StyledButton
-            title="Next"
+            title="Continue"
             onPress={handleSaveAndContinue}
             variant="primary"
           />

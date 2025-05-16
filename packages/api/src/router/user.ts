@@ -363,7 +363,7 @@ export const userRouter = createTRPCRouter({
         return null;
       }
 
-      prettyPrint(bodyRating.bodyRating);
+      console.log(bodyRating.bodyRating);
 
       return {
         ...bodyRating,
