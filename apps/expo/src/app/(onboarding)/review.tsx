@@ -11,6 +11,8 @@ import testimonial3 from "@/assets/images/testimonials/image3.jpeg";
 import { StyledButton } from "@/components/core";
 import { withOnboardingTracking } from "@/components/core/withOnboardingTracking";
 import { Feather } from "@expo/vector-icons";
+import * as Sentry from "@sentry/react-native";
+import { logger } from "@/lib/logger";
 
 function ReviewScreen() {
   const [isDisabled, setIsDisabled] = useState(true);
@@ -20,7 +22,18 @@ function ReviewScreen() {
     const checkReview = async () => {
       const isAvailable = await StoreReview.isAvailableAsync();
       if (isAvailable) {
+        Sentry.captureMessage("StoreReview is available", {
+          level: "info",
+        });
         await StoreReview.requestReview();
+      } else {
+        logger.error("StoreReview is not available");
+        const storeUrl = StoreReview.storeUrl();
+        if (storeUrl) {
+          Sentry.captureException(new Error("StoreReview is not available", {
+            cause: `Store URL: ${storeUrl}`,
+          }));
+        }
       }
     };
 
@@ -77,19 +90,14 @@ function ReviewScreen() {
           {/* Star Rating */}
           <View className="mb-8 flex-row justify-center space-x-2">
             {[1, 2, 3, 4, 5].map((rating) => (
-              <View
-                key={rating}
-                className="p-1"
-              >
-                <Text className="text-4xl">
-                  {rating <= 4 ? "⭐" : "⭐"}
-                </Text>
+              <View key={rating} className="p-1">
+                <Text className="text-4xl">{rating <= 4 ? "⭐" : "⭐"}</Text>
               </View>
             ))}
           </View>
 
           <Text className="font-inter-bold mb-8 px-8 text-center text-2xl text-white">
-            Snatched AI was made for people like you
+            Snatched AI was built for queens like you
           </Text>
 
           {/* Testimonials */}

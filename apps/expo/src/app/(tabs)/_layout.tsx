@@ -1,11 +1,10 @@
-import React, { useEffect } from "react";
-import { Platform } from "react-native";
-import { Image } from "expo-image";
-import { Tabs } from "expo-router";
+import { cacheImages } from "@/lib/utils";
 import { api } from "@/utils/api";
 import { authClient } from "@/utils/auth";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import * as Sentry from "@sentry/react-native";
+import { Tabs } from "expo-router";
+import React, { useEffect } from "react";
+import { Platform } from "react-native";
 
 export default function TabLayout() {
   const { data: session } = authClient.useSession();
@@ -47,11 +46,8 @@ export default function TabLayout() {
 
   useEffect(() => {
     if (workoutData) {
-      workoutData.forEach((workout) => {
-        if (workout.imageUrl) {
-          void Image.prefetch(workout.imageUrl);
-        }
-      });
+      const imageUrls = workoutData.map((workout) => workout.imageUrl).filter(Boolean) as string[];
+      void cacheImages(imageUrls);
     }
   }, [workoutData]);
 
@@ -64,13 +60,9 @@ export default function TabLayout() {
   useEffect(() => {
     if (mealPlanError) {
       generateMealPlan();
-      Sentry.captureException(mealPlanError);
     } else if (mealPlanData) {
-      mealPlanData.meals.forEach((meal) => {
-        if (meal.recipe.imageUrl) {
-          void Image.prefetch(meal.recipe.imageUrl);
-        }
-      });
+      const mealImageUrls = mealPlanData.meals.map((meal) => meal.recipe.imageUrl).filter(Boolean) as string[];
+      void cacheImages(mealImageUrls);
     }
   }, [mealPlanError, mealPlanData]);
 

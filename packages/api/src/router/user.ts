@@ -1,14 +1,15 @@
+import { Readable } from "stream";
 import { GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { TRPCError } from "@trpc/server";
+import { eq } from "drizzle-orm";
+import sharp from "sharp";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
-import sharp from "sharp";
-import { Readable } from "stream";
 
-import { prettyPrint } from "@omc/validators";
+import type { BodyRatingResponse } from "@omc/validators";
 import { userBodyRatings, userImageTransformations } from "@omc/db/schema";
-import { eq } from "drizzle-orm";
+import { prettyPrint } from "@omc/validators";
 
 import type { ImageScansKey } from "../utils/types";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "../trpc";
@@ -25,9 +26,9 @@ type BodyShapeEnum = keyof typeof images;
 async function streamToBuffer(stream: Readable): Promise<Buffer> {
   const chunks: Buffer[] = [];
   return new Promise((resolve, reject) => {
-    stream.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
-    stream.on('error', (err) => reject(err));
-    stream.on('end', () => resolve(Buffer.concat(chunks)));
+    stream.on("data", (chunk) => chunks.push(Buffer.from(chunk)));
+    stream.on("error", (err) => reject(err));
+    stream.on("end", () => resolve(Buffer.concat(chunks)));
   });
 }
 
@@ -158,14 +159,17 @@ export const userRouter = createTRPCRouter({
       const { imageKeys } = input;
 
       // Insert initial record with 'pending' status
-      const [newTransformation] = await ctx.db.insert(userImageTransformations).values({
-        userId: Number(ctx.session.user.id),
-        inputImageKey: imageKeys.front,
-        status: 'pending',
-      }).returning({ id: userImageTransformations.id });
+      const [newTransformation] = await ctx.db
+        .insert(userImageTransformations)
+        .values({
+          userId: Number(ctx.session.user.id),
+          inputImageKey: imageKeys.front,
+          status: "pending",
+        })
+        .returning({ id: userImageTransformations.id });
 
       if (!newTransformation) {
-         throw new TRPCError({
+        throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Failed to create initial transformation record",
         });
@@ -189,15 +193,15 @@ export const userRouter = createTRPCRouter({
           await transformImage(imageBuffer, coordinates);
 
         // Update record with 'success' status and transformed image key
-        await ctx.db.update(userImageTransformations)
+        await ctx.db
+          .update(userImageTransformations)
           .set({
             transformedImageKey: transformedImageKey,
             faceCoordinates: coordinates, // Store coordinates for debugging if needed
-            status: 'success',
+            status: "success",
             updatedAt: new Date().toISOString(),
           })
           .where(eq(userImageTransformations.id, transformationId));
-
 
         return {
           currentImageUri,
@@ -207,19 +211,26 @@ export const userRouter = createTRPCRouter({
       } catch (error) {
         console.error(error);
 
-        let status = 'failed';
-        let errorMessage = 'Unknown error';
+        let status = "failed";
+        let errorMessage = "Unknown error";
 
         if (error instanceof Error) {
           errorMessage = error.message;
           // Check for moderation error structure if available
-          if ('error' in error && typeof error.error === 'object' && error.error !== null && 'code' in error.error && error.error.code === 'moderation_blocked') {
-             status = 'moderated';
+          if (
+            "error" in error &&
+            typeof error.error === "object" &&
+            error.error !== null &&
+            "code" in error.error &&
+            error.error.code === "moderation_blocked"
+          ) {
+            status = "moderated";
           }
         }
 
         // Update record with error status
-        await ctx.db.update(userImageTransformations)
+        await ctx.db
+          .update(userImageTransformations)
           .set({
             status: status,
             updatedAt: new Date().toISOString(),
@@ -284,7 +295,7 @@ export const userRouter = createTRPCRouter({
           .toBuffer();
 
         // Generate a new key for the blurred image
-        const blurredImageKey = `blurred/${imageKey.split('/').pop()}`;
+        const blurredImageKey = `blurred/${imageKey.split("/").pop()}`;
 
         // Upload blurred image back to S3
         const putCommand = new PutObjectCommand({
@@ -306,9 +317,13 @@ export const userRouter = createTRPCRouter({
           Key: blurredImageKey,
         });
 
-        const blurredImageUrl = await getSignedUrl(ctx.s3, blurredImageCommand, {
-          expiresIn: 3600, // 1 hour
-        });
+        const blurredImageUrl = await getSignedUrl(
+          ctx.s3,
+          blurredImageCommand,
+          {
+            expiresIn: 3600, // 1 hour
+          },
+        );
 
         return {
           originalImageUrl,
@@ -322,5 +337,37 @@ export const userRouter = createTRPCRouter({
           message: "Failed to generate blurred image",
         });
       }
+    }),
+
+  getBodyRatingByDate: protectedProcedure
+    .input(
+      z.object({
+        date: z.string(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const { date } = input;
+      const dateParts = date.split("T")[0]; // Extract YYYY-MM-DD part
+
+      // Query the latest body rating on or before the given date
+      const bodyRating = await ctx.db.query.userBodyRatings.findFirst({
+        where: (ratings, { and, eq, lte }) =>
+          and(
+            eq(ratings.userId, Number(ctx.session.user.id)),
+            lte(ratings.createdAt, `${dateParts}T23:59:59.999Z`),
+          ),
+        orderBy: (ratings, { desc }) => [desc(ratings.createdAt)],
+      });
+
+      if (!bodyRating) {
+        return null;
+      }
+
+      prettyPrint(bodyRating.bodyRating);
+
+      return {
+        ...bodyRating,
+        bodyRating: bodyRating.bodyRating as BodyRatingResponse,
+      };
     }),
 });

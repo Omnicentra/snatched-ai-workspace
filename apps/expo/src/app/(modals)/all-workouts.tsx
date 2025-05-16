@@ -5,16 +5,17 @@ import {
   ScrollView,
   Pressable,
   TextInput,
-  Image,
   ActivityIndicator,
   SafeAreaView,
   FlatList
 } from 'react-native'
+import { Image } from 'expo-image'
 import { useRouter } from 'expo-router'
 import Constants from 'expo-constants'
 import { Ionicons } from '@expo/vector-icons'
 import { api } from '@/utils/api'
 import type { RouterOutputs } from '@/utils/api'
+import defaultImage from '@/assets/images/placeholders/workout-placeholder.png'
 
 // Define workout type for better typing
 type Workout = RouterOutputs['workout']['getWorkouts'][number]
@@ -48,8 +49,14 @@ const WorkoutCard = ({
       <View className="h-24 w-24 bg-gray-100">
         <Image
           source={{ uri: imageUrl }}
-          className="h-full w-full"
-          resizeMode="cover"
+          style={{
+            width: "100%",
+            height: "100%",
+          }}
+          contentFit="cover"
+          cachePolicy="memory-disk"
+          transition={200}
+          placeholder={defaultImage}
         />
       </View>
       <View className="flex-1 justify-between p-3">

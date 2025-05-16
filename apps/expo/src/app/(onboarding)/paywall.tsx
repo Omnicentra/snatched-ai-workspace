@@ -419,6 +419,8 @@ function PaywallScreen() {
       if (customerInfo.entitlements.active.premium) {
         await Promise.all([
           SecureStore.setItemAsync("onboarding_complete", "true"),
+          // reset the after transformation image
+          transformationStore$.snatchedImage.set(null),
           imageTransformation({
             imageKeys: {
               front: frontImageKey,
@@ -593,6 +595,8 @@ function PaywallScreen() {
                     );
                     await Promise.all([
                       SecureStore.setItemAsync("onboarding_complete", "true"),
+                      // reset the after transformation image
+                      transformationStore$.snatchedImage.set(null),
                       imageTransformation({
                         imageKeys: {
                           front: frontImageKey,

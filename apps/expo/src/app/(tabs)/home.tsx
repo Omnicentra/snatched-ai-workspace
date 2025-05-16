@@ -70,6 +70,11 @@ export default function HomeScreen() {
   const [activeDayIndex, setActiveDayIndex] = useState(Math.max(0, todayIndex));
   const [refreshing, setRefreshing] = useState(false);
 
+  // Get the selected date object based on active index
+  const selectedDate = useMemo(() => {
+    return weekDates[activeDayIndex]?.fullDate ?? today;
+  }, [weekDates, activeDayIndex, today]);
+
   // Fetch data for completion status
   const { data: workoutPlan } = api.workout.getCurrentWeekPlan.useQuery();
   const { data: mealSchedules } = api.nutrition.getUserMealSchedules.useQuery();
@@ -106,6 +111,7 @@ export default function HomeScreen() {
       utils.nutrition.getTodaysMealPlan.invalidate(),
       utils.nutrition.getRecentlyLoggedMeals.invalidate(),
       utils.workout.getCurrentWeekPlan.invalidate(),
+      utils.user.getBodyRatingByDate.invalidate(),
     ]).finally(() => {
       setRefreshing(false);
     });
@@ -186,7 +192,7 @@ export default function HomeScreen() {
       {/* Main Content */}
       <ScrollView className="flex-1 px-6" refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}>
         {/* Nutrition Stats */}
-        <NutritionStats />
+        <NutritionStats selectedDate={selectedDate} />
 
         {/* Pedometer Card */}
         <PedometerCard />

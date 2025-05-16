@@ -56,3 +56,14 @@ export function setNextImageTransformationTime() {
   const nextTime = new Date(Date.now() + 3 * 60 * 1000).toISOString();
   transformationStore$.nextImageTransformationTime.set(nextTime);
 }
+
+// Helper to update bodyRating from API response
+export function synchronizeBodyRating(bodyRating: BodyRatingResponse | null | undefined) {
+  if (!bodyRating) return;
+  
+  // Update the body rating in the store
+  transformationStore$.bodyRating.set(bodyRating);
+  
+  // Update lastUpdated to track when the data was last refreshed
+  transformationStore$.lastUpdated.set(new Date().toISOString());
+}

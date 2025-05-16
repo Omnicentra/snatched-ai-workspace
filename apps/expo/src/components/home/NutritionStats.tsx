@@ -1,52 +1,88 @@
 import { ProgressRing } from "@/components/core";
 import { onboardingStore$ } from "@/stores/onboarding.store";
-import { setNextImageTransformationTime, transformationStore$ } from "@/stores/transformation.store";
-import type { IconName } from "@/types";
+import {
+  setNextImageTransformationTime,
+  synchronizeBodyRating,
+  transformationStore$,
+} from "@/stores/transformation.store";
 import { api } from "@/utils/api";
 import { Ionicons } from "@expo/vector-icons";
 import { use$ } from "@legendapp/state/react";
 import { useRouter } from "expo-router";
-import React from "react";
-import { Pressable, Text, View } from "react-native";
+import React, { useEffect } from "react";
+import { Image, Pressable, Text, View } from "react-native";
 import * as Sentry from "@sentry/react-native";
+import { useAssets } from "expo-asset";
 
-export const NutritionStats = () => {
+interface NutritionStatsProps {
+  selectedDate?: Date;
+}
+
+export const NutritionStats = ({
+  selectedDate = new Date(),
+}: NutritionStatsProps) => {
   const router = useRouter();
   const now = new Date();
-  const bodyRating = use$(transformationStore$.bodyRating);
-  const currentImage = use$(transformationStore$.currentImage);
-  const snatchedImage = use$(transformationStore$.snatchedImage);
-  const nextImageTransformationTime = use$(transformationStore$.nextImageTransformationTime);
-  const { mutate: imageTransformation } = api.user.imageTransformation.useMutation({
-    onSuccess: (data) => {
-      transformationStore$.currentImage.set(data.currentImageUri);
-      transformationStore$.snatchedImage.set(data.transformedImageUri);
-    },
-    onError: (error) => {
-      console.error(error);
-      Sentry.captureException(error);
+  const {bodyRating, currentImage, snatchedImage, nextImageTransformationTime} = use$(transformationStore$);
+
+  // Convert date to ISO string for API call
+  const dateString = selectedDate.toISOString();
+
+  // Fetch body ratings for the selected date
+  const { data: bodyRatingData } = api.user.getBodyRatingByDate.useQuery(
+    { date: dateString },
+    { enabled: !!dateString },
+  );
+
+  // Sync DB body rating with transformation store when data changes
+  useEffect(() => {
+    if (bodyRatingData?.bodyRating) {
+      synchronizeBodyRating(bodyRatingData.bodyRating);
     }
-  });
+  }, [bodyRatingData]);
+
+  const [assets] = useAssets([
+    require('@/assets/icons/body-parts/Waist Definition.png'),
+    require('@/assets/icons/body-parts/Arm Shape.png'),
+    require('@/assets/icons/body-parts/Glute Shape.png'),
+    require('@/assets/icons/body-parts/Hip Curve.png'),
+    require('@/assets/icons/body-parts/Back Definition.png'),
+    require('@/assets/icons/body-parts/Posture.png'),
+  ]);
+
+  const { mutate: imageTransformation } =
+    api.user.imageTransformation.useMutation({
+      onSuccess: (data) => {
+        transformationStore$.currentImage.set(data.currentImageUri);
+        transformationStore$.snatchedImage.set(data.transformedImageUri);
+      },
+      onError: (error) => {
+        console.error(error);
+        Sentry.captureException(error);
+      },
+    });
 
   const frontImageKey = use$(onboardingStore$.onboarding.frontViewPhoto);
-  const canRequest = !nextImageTransformationTime || now >= new Date(nextImageTransformationTime);
+  const canRequest =
+    !nextImageTransformationTime ||
+    now >= new Date(nextImageTransformationTime);
   const canShow = !!currentImage && !!snatchedImage;
   const buttonDisabled = !canShow && !canRequest;
 
   const buttonText = canShow
-    ? 'See Snatched Transformation'
+    ? "See Snatched Transformation"
     : canRequest
-      ? 'Generate Transformation Image'
-      : 'Please wait...';
+      ? "Generate Transformation Image"
+      : "Please wait...";
 
   const requestTransformation = () => {
     if (!frontImageKey) {
-      router.push("/(modals)/progress-front")
+      router.push("/(modals)/progress-front");
       return;
     }
-    imageTransformation({ imageKeys: { front: frontImageKey } })
-    setNextImageTransformationTime()
-  }
+    imageTransformation({ imageKeys: { front: frontImageKey } });
+    setNextImageTransformationTime();
+  };
 
   // Calculate the overall snatched score as an average of all metrics
   // const snatchedScore = Math.round(
@@ -60,30 +96,42 @@ export const NutritionStats = () => {
   //   ].filter(Boolean).reduce((a, b) => a + b, 0) / 6
   // );
 
-  const bodyPartStats: {
-    label: string;
-    value: number;
-    icon: IconName;
-  }[] = [
+  const bodyPartStats = [
     {
       label: "Waist Definition",
       value: bodyRating.waistDefinition ?? 0,
-      icon: "hourglass-outline",
+      asset: assets?.[0]?.localUri ? { uri: assets[0].localUri } : undefined,
     },
-    { label: "Arm Shape", value: bodyRating.armShape ?? 0, icon: "barbell" },
+    {
+      label: "Arm Shape",
+      value: bodyRating.armShape ?? 0,
+      asset: assets?.[1]?.localUri ? { uri: assets[1].localUri } : undefined,
+    },
     {
       label: "Glute Shape",
       value: bodyRating.gluteShape ?? 0,
-      icon: "fitness",
+      asset: assets?.[2]?.localUri ? { uri: assets[2].localUri } : undefined,
     },
-    { label: "Hip Curve", value: bodyRating.hipCurve ?? 0, icon: "walk" },
+    {
+      label: "Hip Curve",
+      value: bodyRating.hipCurve ?? 0,
+      asset: assets?.[3]?.localUri ? { uri: assets[3].localUri } : undefined,
+    },
     {
       label: "Back Definition",
       value: bodyRating.backDefinition ?? 0,
-      icon: "body",
+      asset: assets?.[4]?.localUri ? { uri: assets[4].localUri } : undefined,
     },
-    { label: "Posture", value: bodyRating.posture ?? 0, icon: "shield" },
+    {
+      label: "Posture",
+      value: bodyRating.posture ?? 0,
+      asset: assets?.[5]?.localUri ? { uri: assets[5].localUri } : undefined,
+    },
   ];
+
+  if (!assets) {
+    return null; // Or return a loading state
+  }
 
   return (
     <View className="mb-8">
@@ -109,17 +157,23 @@ export const NutritionStats = () => {
           </View>
           <Pressable
             className={`flex-row items-center rounded-full px-4 py-2 ${
-              (canShow || canRequest) ? "bg-pink-50" : "bg-gray-100"
+              canShow || canRequest ? "bg-pink-50" : "bg-gray-100"
             }`}
-            onPress={canShow ? () => router.push("/(modals)/transformation-preview") : canRequest ? () => requestTransformation() : undefined}
+            onPress={
+              canShow
+                ? () => router.push("/(modals)/transformation-preview")
+                : canRequest
+                  ? () => requestTransformation()
+                  : undefined
+            }
             disabled={buttonDisabled}
           >
-            <Ionicons 
-              name="image" 
-              size={18} 
-              color={canShow || canRequest ? "#F472B6" : "#9CA3AF"} 
+            <Ionicons
+              name="image"
+              size={18}
+              color={canShow || canRequest ? "#F472B6" : "#9CA3AF"}
             />
-            <Text 
+            <Text
               className={`font-inter-medium ml-2 text-sm ${
                 canShow || canRequest ? "text-pink-500" : "text-gray-400"
               }`}
@@ -154,7 +208,11 @@ export const NutritionStats = () => {
                 />
                 <View className="absolute inset-0 items-center justify-center">
                   <View className="h-6 w-6 items-center justify-center rounded-full bg-white/80">
-                    <Ionicons name={stat.icon} size={18} color="#F472B6" />
+                    <Image
+                      source={stat.asset}
+                      style={{ width: 30, height: 30 }}
+                      resizeMode="contain"
+                    />
                   </View>
                 </View>
               </View>

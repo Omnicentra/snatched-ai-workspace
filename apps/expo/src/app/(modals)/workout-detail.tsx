@@ -3,16 +3,16 @@ import { api } from '@/utils/api'
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'
 import Constants from 'expo-constants'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect } from 'react'
 import {
-  Image,
   Pressable,
   SafeAreaView,
   ScrollView,
   Text,
   View
 } from 'react-native'
-
+import { Image } from 'expo-image'
+import { cacheImages } from '@/lib/utils'
 
 // Reusable Exercise Card
 const ExerciseCard = ({
@@ -35,8 +35,13 @@ const ExerciseCard = ({
       <View className="mr-4 h-16 w-16 overflow-hidden rounded-xl">
         <Image
           source={{ uri: imageUrl }}
-          className="h-full w-full"
-          resizeMode="cover"
+          style={{
+            width: "100%",
+            height: "100%",
+          }}
+          contentFit="cover"
+          cachePolicy="memory-disk"
+          transition={200}
         />
       </View>
       <View className="flex-1">
@@ -68,7 +73,6 @@ export default function WorkoutDetailScreen() {
   const router = useRouter()
   const params = useLocalSearchParams()
   const workoutId = typeof params.workoutId === 'string' ? parseInt(params.workoutId, 10) : undefined
-  const [isLoading, setIsLoading] = useState(true)
   const utils = api.useUtils()
 
   const { mutateAsync: completeWorkoutPlan } = api.workout.completeWorkoutPlan.useMutation({
@@ -83,11 +87,6 @@ export default function WorkoutDetailScreen() {
       { workoutId: workoutId ?? 0 },
       { enabled: !!workoutId && !isNaN(workoutId) }
     )
-  
-  // Update loading state when data changes
-  useEffect(() => {
-    setIsLoading(isLoadingWorkout)
-  }, [isLoadingWorkout])
 
   const handlePlayVideo = (exerciseName: string, exerciseIndex: number) => {
     if (!workoutWithExercises) return;
@@ -136,7 +135,12 @@ export default function WorkoutDetailScreen() {
     }
   }
 
-  if (isLoading) {
+  useEffect(() => {
+    const imageUrls = workoutWithExercises?.exercises.map(exercise => exercise.imageUrl).filter(Boolean) as string[]
+    void cacheImages(imageUrls)
+  }, [workoutWithExercises])
+
+  if (isLoadingWorkout) {
     return (
       <SafeAreaView 
         style={{ paddingTop: Constants.statusBarHeight }}

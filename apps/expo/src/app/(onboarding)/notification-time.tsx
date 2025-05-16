@@ -15,6 +15,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { withOnboardingTracking } from '@/components/core/withOnboardingTracking';
 import { StyledButton } from '@/components/core';
 import { logger } from '@/lib/logger';
+import * as Haptics from 'expo-haptics';
 import { checkNotificationPermissions, initializeNotifications } from '@/lib/notifications';
 import { 
   notificationsStore$, 
@@ -22,6 +23,7 @@ import {
   setLunchNotificationTime, 
   setDinnerNotificationTime 
 } from '@/stores/notifications.store';
+
 
 // Reusable Animated View for Fade-in effect
 const FadeInView = ({
@@ -95,7 +97,15 @@ const TimeSelectionRow = ({
     <View className="mb-6 rounded-3xl bg-white p-4 shadow-sm border border-gray-100">
       <Pressable 
         className="flex-row items-center justify-between" 
-        onPress={() => setShowPicker(true)}
+        onPress={() => {
+          void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).then(() => {
+            if (Platform.OS === 'ios') {
+              setShowPicker(!showPicker)
+            } else {
+              setShowPicker(false)
+            }
+          })
+        }}
       >
         <View>
           <Text className="font-inter-bold text-xl text-gray-900">{label}</Text>

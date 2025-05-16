@@ -9,7 +9,7 @@ function getAppConfig() {
         scheme: "snatched-ai-dev",
         androidPackage: "com.omnicentra.snatched_ai_dev",
         iosBundleIdentifier: "com.omnicentra.snatched-ai-dev",
-        icon: "./assets/icon.png",
+        icon: "./assets/icon-dev.png",
         intentFilters: [
           {
             scheme: "https",
@@ -126,6 +126,32 @@ const createConfig = ({ config }: ConfigContext): ExpoConfig => ({
     "expo-router",
     "expo-font",
     "expo-secure-store",
+    [
+      "expo-asset",
+      {
+        assets: [
+          "./src/assets/icons/body-parts/Waist Definition.png",
+          "./src/assets/icons/body-parts/Arm Shape.png",
+          "./src/assets/icons/body-parts/Glute Shape.png",
+          "./src/assets/icons/body-parts/Hip Curve.png",
+          "./src/assets/icons/body-parts/Back Definition.png",
+          "./src/assets/icons/body-parts/Posture.png",
+          "./src/assets/images/yoga-pose.png",
+          "./src/assets/images/wreath.png",
+          "./src/assets/images/logo-dark.png",
+          "./src/assets/images/body-silhouette.png",
+          "./src/assets/images/logo2.png",
+          "./src/assets/images/silhouette-back.png",
+          "./src/assets/images/body-positivity.png",
+          "./src/assets/images/silhouette-front.png",
+          "./src/assets/images/before-after.jpeg",
+          "./src/assets/images/silhouette-side.png",
+          "./src/assets/images/testimonials/image1.jpeg",
+          "./src/assets/images/testimonials/image2.jpeg",
+          "./src/assets/images/testimonials/image3.jpeg",         
+        ],
+      },
+    ],
     [
       "expo-media-library",
       {
