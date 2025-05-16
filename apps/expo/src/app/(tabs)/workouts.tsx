@@ -306,20 +306,6 @@ export default function WorkoutLibraryScreen() {
       >
         <TodaysPlanCard />
 
-        {/* Search and Filter */}
-        {/* <View className="relative mb-6">
-          <TextInput
-            placeholder="Search workouts..."
-            className="rounded-2xl bg-gray-100 px-5 py-4 pr-12 text-base text-black"
-            placeholderTextColor="#9CA3AF"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-          <View className="absolute right-4 top-4">
-            <Ionicons name="search-outline" size={24} color="#9CA3AF" />
-          </View>
-        </View> */}
-
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}

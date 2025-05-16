@@ -7,6 +7,7 @@ import { exerciseRouter } from "./router/exercise";
 import { createTRPCRouter } from "./trpc";
 import { userDevicesRouter } from "./router/user-devices";
 import { adminRouter } from "./router/admin";
+import { snatchHackRouter } from "./router/snatch-hack";
 
 export const appRouter = createTRPCRouter({
   auth: authRouter,
@@ -17,6 +18,7 @@ export const appRouter = createTRPCRouter({
   exercise: exerciseRouter,
   userDevices: userDevicesRouter,
   admin: adminRouter,
+  snatchHack: snatchHackRouter,
 });
 
 // export type definition of API

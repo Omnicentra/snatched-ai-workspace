@@ -11,12 +11,13 @@ import { api } from "@/utils/api";
 import { authClient } from "@/utils/auth";
 import { Ionicons } from "@expo/vector-icons";
 import { use$ } from "@legendapp/state/react";
+import { isSameDay } from "date-fns";
 import Constants from "expo-constants";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
 
 export default function HomeScreen() {
@@ -78,9 +79,13 @@ export default function HomeScreen() {
   // Fetch data for completion status
   const { data: workoutPlan } = api.workout.getCurrentWeekPlan.useQuery();
   const { data: mealSchedules } = api.nutrition.getUserMealSchedules.useQuery();
+  const { data: userCompletedHacks } = api.snatchHack.getUserCompletedHacksForTheWeek.useQuery({
+    startDate: monday.toISOString(),
+    endDate: today.toISOString(),
+  });
 
   // Check if a day is completed
-  const isDayCompleted = (date: Date) => {
+  const isDayCompleted = useCallback((date: Date) => {
     const dateStr = date.toISOString().split('T')[0];
     if (!dateStr) return false;
     const dayNumber = date.getDay() === 0 ? 7 : date.getDay(); // Convert to 1-7 range where 7 is Sunday
@@ -93,17 +98,17 @@ export default function HomeScreen() {
     const hasCompletedMeals = !!mealSchedule?.every((meal) => meal.completed);
 
     // Check snatch hack completion from local store
-    const hasCompletedSnatchHack = Boolean(dateStr && snatchHackStore.completedHacks[dateStr]?.completedAt);
+    const hasCompletedSnatchHack = userCompletedHacks?.find((h) => isSameDay(new Date(h.completedAt), new Date(dateStr))) ?? false;
 
     return hasCompletedWorkout && hasCompletedMeals && hasCompletedSnatchHack;
-  };
+  }, [workoutPlan, mealSchedules, userCompletedHacks]);
 
   // Calculate number of completed days in the current week
   const completedDaysCount = useMemo(() => {
     return weekDates.reduce((count, day) => {
       return count + (isDayCompleted(day.fullDate) ? 1 : 0);
     }, 0);
-  }, [weekDates, workoutPlan, mealSchedules, snatchHackStore]);
+  }, [weekDates, isDayCompleted]);
 
   const handleRefresh = () => {
     setRefreshing(true);

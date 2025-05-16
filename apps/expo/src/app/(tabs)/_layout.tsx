@@ -8,6 +8,9 @@ import { Platform } from "react-native";
 
 export default function TabLayout() {
   const { data: session } = authClient.useSession();
+  // Get the snatch hacks from API data
+  api.snatchHack.getSnatchHacks.useQuery();
+  // api.snatchHack.getUserCompletedHackForToday.useQuery();
   // Get the workouts from API data
   const { data: workoutData } = api.workout.getWorkouts.useQuery();
   // Get the categories from API data

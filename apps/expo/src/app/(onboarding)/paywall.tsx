@@ -413,7 +413,7 @@ function PaywallScreen() {
           interval:
             selectedPackage.product.subscriptionPeriod === "P1Y"
               ? "year"
-              : "month",
+              : "week",
         });
       }
       if (customerInfo.entitlements.active.premium) {
