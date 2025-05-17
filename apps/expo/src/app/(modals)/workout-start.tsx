@@ -173,7 +173,7 @@ export default function WorkoutStartScreen() {
     if (isPreWorkout) {
       // Trigger initial animation immediately
       scaleAnim.value = 1.6;
-      scaleAnim.value = withTiming(0.7, {
+      scaleAnim.value = withTiming(0.8, {
         duration: 1000,
         easing: Easing.out(Easing.ease),
       });

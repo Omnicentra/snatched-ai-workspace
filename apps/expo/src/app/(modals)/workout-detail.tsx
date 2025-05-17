@@ -13,6 +13,7 @@ import {
 } from 'react-native'
 import { Image } from 'expo-image'
 import { cacheImages } from '@/lib/utils'
+import { LoadingScreen } from '@/components/core/LoadingScreen'
 
 // Reusable Exercise Card
 const ExerciseCard = ({
@@ -136,7 +137,7 @@ export default function WorkoutDetailScreen() {
   }
 
   useEffect(() => {
-    const imageUrls = workoutWithExercises?.exercises.map(exercise => exercise.imageUrl).filter(Boolean) as string[]
+    const imageUrls = (workoutWithExercises?.exercises.map(exercise => exercise.imageUrl).filter(Boolean) ?? []) as string[]
     void cacheImages(imageUrls)
   }, [workoutWithExercises])
 
@@ -146,7 +147,7 @@ export default function WorkoutDetailScreen() {
         style={{ paddingTop: Constants.statusBarHeight }}
         className="flex-1 bg-white items-center justify-center"
       >
-        <Text className="font-inter text-gray-500">Loading workout details...</Text>
+        <LoadingScreen message='Loading workout details...' />
       </SafeAreaView>
     )
   }

@@ -6,7 +6,6 @@ import { RecentlyLogged } from "@/components/home/RecentlyLogged";
 import { SnatchHackCard } from "@/components/home/SnatchHackCard";
 import { TodaysPlanCard } from "@/components/home/TodaysPlanCard";
 import { onboardingStore$ } from "@/stores/onboarding.store";
-import { snatchHackStore$ } from "@/stores/snatch-hack.store";
 import { api } from "@/utils/api";
 import { authClient } from "@/utils/auth";
 import { Ionicons } from "@expo/vector-icons";
@@ -24,16 +23,19 @@ export default function HomeScreen() {
   const router = useRouter();
   const utils = api.useUtils();
   const { data: session } = authClient.useSession();
-  const snatchHackStore = use$(snatchHackStore$);
   const userName = use$(onboardingStore$.onboarding.name);
   
   // Get current date and calculate the Monday of current week
-  const today = new Date();
-  const currentDay = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
-  const mondayOffset = currentDay === 0 ? -6 : 1 - currentDay; // If Sunday, go back 6 days, else calculate days until Monday
+  const today = useMemo(() => new Date(), []);
+
+  const monday = useMemo(() => {
+    const currentDay = today.getDay();
+    const mondayOffset = currentDay === 0 ? -6 : 1 - currentDay; // If Sunday, go back 6 days, else calculate days until Monday
+    const monday = new Date(today);
+    monday.setDate(today.getDate() + mondayOffset);
+    return monday;
+  }, [today]);
   
-  const monday = new Date(today);
-  monday.setDate(today.getDate() + mondayOffset);
 
   // Calculate journey progress
   const journeyProgress = useMemo(() => {

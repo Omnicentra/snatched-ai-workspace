@@ -92,10 +92,6 @@ const goalMap: GoalMapType = {
 function GoalScreen() {
   const router = useRouter()
   const selectedGoals = use$(onboardingStore$.onboarding.goals)
-  // const [selectedGoals, setSelectedGoals] = useState<string[]>([])
-
-  console.log(selectedGoals);
-  console.log(JSON.stringify(onboardingStore$.onboarding, null, 2));
 
   const goals = goalEnum.options.map(goal => ({
     id: goal,

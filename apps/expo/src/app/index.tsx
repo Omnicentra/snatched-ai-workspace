@@ -3,11 +3,14 @@ import { ActivityIndicator, View } from "react-native";
 import { Redirect } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import { authClient } from "@/utils/auth";
+import * as SplashScreen from "expo-splash-screen";
+import { logger } from "@/lib/logger";
 
 // Check onboarding completion status from SecureStore
 const checkOnboardingStatus = async () => {
   try {
     const secureStoreFlag = await SecureStore.getItemAsync("onboarding_complete");
+    logger.info(`Secure store flag: ${secureStoreFlag}`);
     return secureStoreFlag === "true";
   } catch {
     return false; // Default to showing onboarding if error
@@ -15,18 +18,36 @@ const checkOnboardingStatus = async () => {
 };
 
 export default function AppEntry() {
-  const [isOnboardingComplete, setIsOnboardingComplete] = React.useState<boolean | null>(null);
-  const { data: session } = authClient.useSession();
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [isOnboardingComplete, setIsOnboardingComplete] = React.useState(false);
+  const { data: session, isPending: isSessionLoading } = authClient.useSession();
 
   useEffect(() => {
-    const checkStatus = async () => {
-      const completed = await checkOnboardingStatus();
-      setIsOnboardingComplete(completed);
-    };
-    void checkStatus();
-  }, []); // Only check once on mount
+    async function initializeApp() {
+      try {
+        // Check onboarding status
+        const completed = await checkOnboardingStatus();
+        setIsOnboardingComplete(completed);
+        
+        // Wait for session check to complete
+        if (!isSessionLoading) {
+          // Only hide splash screen when both checks are complete
+          await SplashScreen.hideAsync();
+          setIsLoading(false);
+        }
+      } catch (error) {
+        logger.error("Error during app initialization:", error);
+        // Hide splash screen even if there's an error
+        await SplashScreen.hideAsync();
+        setIsLoading(false);
+      }
+    }
 
-  if (isOnboardingComplete === null) {
+    void initializeApp();
+  }, [isSessionLoading]); // Re-run when session loading state changes
+
+  // Show loading spinner while checking status
+  if (isLoading) {
     return (
       <View className="flex-1 items-center justify-center">
         <ActivityIndicator size="large" color="#EC4899" />

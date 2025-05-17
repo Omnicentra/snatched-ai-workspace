@@ -205,12 +205,6 @@ function RootLayout() {
     }
   }, [ref]);
 
-  useEffect(() => {
-    if ((fontsLoaded || fontError) && assetsLoaded) {
-      void SplashScreen.hideAsync();
-    }
-  }, [fontsLoaded, fontError, assetsLoaded]);
-
   // Prevent rendering until the fonts and assets have loaded or an error occurred
   if ((!fontsLoaded && !fontError) || !assetsLoaded) {
     return null;

@@ -18,6 +18,7 @@ import { Ionicons } from "@expo/vector-icons";
 import ChatWootWidget from '@chatwoot/react-native-widget';
 import { mixpanel } from "@/lib/utils";
 import * as SecureStore from 'expo-secure-store';
+import { appVariant } from "@/lib/utils";
 
 const MenuItem = ({
   icon,
@@ -71,27 +72,31 @@ export default function ProfileScreen() {
       icon: <Ionicons name="person-outline" size={18} color="#1F2937" />,
       label: "Personal Information",
       onPress: () => router.push("/(modals)/personal-info"),
+      show: true,
     },
     {
       icon: <Ionicons name="card-outline" size={18} color="#1F2937" />,
       label: "Subscription",
       onPress: () => router.push("/(modals)/subscription"),
+      show: true,
     },
     {
       icon: <Ionicons name="notifications-outline" size={18} color="#1F2937" />,
       label: "Notifications",
       onPress: () => router.push("/(onboarding)/notification-time"),
+      show: true,
     },
     {
       icon: <Ionicons name="help-circle-outline" size={18} color="#1F2937" />,
       label: "Help & Support",
       onPress: () => toggleWidget(true),
+      show: true,
     },
     {
       icon: (
         <Ionicons name="refresh-circle-outline" size={18} color="#DC2626" />
       ),
-      label: "Reset Onboarding",
+      label: "Reset Onboarding", 
       onPress: () => {
         Alert.alert(
           "Reset Onboarding",
@@ -102,7 +107,7 @@ export default function ProfileScreen() {
               style: "cancel",
             },
             {
-              text: "Reset",
+              text: "Reset", 
               style: "destructive",
               onPress: () => {
                 void SecureStore.setItemAsync('onboarding_complete', 'false');
@@ -113,6 +118,7 @@ export default function ProfileScreen() {
         );
       },
       textColor: "text-red-600",
+      show: appVariant !== 'production',
     },
     {
       icon: (
@@ -139,6 +145,7 @@ export default function ProfileScreen() {
         );
       },
       textColor: "text-red-600",
+      show: true,
     },
   ];
 
@@ -206,7 +213,7 @@ export default function ProfileScreen() {
 
       <ScrollView className="flex-1 px-6">
         <View className="rounded-2xl bg-white px-4 shadow-sm">
-          {menuItems.map((item, index) => (
+          {menuItems.filter(item => item.show).map((item, index) => (
             <MenuItem
               key={index}
               icon={item.icon}

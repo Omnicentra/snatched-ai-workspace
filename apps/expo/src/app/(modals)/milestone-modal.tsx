@@ -93,11 +93,11 @@ export const MilestoneModal: React.FC<MilestoneModalProps> = ({
             isCompleted ? '' : 'bg-white border border-gray-100'
           }`}
           style={{
-            borderColor: type === 'workout' ? '#FF6B6B' : '#4CAF50',
+            borderColor: type === 'workout' ? '#FF8787' : '#4CAF50',
             backgroundColor: isCompleted ? (type === 'workout' ? '#FFA5A5' : '#90EE90') : 'white'
           }}
         >
-          {isCompleted && day === 1 && (
+          {isCompleted && (
             <Text className="text-xl">{emoji}</Text>
           )}
           {isCompleted && day === totalDays && (

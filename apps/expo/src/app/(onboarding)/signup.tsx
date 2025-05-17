@@ -1,3 +1,15 @@
+import { OnboardingHeader, StyledButton } from "@/components/core";
+import { withOnboardingTracking } from '@/components/core/withOnboardingTracking';
+import { Analytics } from "@/lib/analytics";
+import { appVariant, scheme } from "@/lib/utils";
+import { api } from "@/utils/api";
+import { authClient } from "@/utils/auth";
+import { getOrCreateDeviceId } from "@/utils/device-id";
+import { Ionicons } from "@expo/vector-icons";
+import * as Sentry from "@sentry/react-native";
+import Constants from "expo-constants";
+import * as Device from "expo-device";
+import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -9,17 +21,6 @@ import {
   View,
 } from "react-native";
 import Purchases from "react-native-purchases";
-import Constants from "expo-constants";
-import * as Device from "expo-device";
-import { useRouter } from "expo-router";
-import { OnboardingHeader, StyledButton } from "@/components/core";
-import { appVariant, mixpanel, scheme } from "@/lib/utils";
-import { api } from "@/utils/api";
-import { authClient } from "@/utils/auth";
-import { getOrCreateDeviceId } from "@/utils/device-id";
-import { Ionicons } from "@expo/vector-icons";
-import * as Sentry from "@sentry/react-native";
-import { withOnboardingTracking } from '@/components/core/withOnboardingTracking';
 
 function SignupScreen() {
   const router = useRouter();
@@ -38,14 +39,10 @@ function SignupScreen() {
             deviceType: Platform.OS,
             deviceName: Device.deviceName,
           });
-          void mixpanel.identify(session.user.id);
-          void mixpanel.getPeople().setOnce({
+          void Analytics.trackUserSignIn(deviceId, {
             email: session.user.email,
             name: session.user.name,
-            avatar: session.user.image,
-            device_id: deviceId,
-            device_type: Platform.OS,
-            device_name: Device.deviceName,
+            image: session.user.image,
           });
           await Purchases.logIn(session.user.email);
           Sentry.setUser({
@@ -100,7 +97,6 @@ function SignupScreen() {
           provider: "google",
           callbackURL: `${scheme}://`,
         },
-
         {
           onSuccess: (ctx) => {
             console.log("Google sign in success:");
@@ -188,19 +184,6 @@ function SignupScreen() {
             </Text>
           </View>
         </View>
-
-        {/* Skip Option */}
-        {/* <View className="mt-auto">
-          <Pressable
-            onPress={() => router.push('/(onboarding)/analyzing')}
-            className="flex-row items-center justify-center"
-          >
-            <Text className="font-inter text-sm text-gray-600">
-              Not ready to sign up?{' '}
-              <Text className="font-inter-medium text-pink-400">Skip for now</Text>
-            </Text>
-          </Pressable>
-        </View> */}
       </ScrollView>
     </SafeAreaView>
   );

@@ -16,8 +16,8 @@ export const getBaseUrl = (isNgrok = false) => {
    */
   const debuggerHost = Constants.expoConfig?.hostUri;
   const localhost = debuggerHost?.split(":")[0];
-  logger.info("localhost", localhost);
-  logger.info("ngrokUrl", ngrokUrl);
+  // logger.debug("localhost", localhost);
+  // logger.debug("ngrokUrl", ngrokUrl);
   if (localhost) {
     if (localhost.includes("ngrok") || isNgrok) {
       return ngrokUrl;

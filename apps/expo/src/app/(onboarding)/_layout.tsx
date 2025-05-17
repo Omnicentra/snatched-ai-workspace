@@ -35,7 +35,7 @@ export default function OnboardingLayout() {
       <Stack.Screen name="signup" />
       <Stack.Screen name="paywall" />
       <Stack.Screen name="notifications" />
-      <Stack.Screen name="notifications-time" />
+      <Stack.Screen name="notification-time" />
 
       {/* Index route is automatically included */}
       {/* Add other onboarding screens here if needed, or rely on index naming */}
