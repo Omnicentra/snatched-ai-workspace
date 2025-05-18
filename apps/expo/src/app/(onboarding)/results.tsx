@@ -20,8 +20,9 @@ function ResultsScreen() {
   const router = useRouter();
   const confettiRef = useRef<ConfettiCannon>(null); // Create a ref for the confetti cannon
   const bodyRating = use$(transformationStore$.bodyRating);
-  const searchParams = useLocalSearchParams<{ unlocked?: string }>();
+  const searchParams = useLocalSearchParams<{ unlocked?: string, progress?: string }>();
   const isUnlocked = searchParams.unlocked === "true";
+  const isProgress = searchParams.progress === "true";
   const { data: session } = authClient.useSession();
 
   // Get the number of issues that are not null
@@ -32,7 +33,9 @@ function ResultsScreen() {
   ].filter(Boolean).length;
 
   const handleViewDetails = () => {
-    if (isUnlocked) {
+    if (isProgress) {
+      void router.push("/(tabs)/home");
+    } else if (isUnlocked) {
       // When unlocked, navigate to notifications screen first
       void router.push("/(onboarding)/notifications");
     } else {
@@ -162,7 +165,7 @@ function ResultsScreen() {
               </View>
 
               <View className="gap-y-4">
-                {isUnlocked ? (
+                {isUnlocked || isProgress ? (
                   [bodyRating.issue1, bodyRating.issue2, bodyRating.issue3].map(
                     (issue, index) => (
                       <View key={index} className="flex-row items-start">
@@ -254,7 +257,7 @@ function ResultsScreen() {
                         {title}
                       </Text>
                       <Text className="font-inter-bold text-center text-2xl text-pink-400">
-                        {isUnlocked ? value : "🔒"}
+                        {isUnlocked || isProgress ? value : "🔒"}
                       </Text>
                     </View>
                   </View>
@@ -270,7 +273,7 @@ function ResultsScreen() {
         <View className="bg-transparent px-5 pb-4 pt-4">
           {/* Adjusted Button Styling - Assuming StyledButton handles variants */}
           <StyledButton
-            title={isUnlocked ? "Continue" : "Unlock your results"}
+            title={isUnlocked || isProgress ? "Continue" : "Unlock your results"}
             onPress={handleViewDetails}
             variant="primary" // Assuming a primary variant exists with appropriate styling
             style={{

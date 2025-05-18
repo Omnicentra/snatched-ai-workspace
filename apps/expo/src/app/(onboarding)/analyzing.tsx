@@ -11,7 +11,7 @@ import Constants from "expo-constants";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import Silhouette from "@/assets/images/logo2.png";
 import { CircleProgress } from "@/components/core/CircleProgress";
 import { withOnboardingTracking } from "@/components/core/withOnboardingTracking";
@@ -59,8 +59,9 @@ function AnalyzingScreen() {
   const router = useRouter();
   const [progress, setProgress] = useState(0);
   const [currentStatusIndex, setCurrentStatusIndex] = useState(0);
+  const params = useLocalSearchParams<{ progress?: string }>();
 
-  const { mutate: getBodyRating } = api.user.bodyRating.useMutation({
+  const { mutate: generateBodyRating } = api.user.bodyRating.useMutation({
     onSuccess: (data) => {
       prettyPrint(JSON.stringify(data, null, 2));
       transformationStore$.bodyRating.set(data);
@@ -100,29 +101,26 @@ function AnalyzingScreen() {
       },
     });
 
-  const { currentSnatchedScore, potentialSnatchedScore } = use$(
-    transformationStore$.bodyRating,
-  );
+  // const { currentSnatchedScore, potentialSnatchedScore } = use$(
+  //   transformationStore$.bodyRating,
+  // );
   const frontImageKey = use$(onboardingStore$.onboarding.frontViewPhoto);
   const sideImageKey = use$(onboardingStore$.onboarding.sideViewPhoto);
   const backImageKey = use$(onboardingStore$.onboarding.backViewPhoto);
   const desiredBodyShape = use$(onboardingStore$.onboarding.desiredShape);
 
   useEffect(() => {
-    if (
-      !currentSnatchedScore ||
-      !potentialSnatchedScore
-    ) {
-      getBodyRating({
-        imageKeys: {
-          front: frontImageKey,
-          side: sideImageKey,
-          back: backImageKey,
-        },
-        desiredBodyShape,
-      });
+    generateBodyRating({
+      imageKeys: {
+        front: frontImageKey,
+        side: sideImageKey,
+        back: backImageKey,
+      },
+      desiredBodyShape,
+    });
+    if (params.progress !== "true") {
+      generateBlurredImage({ imageKey: frontImageKey, blurAmount: 100 });
     }
-    generateBlurredImage({ imageKey: frontImageKey, blurAmount: 100 });
     generateMealPlan();
     generateWorkoutPlan();
 
@@ -140,7 +138,11 @@ function AnalyzingScreen() {
           clearInterval(progressInterval);
           clearInterval(statusInterval);
           setTimeout(() => {
-            router.replace("/(onboarding)/results");
+            if (params.progress === "true") {
+              router.replace("/(onboarding)/results?progress=true");
+            } else {
+              router.replace("/(onboarding)/results");
+            }
           }, 500); // Small delay after reaching 100%
           return 1; // Cap at 100%
         }
@@ -152,7 +154,7 @@ function AnalyzingScreen() {
       clearInterval(statusInterval);
       clearInterval(progressInterval);
     };
-  }, [router]);
+  }, []);
 
   return (
     <LinearGradient

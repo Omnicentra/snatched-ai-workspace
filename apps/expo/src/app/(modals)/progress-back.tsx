@@ -8,7 +8,8 @@ import {
   Text,
   View
 } from 'react-native'
-import { CameraType, CameraView, useCameraPermissions } from 'expo-camera'
+import type { CameraType} from 'expo-camera';
+import { CameraView, useCameraPermissions } from 'expo-camera'
 import Constants from 'expo-constants'
 import { Image } from 'expo-image'
 import * as ImagePicker from 'expo-image-picker'
@@ -29,6 +30,7 @@ import Animated, {
 } from 'react-native-reanimated'
 import { use$ } from '@legendapp/state/react'
 import { setNextImageTransformationTime } from '@/stores/transformation.store'
+import { logger } from '~/lib/logger';
 
 const AnimatedIcon = Animated.createAnimatedComponent(MaterialCommunityIcons);
 
@@ -209,7 +211,7 @@ export default function ProgressBackScreen() {
         
         // Store the image key in LegendState
         onboardingStore$.onboarding.backViewPhoto.set(result.key);
-        console.log('Stored image key in LegendState:', result.key);
+        logger.debug('Stored image key in LegendState:', result.key);
         void imageTransformation({
           imageKeys: {
             front: frontViewPhoto,
@@ -217,7 +219,7 @@ export default function ProgressBackScreen() {
         });
         setNextImageTransformationTime()
         // Navigate to next screen
-        router.push('/(tabs)/home');
+        router.push('/(onboarding)/analyzing?progress=true');
       } else {
         Alert.alert('Upload Failed', 'Failed to upload image. Please try again.');
       }

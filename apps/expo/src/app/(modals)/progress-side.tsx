@@ -27,6 +27,7 @@ import Animated, {
   withSequence,
   withDelay
 } from 'react-native-reanimated'
+import { logger } from '~/lib/logger'
 
 const AnimatedIcon = Animated.createAnimatedComponent(MaterialCommunityIcons);
 
@@ -205,7 +206,7 @@ export default function ProgressSideScreen() {
         
         // Store the image key in LegendState
         onboardingStore$.onboarding.sideViewPhoto.set(result.key);
-        console.log('Stored image key in LegendState:', result.key);
+        logger.debug('Stored side image key in LegendState:', result.key);
         
         // Navigate to next screen
         router.push('/(modals)/progress-back');
