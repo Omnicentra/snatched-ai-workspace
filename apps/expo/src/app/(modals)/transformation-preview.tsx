@@ -18,9 +18,6 @@ const TransformationPreviewScreen = observer(() => {
     use$(transformationStore$);
   const { currentSnatchedScore, potentialSnatchedScore } = bodyRating;
 
-  console.log({ currentImage });
-  console.log({ snatchedImage });
-
   const progress = Math.round(
     ((currentSnatchedScore ?? 0) / (potentialSnatchedScore ?? 100)) * 100,
   );

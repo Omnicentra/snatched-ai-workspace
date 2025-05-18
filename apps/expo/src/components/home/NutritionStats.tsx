@@ -14,7 +14,7 @@ import { differenceInDays } from "date-fns";
 import { useAssets } from "expo-asset";
 import { useRouter } from "expo-router";
 import React, { useEffect, useMemo } from "react";
-import { ActivityIndicator, Image, Pressable, Text, View } from "react-native";
+import {   Image, Pressable, Text, View } from "react-native";
 import { logger } from "~/lib/logger";
 
 interface NutritionStatsProps {
