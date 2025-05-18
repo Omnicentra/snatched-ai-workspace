@@ -8,11 +8,14 @@ import {
 import { api } from "@/utils/api";
 import { Ionicons } from "@expo/vector-icons";
 import { use$ } from "@legendapp/state/react";
-import { useRouter } from "expo-router";
-import React, { useEffect } from "react";
-import { Image, Pressable, Text, View } from "react-native";
+import { formatPostgresTimestampToDate } from "@omc/validators";
 import * as Sentry from "@sentry/react-native";
+import { differenceInDays } from "date-fns";
 import { useAssets } from "expo-asset";
+import { useRouter } from "expo-router";
+import React, { useEffect, useMemo } from "react";
+import {   Image, Pressable, Text, View } from "react-native";
+import { logger } from "~/lib/logger";
 
 interface NutritionStatsProps {
   selectedDate?: Date;
@@ -22,24 +25,35 @@ export const NutritionStats = ({
   selectedDate = new Date(),
 }: NutritionStatsProps) => {
   const router = useRouter();
-  const now = new Date();
   const {bodyRating, currentImage, snatchedImage, nextImageTransformationTime} = use$(transformationStore$);
 
   // Convert date to ISO string for API call
   const dateString = selectedDate.toISOString();
 
   // Fetch body ratings for the selected date
-  const { data: bodyRatingData } = api.user.getBodyRatingByDate.useQuery(
+  const { data } = api.user.getBodyRatingByDate.useQuery(
     { date: dateString },
     { enabled: !!dateString },
   );
 
+  // Calculate days since last scan
+  const { daysSinceLastScan, canTakeNewScan } = useMemo(() => {
+    const now = new Date();
+    const lastBodyRating = data?.createdAt;
+    const lastBodyRatingDate = formatPostgresTimestampToDate(lastBodyRating);
+
+    const daysSinceLastScan = lastBodyRating ? differenceInDays(now, lastBodyRatingDate) : null;
+    const canTakeNewScan = daysSinceLastScan === null || daysSinceLastScan >= 7;
+    logger.debug(`daysSinceLastScan: ${daysSinceLastScan}, canTakeNewScan: ${canTakeNewScan}`);
+    return { daysSinceLastScan, canTakeNewScan }
+  }, [data]);
+
   // Sync DB body rating with transformation store when data changes
   useEffect(() => {
-    if (bodyRatingData?.bodyRating) {
-      synchronizeBodyRating(bodyRatingData.bodyRating);
+    if (data?.bodyRating) {
+      synchronizeBodyRating(data.bodyRating);
     }
-  }, [bodyRatingData]);
+  }, [data]);
 
   const [assets] = useAssets([
     require('@/assets/icons/body-parts/Waist Definition.png'),
@@ -55,6 +69,7 @@ export const NutritionStats = ({
       onSuccess: (data) => {
         transformationStore$.currentImage.set(data.currentImageUri);
         transformationStore$.snatchedImage.set(data.transformedImageUri);
+        setNextImageTransformationTime();
       },
       onError: (error) => {
         console.error(error);
@@ -63,11 +78,22 @@ export const NutritionStats = ({
     });
 
   const frontImageKey = use$(onboardingStore$.onboarding.frontViewPhoto);
-  const canRequest =
-    !nextImageTransformationTime ||
-    now >= new Date(nextImageTransformationTime);
-  const canShow = !!currentImage && !!snatchedImage;
+
+  const { canRequest, canShow } = useMemo(() => {
+    const now = new Date();
+    const canRequest = !nextImageTransformationTime || now >= new Date(nextImageTransformationTime);
+    const canShow = !!currentImage && !!snatchedImage;
+    return { canRequest, canShow }
+  }, [nextImageTransformationTime, currentImage, snatchedImage]);
+
   const buttonDisabled = !canShow && !canRequest;
+
+
+  const handlePress = canShow 
+    ? () => router.push("/(modals)/transformation-preview")
+    : canRequest 
+      ? () => requestTransformation()
+      : undefined;
 
   const buttonText = canShow
     ? "See Snatched Transformation"
@@ -76,25 +102,13 @@ export const NutritionStats = ({
       : "Please wait...";
 
   const requestTransformation = () => {
-    if (!frontImageKey) {
+    if (!frontImageKey || !data?.frontImageKey) {
       router.push("/(modals)/progress-front");
       return;
     }
-    imageTransformation({ imageKeys: { front: frontImageKey } });
+    imageTransformation({ imageKeys: { front: frontImageKey || data.frontImageKey } });
     setNextImageTransformationTime();
   };
-
-  // Calculate the overall snatched score as an average of all metrics
-  // const snatchedScore = Math.round(
-  //   [
-  //     bodyRating.waistDefinition ?? 0,
-  //     bodyRating.hipCurve ?? 0,
-  //     bodyRating.gluteShape ?? 0,
-  //     bodyRating.posture ?? 0,
-  //     bodyRating.armShape ?? 0,
-  //     bodyRating.backDefinition ?? 0,
-  //   ].filter(Boolean).reduce((a, b) => a + b, 0) / 6
-  // );
 
   const bodyPartStats = [
     {
@@ -129,10 +143,6 @@ export const NutritionStats = ({
     },
   ];
 
-  if (!assets) {
-    return null; // Or return a loading state
-  }
-
   return (
     <View className="mb-8">
       {/* Main Snatched Score Card */}
@@ -155,17 +165,33 @@ export const NutritionStats = ({
               </Text>
             </View>
           </View>
+
+          {/* New Scan Button */}
+          {canTakeNewScan && (
+            <Pressable
+              className="mb-3 flex-row items-center rounded-full bg-pink-50 px-4 py-2"
+              onPress={() => router.push("/(modals)/progress-front")}
+            >
+              <Ionicons name="camera" size={18} color="#F472B6" />
+              <Text className="font-inter-medium ml-2 text-sm text-pink-500">
+                Take New Body Scan
+              </Text>
+            </Pressable>
+          )}
+
+          {/* Days Until Next Scan */}
+          {!canTakeNewScan && daysSinceLastScan !== null && (
+            <Text className="mb-3 font-inter text-sm text-gray-500">
+              Next scan available in {7 - daysSinceLastScan} days
+            </Text>
+          )}
+
+          {/* Transformation Button */}
           <Pressable
             className={`flex-row items-center rounded-full px-4 py-2 ${
               canShow || canRequest ? "bg-pink-50" : "bg-gray-100"
             }`}
-            onPress={
-              canShow
-                ? () => router.push("/(modals)/transformation-preview")
-                : canRequest
-                  ? () => requestTransformation()
-                  : undefined
-            }
+            onPress={handlePress}
             disabled={buttonDisabled}
           >
             <Ionicons

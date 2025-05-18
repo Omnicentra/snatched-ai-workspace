@@ -60,6 +60,18 @@ export const formatPostgresTimestamp = (timestamp: string | null | undefined): s
   }
 };
 
+/**
+ * Formats a PostgreSQL timestamp with timezone to a Date object. Using the Date constuctor on the timestamp string returns invalid date because the string is not in ISO format.
+ * This function manually converts the timestamp to ISO format and then creates a Date object.
+ * @param timestamp PostgreSQL timestamp string (e.g. "2025-05-04 11:54:44+00")
+ * @returns Date object
+ */
+export const formatPostgresTimestampToDate = (timestamp: string | null | undefined): Date => {
+  if (!timestamp) return new Date();
+  const isoTimestamp = timestamp.replace(/\+(\d{2})$/, "+$1:00");
+  return new Date(isoTimestamp);
+};
+
 export interface BodyRatingResponse {
   currentSnatchedScore: number | null;
   potentialSnatchedScore: number | null;

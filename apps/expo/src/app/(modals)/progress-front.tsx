@@ -28,6 +28,7 @@ import Animated, {
   withSequence,
   withTiming
 } from 'react-native-reanimated'
+import { logger } from '~/lib/logger'
 
 const AnimatedIcon = Animated.createAnimatedComponent(MaterialCommunityIcons);
 
@@ -207,7 +208,7 @@ export default function ProgressFrontScreen() {
         // Store the image key in LegendState
         onboardingStore$.onboarding.frontViewPhoto.set(result.key);
         transformationStore$.currentImage.set(result.presignedUrl);
-        console.log('Stored image key in LegendState:', result.key);
+        logger.debug('Stored front image key in LegendState:', result.key);
         
         // Navigate to next screen
         router.push('/(modals)/progress-side');

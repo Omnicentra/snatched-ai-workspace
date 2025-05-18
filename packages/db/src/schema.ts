@@ -1038,6 +1038,10 @@ export const userBodyRatings = pgTable(
       withTimezone: true,
       mode: "string",
     }).default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: timestamp("updated_at", {
+      withTimezone: true,
+      mode: "string",
+    }).default(sql`CURRENT_TIMESTAMP`),
   },
   (table) => [
     index("idx_user_body_ratings_user").using("btree", table.userId),
@@ -1106,6 +1110,10 @@ export const userSnatchHacks = pgTable(
       .notNull(),
     completedDate: date("completed_date").notNull(),
     createdAt: timestamp("created_at", {
+      withTimezone: true,
+      mode: "string",
+    }).default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: timestamp("updated_at", {
       withTimezone: true,
       mode: "string",
     }).default(sql`CURRENT_TIMESTAMP`),

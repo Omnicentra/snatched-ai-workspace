@@ -1,0 +1,2 @@
+ALTER TABLE "user_body_ratings" ADD COLUMN "updated_at" timestamp with time zone DEFAULT CURRENT_TIMESTAMP;--> statement-breakpoint
+ALTER TABLE "user_snatch_hacks" ADD COLUMN "updated_at" timestamp with time zone DEFAULT CURRENT_TIMESTAMP;

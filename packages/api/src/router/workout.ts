@@ -1,7 +1,7 @@
 import type { TRPCRouterRecord } from "@trpc/server";
 import { GoogleGenAI, Type } from "@google/genai";
 import { TRPCError } from "@trpc/server";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, gte, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { db } from "@omc/db/client";
@@ -522,7 +522,6 @@ export const workoutRouter = {
     .mutation(async ({ ctx }) => {
       // Get fitness goals
       const userId = Number(ctx.session.user.id);
-      console.log("userId", userId);
 
       // check if the user has an active workout plan
       const [activeWorkoutPlan] = await db
@@ -531,8 +530,9 @@ export const workoutRouter = {
         .where(and(
           eq(workoutPlans.userId, userId),
           eq(workoutPlans.status, "active"),
+          gte(workoutPlans.endDate, new Date().toISOString()),
         ))
-        .execute(); 
+        .execute();
 
       if (activeWorkoutPlan) {
         throw new Error("User already has an active workout plan");
@@ -718,13 +718,9 @@ export const workoutRouter = {
     }),
 
   getCurrentWeekPlan: protectedProcedure.query(async ({ ctx }) => {
-    const [dbUser] = await db
-      .select()
-      .from(user)
-      .where(eq(user.email, ctx.session.user.email))
-      .execute();
+    const userId = Number(ctx.session.user.id);
 
-    if (!dbUser) {
+    if (!userId) {
       throw new Error("User not found");
     }
 
@@ -734,13 +730,15 @@ export const workoutRouter = {
       .from(workoutPlans)
       .where(
         and(
-          eq(workoutPlans.userId, dbUser.id),
+          eq(workoutPlans.userId, userId),
           eq(workoutPlans.status, "active"),
+          gte(workoutPlans.endDate, new Date().toISOString()),
         ),
       )
       .execute();
 
     if (!currentPlan) {
+      prettyPrint("No active plan found");
       return null;
     }
 
