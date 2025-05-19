@@ -1,4 +1,4 @@
-import beforeAfter from "@/assets/images/before-after.jpeg";
+import beforeAfter from "@/assets/images/before_after.jpeg";
 import { Image } from "expo-image";
 import React from "react";
 import { Text, View } from "react-native";

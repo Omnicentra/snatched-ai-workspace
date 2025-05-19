@@ -102,7 +102,7 @@ const TimeSelectionRow = ({
             if (Platform.OS === 'ios') {
               setShowPicker(!showPicker)
             } else {
-              setShowPicker(false)
+              setShowPicker(true)
             }
           })
         }}

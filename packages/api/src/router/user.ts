@@ -37,6 +37,9 @@ export const userRouter = createTRPCRouter({
    * bodyRating
    * Accepts image URLs and desired body shape to calculate various body-rating scores
    */
+  testHelloWorldQuery: publicProcedure.query(async ({ ctx }) => {
+    return "Hello World";
+  }),
   bodyRating: protectedProcedure
     .input(
       z.object({
@@ -109,7 +112,7 @@ export const userRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       const { deviceId, photoType, fileType } = input;
-      prettyPrint(input);
+      prettyPrint(JSON.stringify(input, null, 2));
       try {
         // Generate unique file name
         const fileName = `${uuidv4()}.${fileType.split("/").pop() ?? "jpg"}`;

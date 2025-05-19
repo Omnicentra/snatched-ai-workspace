@@ -1,5 +1,5 @@
 // app/(onboarding)/body-positivity.tsx
-import bodyPositivity from '@/assets/images/body-positivity.png'
+import bodyPositivity from '@/assets/images/body_positivity.png'
 import { StyledButton } from '@/components/core'; // Assuming you want to use the standard button
 import { withOnboardingTracking } from '@/components/core/withOnboardingTracking'
 import Constants from 'expo-constants'

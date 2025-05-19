@@ -1,6 +1,6 @@
 // app/(onboarding)/scan-back.tsx
 // Similar to scan-front/side, adjust titles, progress, tips, and navigation target.
-import sillhouetteBack from '@/assets/images/silhouette-back.png'
+import sillhouetteBack from '@/assets/images/silhouette_back.png'
 import { getOrCreateDeviceId } from '@/utils/device-id'
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'
 import { BlurView } from 'expo-blur'

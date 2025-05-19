@@ -1,4 +1,4 @@
-import logo from "@/assets/images/logo-dark.png";
+import logo from "@/assets/images/logo_dark.png";
 import { PedometerCard } from "@/components/core/PedometerCard";
 import { DayPill } from "@/components/home/DayPill";
 import { NutritionStats } from "@/components/home/NutritionStats";

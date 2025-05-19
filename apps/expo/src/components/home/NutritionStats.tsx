@@ -1,3 +1,7 @@
+import React, { useEffect, useMemo } from "react";
+import { Image, Pressable, Text, View } from "react-native";
+import { useAssets } from "expo-asset";
+import { useRouter } from "expo-router";
 import { ProgressRing } from "@/components/core";
 import { onboardingStore$ } from "@/stores/onboarding.store";
 import {
@@ -8,13 +12,11 @@ import {
 import { api } from "@/utils/api";
 import { Ionicons } from "@expo/vector-icons";
 import { use$ } from "@legendapp/state/react";
-import { formatPostgresTimestampToDate } from "@omc/validators";
 import * as Sentry from "@sentry/react-native";
 import { differenceInDays } from "date-fns";
-import { useAssets } from "expo-asset";
-import { useRouter } from "expo-router";
-import React, { useEffect, useMemo } from "react";
-import {   Image, Pressable, Text, View } from "react-native";
+
+import { formatPostgresTimestampToDate } from "@omc/validators";
+
 import { logger } from "~/lib/logger";
 
 interface NutritionStatsProps {
@@ -25,7 +27,12 @@ export const NutritionStats = ({
   selectedDate = new Date(),
 }: NutritionStatsProps) => {
   const router = useRouter();
-  const {bodyRating, currentImage, snatchedImage, nextImageTransformationTime} = use$(transformationStore$);
+  const {
+    bodyRating,
+    currentImage,
+    snatchedImage,
+    nextImageTransformationTime,
+  } = use$(transformationStore$);
 
   // Convert date to ISO string for API call
   const dateString = selectedDate.toISOString();
@@ -36,18 +43,6 @@ export const NutritionStats = ({
     { enabled: !!dateString },
   );
 
-  // Calculate days since last scan
-  const { daysSinceLastScan, canTakeNewScan } = useMemo(() => {
-    const now = new Date();
-    const lastBodyRating = data?.createdAt;
-    const lastBodyRatingDate = formatPostgresTimestampToDate(lastBodyRating);
-
-    const daysSinceLastScan = lastBodyRating ? differenceInDays(now, lastBodyRatingDate) : null;
-    const canTakeNewScan = daysSinceLastScan === null || daysSinceLastScan >= 7;
-    logger.debug(`daysSinceLastScan: ${daysSinceLastScan}, canTakeNewScan: ${canTakeNewScan}`);
-    return { daysSinceLastScan, canTakeNewScan }
-  }, [data]);
-
   // Sync DB body rating with transformation store when data changes
   useEffect(() => {
     if (data?.bodyRating) {
@@ -56,13 +51,32 @@ export const NutritionStats = ({
   }, [data]);
 
   const [assets] = useAssets([
-    require('@/assets/icons/body-parts/Waist Definition.png'),
-    require('@/assets/icons/body-parts/Arm Shape.png'),
-    require('@/assets/icons/body-parts/Glute Shape.png'),
-    require('@/assets/icons/body-parts/Hip Curve.png'),
-    require('@/assets/icons/body-parts/Back Definition.png'),
-    require('@/assets/icons/body-parts/Posture.png'),
+    require("@/assets/icons/body-parts/waist_definition.png"),
+    require("@/assets/icons/body-parts/arm_shape.png"),
+    require("@/assets/icons/body-parts/glute_shape.png"),
+    require("@/assets/icons/body-parts/hip_curve.png"),
+    require("@/assets/icons/body-parts/back_definition.png"),
+    require("@/assets/icons/body-parts/posture.png"),
   ]);
+
+  // Calculate days since last scan
+  const { daysSinceLastScan, canTakeNewScan } = useMemo(() => {
+    if (!data) {
+      return { daysSinceLastScan: null, canTakeNewScan: false };
+    }
+    const now = new Date();
+    const lastBodyRating = data.createdAt;
+    const lastBodyRatingDate = formatPostgresTimestampToDate(lastBodyRating);
+
+    const daysSinceLastScan = lastBodyRating
+      ? differenceInDays(now, lastBodyRatingDate)
+      : null;
+    const canTakeNewScan = daysSinceLastScan === null || daysSinceLastScan >= 7;
+    logger.debug(
+      `daysSinceLastScan: ${daysSinceLastScan}, canTakeNewScan: ${canTakeNewScan}`,
+    );
+    return { daysSinceLastScan, canTakeNewScan };
+  }, [data]);
 
   const { mutate: imageTransformation } =
     api.user.imageTransformation.useMutation({
@@ -81,17 +95,18 @@ export const NutritionStats = ({
 
   const { canRequest, canShow } = useMemo(() => {
     const now = new Date();
-    const canRequest = !nextImageTransformationTime || now >= new Date(nextImageTransformationTime);
+    const canRequest =
+      !nextImageTransformationTime ||
+      now >= new Date(nextImageTransformationTime);
     const canShow = !!currentImage && !!snatchedImage;
-    return { canRequest, canShow }
+    return { canRequest, canShow };
   }, [nextImageTransformationTime, currentImage, snatchedImage]);
 
   const buttonDisabled = !canShow && !canRequest;
 
-
-  const handlePress = canShow 
+  const handlePress = canShow
     ? () => router.push("/(modals)/transformation-preview")
-    : canRequest 
+    : canRequest
       ? () => requestTransformation()
       : undefined;
 
@@ -106,7 +121,9 @@ export const NutritionStats = ({
       router.push("/(modals)/progress-front");
       return;
     }
-    imageTransformation({ imageKeys: { front: frontImageKey || data.frontImageKey } });
+    imageTransformation({
+      imageKeys: { front: frontImageKey || data.frontImageKey },
+    });
     setNextImageTransformationTime();
   };
 
@@ -181,7 +198,7 @@ export const NutritionStats = ({
 
           {/* Days Until Next Scan */}
           {!canTakeNewScan && daysSinceLastScan !== null && (
-            <Text className="mb-3 font-inter text-sm text-gray-500">
+            <Text className="font-inter mb-3 text-sm text-gray-500">
               Next scan available in {7 - daysSinceLastScan} days
             </Text>
           )}

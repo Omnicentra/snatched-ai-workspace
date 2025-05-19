@@ -3,7 +3,7 @@ import { SafeAreaView, ScrollView, Text, View } from "react-native";
 import Constants from "expo-constants";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
-import YogaPose from "@/assets/images/yoga-pose.png";
+import YogaPose from "@/assets/images/yoga_pose.png";
 import { OnboardingHeader, StyledButton } from "@/components/core";
 import { withOnboardingTracking } from "@/components/core/withOnboardingTracking";
 

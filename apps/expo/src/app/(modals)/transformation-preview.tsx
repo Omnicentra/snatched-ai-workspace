@@ -1,13 +1,10 @@
-import type { ImageSourcePropType } from "react-native";
-import { Pressable, Text, useWindowDimensions, View } from "react-native";
 import Constants from "expo-constants";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { Pressable, Text, useWindowDimensions, View } from "react-native";
 // Import types for static images
-import placeholderBody from "@/assets/images/placeholders/placeholder-body.jpeg";
-import placeholderSnatched from "@/assets/images/placeholders/placeholder-snatched.jpeg";
 import { transformationStore$ } from "@/stores/transformation.store";
 import { Ionicons } from "@expo/vector-icons";
 import { observer, use$ } from "@legendapp/state/react";
@@ -22,13 +19,9 @@ const TransformationPreviewScreen = observer(() => {
     ((currentSnatchedScore ?? 0) / (potentialSnatchedScore ?? 100)) * 100,
   );
 
-  const currentImageSource = currentImage
-    ? { uri: currentImage }
-    : (placeholderBody as ImageSourcePropType);
+  const currentImageSource = { uri: currentImage }
 
-  const snatchedImageSource = snatchedImage
-    ? { uri: snatchedImage }
-    : (placeholderSnatched as ImageSourcePropType);
+  const snatchedImageSource = { uri: snatchedImage }
 
   const { width: WIDTH } = useWindowDimensions();
 

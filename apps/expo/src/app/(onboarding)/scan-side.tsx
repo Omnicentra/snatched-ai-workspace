@@ -1,6 +1,6 @@
 // app/(onboarding)/scan-side.tsx
 // Similar structure to scan-front.tsx, just change titles, progress, tips, and navigation target.
-import sillhouetteSide from '@/assets/images/silhouette-side.png'
+import sillhouetteSide from '@/assets/images/silhouette_side.png'
 import { getOrCreateDeviceId } from '@/utils/device-id'
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'
 import { BlurView } from 'expo-blur'

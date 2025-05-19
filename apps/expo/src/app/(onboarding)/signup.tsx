@@ -100,7 +100,6 @@ function SignupScreen() {
         {
           onSuccess: (ctx) => {
             console.log("Google sign in success:");
-            console.log(JSON.stringify(ctx, null, 2));
           },
           onError: (ctx) => {
             console.error("Google sign in error:", ctx.error);

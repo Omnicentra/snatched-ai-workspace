@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native'; // Added Alert, StyleSheet, Linking
 // No 'styled' import
-import sillhouetteFront from '@/assets/images/silhouette-front.png';
+import sillhouetteFront from '@/assets/images/silhouette_front.png';
 import { onboardingStore$ } from '@/stores/onboarding.store';
 import { api } from '@/utils/api';
 import { getOrCreateDeviceId } from '@/utils/device-id';
@@ -131,7 +131,7 @@ function ScanFrontScreen() {
   const [capturedImage, setCapturedImage] = useState<string | null>(null)
   const [isUploading, setIsUploading] = useState(false)
   const countdownRef = useRef<NodeJS.Timeout>()
-  
+
   // Get the mutations from tRPC
   const generatePhotoUploadUrl = api.user.generatePhotoUploadUrl.useMutation();
   const validateUploadedImage = api.user.validateUploadedImage.useMutation();
@@ -198,6 +198,27 @@ function ScanFrontScreen() {
       Alert.alert('Capture Failed', 'Could not take photo. Please try again.')
     }
   }
+
+  const handleGalleryUpload = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"], 
+        allowsEditing: false,
+        aspect: [3, 4],
+        quality: 0.7,
+      });
+
+      if (!result.canceled && result.assets.length > 0) {
+        const asset = result.assets[0];
+        if (asset) {
+          setCapturedImage(asset.uri);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to select image from gallery:', error);
+      Alert.alert('Error', 'Failed to select image from gallery.');
+    }
+  };
 
   const handlePhotoUpload = async (uri: string, mimeType: string) => {
     setIsUploading(true);
@@ -273,27 +294,6 @@ function ScanFrontScreen() {
     setType(current => (current === 'front' ? 'back' : 'front'))
   }
 
-  const handleGalleryUpload = async () => {
-    try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ["images"], 
-        allowsEditing: false,
-        aspect: [3, 4],
-        quality: 0.7,
-      });
-
-      if (!result.canceled && result.assets.length > 0) {
-        const asset = result.assets[0];
-        if (asset) {
-          setCapturedImage(asset.uri);
-        }
-      }
-    } catch (error) {
-      console.error('Failed to select image from gallery:', error);
-      Alert.alert('Error', 'Failed to select image from gallery.');
-    }
-  };
-
   if (!cameraPermission) {
     return <View className="flex-1 bg-black" /> // Loading state
   }
@@ -330,6 +330,7 @@ function ScanFrontScreen() {
       </SafeAreaView>
     )
   }
+
 
   return (
     <View className="flex-1 bg-black/20">

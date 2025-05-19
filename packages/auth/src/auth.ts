@@ -61,7 +61,7 @@ export const config = {
       redirectURI: redirectURI + "/apple",
     },
     google: {
-      // prompt: "select_account",
+      prompt: "select_account",
       clientId: env.AUTH_GOOGLE_ID,
       clientSecret: env.AUTH_GOOGLE_SECRET,
       redirectURI: redirectURI + "/google",
