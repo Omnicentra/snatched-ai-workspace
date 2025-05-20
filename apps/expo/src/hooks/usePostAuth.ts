@@ -1,6 +1,6 @@
 import { mixpanel } from "@/lib/utils";
 import { api } from "@/utils/api";
-import type { Session } from "@/utils/auth";
+import { authClient } from "@/utils/auth";
 import { getOrCreateDeviceId } from "@/utils/device-id";
 import { useLDClient } from "@launchdarkly/react-native-client-sdk";
 import * as Sentry from "@sentry/react-native";
@@ -11,14 +11,14 @@ import type { CustomerInfo } from "react-native-purchases";
 import Purchases from "react-native-purchases";
 
 interface UsePostAuthProps {
-  session: Session | null;
   onSuccess?: (info: CustomerInfo) => void;
   onTrack?: (deviceId: string) => void;
 }
 
-export function usePostAuth({ session, onSuccess, onTrack }: UsePostAuthProps) {
+export function usePostAuth({ onSuccess, onTrack }: UsePostAuthProps) {
   const { mutate: createUserDevice } = api.userDevices.create.useMutation();
   const ldc = useLDClient();
+  const { data: session } = authClient.useSession();
 
   useEffect(() => {
     if (session?.user) {

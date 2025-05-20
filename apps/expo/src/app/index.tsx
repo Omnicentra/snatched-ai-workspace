@@ -5,7 +5,7 @@ import * as SecureStore from "expo-secure-store";
 import { authClient } from "@/utils/auth";
 import * as SplashScreen from "expo-splash-screen";
 import { logger } from "@/lib/logger";
-
+import { useLDClient } from "@launchdarkly/react-native-client-sdk";
 // Check onboarding completion status from SecureStore
 const checkOnboardingStatus = async () => {
   try {
@@ -20,6 +20,7 @@ export default function AppEntry() {
   const [isLoading, setIsLoading] = React.useState(true);
   const [isOnboardingComplete, setIsOnboardingComplete] = React.useState(false);
   const { data: session, isPending: isSessionLoading } = authClient.useSession();
+  const ldc = useLDClient();
 
   useEffect(() => {
     async function initializeApp() {
@@ -60,10 +61,15 @@ export default function AppEntry() {
   }
 
   // If onboarding is complete but no session, go to auth
-  if (!session?.user) {
-    return <Redirect href="/(auth)/login" />;
+  if (session?.user) {
+    void ldc.identify({
+      key: session.user.id,
+      name: session.user.name,
+      email: session.user.email,
+    });
+    return <Redirect href="/(tabs)/home" />;
   }
 
   // If both onboarding is complete and user is authenticated, go to home
-  return <Redirect href="/(tabs)/home" />;
+  return <Redirect href="/(auth)/login" />;
 }

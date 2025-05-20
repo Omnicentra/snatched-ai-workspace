@@ -22,7 +22,7 @@ const mixpanelToken = String(Constants.expoConfig?.extra?.eas?.mixpanelToken)
 const trackAutomaticEvents = false;
 export const mixpanel = new Mixpanel(mixpanelToken, trackAutomaticEvents);
 
-export const launchdarklyClientKey = String(Constants.expoConfig?.extra?.eas?.launchdarklyClientKey)
+export const launchdarklyClientKey = String(Constants.expoConfig?.extra?.eas?.launchdarklyClientKey) || 'mob-a16cc7b3-1fbb-465c-a5f4-d23c83d5858c'
 
 
 // UTIL FUNCTIONS

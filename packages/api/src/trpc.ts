@@ -12,6 +12,8 @@ import { ZodError } from "zod";
 import { db } from "@omc/db/client";
 import { auth } from "@omc/auth";
 import type { S3Client } from "@aws-sdk/client-s3";
+import type { Logger } from "./types/logger";
+
 /**
  * 1. CONTEXT
  *
@@ -27,6 +29,7 @@ import type { S3Client } from "@aws-sdk/client-s3";
 export const createTRPCContext = async (opts: {
   headers: Headers;
   s3: S3Client;
+  logger: Logger;
 }) => {
   const session = await auth.api.getSession({
     headers: opts.headers,
@@ -35,6 +38,7 @@ export const createTRPCContext = async (opts: {
     session,
     db,
     s3: opts.s3,
+    logger: opts.logger,
     headers: opts.headers,
   };
 };
@@ -81,7 +85,7 @@ export const createTRPCRouter = t.router;
  * You can remove this if you don't like it, but it can help catch unwanted waterfalls by simulating
  * network latency that would occur in production but not in local development.
  */
-const timingMiddleware = t.middleware(async ({ next, path }) => {
+const timingMiddleware = t.middleware(async ({ next, path, ctx }) => {
   const start = Date.now();
 
   if (t._config.isDev) {
@@ -93,7 +97,7 @@ const timingMiddleware = t.middleware(async ({ next, path }) => {
   const result = await next();
 
   const end = Date.now();
-  console.log(`[TRPC] ${path} took ${end - start}ms to execute`);
+  ctx.logger.trpc(`${path} took ${end - start}ms to execute`);
 
   return result;
 });

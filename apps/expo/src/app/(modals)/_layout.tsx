@@ -7,6 +7,7 @@ export default function ModalsLayout() {
       <Stack.Screen name="profile" />
       <Stack.Screen name="visual-preview" />
       <Stack.Screen name="snatch-hack-detail" />
+      <Stack.Screen name="meal-scan" />
       <Stack.Screen name="personal-info" options={{ presentation: "modal" }} />
       <Stack.Screen name="subscription" options={{ presentation: "modal" }} />
       <Stack.Screen name="workout-detail" />

@@ -11,6 +11,10 @@
     "./onboarding": {
       "types": "./dist/onboarding.d.ts",
       "default": "./src/onboarding.ts"
+    },
+    "./nutrition": {
+      "types": "./dist/nutrition.d.ts",
+      "default": "./src/nutrition.ts"
     }
   },
   "license": "MIT",

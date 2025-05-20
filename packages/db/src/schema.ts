@@ -17,7 +17,7 @@ import {
   unique,
   varchar,
 } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
+import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 
 export const bodyMeasurements = pgTable(
@@ -1157,3 +1157,19 @@ export const createRecipeSchema = createInsertSchema(recipes, {
   createdAt: true,
   updatedAt: true,
 });
+
+
+export const createRecipeInstructionSchema = createSelectSchema(recipeInstructions, {
+  recipeId: z.number().min(1).max(1000),
+  stepNumber: z.number().min(1).max(1000),
+  instruction: z.string().min(1).max(1000),
+});
+
+export const createRecipeIngredientSchema = createSelectSchema(recipeIngredients, {
+  recipeId: z.number().min(1).max(1000),
+  ingredientName: z.string().min(1).max(1000),
+  amount: z.string().min(1).max(1000),
+  unit: z.string().min(1).max(1000),
+  orderIndex: z.number().min(1).max(1000),
+});
+

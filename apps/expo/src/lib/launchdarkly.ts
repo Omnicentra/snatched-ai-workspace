@@ -1,6 +1,7 @@
 import { ReactNativeLDClient, AutoEnvAttributes } from "@launchdarkly/react-native-client-sdk";
 import Constants from "expo-constants";
-import { launchdarklyClientKey } from "./utils";
+import { appVariant, launchdarklyClientKey } from "./utils";
+import { logger } from "./logger";
 
 class LaunchDarklyClient {
   private static instance: ReactNativeLDClient | null = null;
@@ -11,17 +12,18 @@ class LaunchDarklyClient {
   }
 
   public static getInstance(): ReactNativeLDClient {
+    logger.info(appVariant);
+    logger.info(launchdarklyClientKey);
     LaunchDarklyClient.instance ??= new ReactNativeLDClient(
       LaunchDarklyClient.CLIENT_KEY,
       AutoEnvAttributes.Enabled,
       {
-        debug: true,
+        debug: appVariant === 'development',
         applicationInfo: {
-          id: "snatched-ai",
+          id: "ld-rn-test-app",
           version: Constants.expoConfig?.version,
           name: "snatched-ai",
         },
-        initialConnectionMode: 'polling'
       }
     );
     return LaunchDarklyClient.instance;

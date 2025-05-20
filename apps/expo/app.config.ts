@@ -242,7 +242,8 @@ const createConfig = ({ config }: ConfigContext): ExpoConfig => ({
       cooldownWorkoutId: process.env.COOLDOWN_WORKOUT_ID,
       revenuecatProjectAppleApiKey: "appl_ihLfvNYWzXDhzMTPQoGLwVGsJKF",
       revenuecatProjectGoogleApiKey: "goog_zymKRJSOYmVtSusuckLwdQuXgIk",
-      mixpanelToken: process.env.MIXPANEL_TOKEN
+      mixpanelToken: process.env.MIXPANEL_TOKEN,
+      launchdarklyClientKey: process.env.LAUNCHDARKLY_CLIENT_KEY,
     },
   },
   owner: "omnicentra",

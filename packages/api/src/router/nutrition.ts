@@ -2,22 +2,34 @@
 import type { S3Client } from "@aws-sdk/client-s3";
 import type { TRPCRouterRecord } from "@trpc/server";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { GoogleGenAI, Type } from "@google/genai";
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { createSelectSchema } from "drizzle-zod";
 import OpenAI from "openai";
+import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 
+import type { Meal, MealPlan } from "@omc/validators/nutrition";
 import { db } from "@omc/db/client";
 import {
   mealPlans,
   mealSchedule,
+  recipeCategories,
   recipeIngredients,
   recipeInstructions,
   recipes,
   user,
+  userRecipes,
 } from "@omc/db/schema";
 import { prettyPrint, slugify } from "@omc/validators";
+import {
+  mealPlanSchema as _mealPlanSchema,
+  foodAnalysisSchema,
+  mealLogSchema,
+  recipeSchema,
+  scannedMealSubmissionSchema,
+} from "@omc/validators/nutrition";
 
 import { protectedProcedure, publicProcedure } from "../trpc";
 
@@ -25,59 +37,7 @@ const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY });
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-const ingredientSchema = z.object({
-  name: z.string(),
-  amount: z.number(),
-  unit: z.string(),
-});
-
-const instructionSchema = z.object({
-  stepNumber: z.number(),
-  instruction: z.string(),
-});
-
-const mealSchema = z.object({
-  category: z.string(),
-  time: z.string(),
-  calories: z.number(),
-  protein: z.number(),
-  carbs: z.number(),
-  fat: z.number(),
-  name: z.string(),
-  ingredients: z.array(ingredientSchema),
-  instructions: z.array(instructionSchema),
-});
-
-const recipeSchema = z.object({
-  id: z.number(),
-  title: z.string(),
-  description: z.string().nullable(),
-  servings: z.number(),
-  prepTimeMinutes: z.number().nullable(),
-  calories: z.number(),
-  proteinGrams: z.number(),
-  carbsGrams: z.number(),
-  fatsGrams: z.number(),
-  imageUrl: z.string().nullable(),
-  rating: z.string().nullable(),
-  reviewCount: z.number().nullable(),
-  categoryId: z.number().nullable(),
-  createdAt: z.string().nullable(),
-  updatedAt: z.string().nullable(),
-});
-
-const _mealPlanSchema = z.object({
-  meals: z.array(mealSchema),
-  targetCalories: z.number(),
-  targetProtein: z.number(),
-  targetCarbs: z.number(),
-  targetFat: z.number(),
-});
-
-type Meal = z.infer<typeof mealSchema>;
-
-type MealPlan = z.infer<typeof _mealPlanSchema>;
-
+// Helper function to generate and upload an image for a recipe
 const generateAndUploadImage = async (
   s3: S3Client,
   recipeName: string,
@@ -157,22 +117,6 @@ const createNewRecipe = async (s3: S3Client, meal: Meal) => {
 
   return recipe;
 };
-
-const mealLogSchema = z.object({
-  id: z.number(),
-  mealType: z.string(),
-  scheduledTime: z.string(),
-  completedAt: z.string().nullable(),
-  recipe: z.object({
-    id: z.number(),
-    title: z.string(),
-    imageUrl: z.string().nullable(),
-    calories: z.number(),
-    proteinGrams: z.number(),
-    carbsGrams: z.number(),
-    fatsGrams: z.number(),
-  }),
-});
 
 // Helper function to generate meal plan using Gemini
 async function generateMealPlanWithGemini(): Promise<MealPlan> {
@@ -366,8 +310,8 @@ export const nutritionRouter = {
         .where(
           and(
             eq(mealPlans.userId, userId),
-            sql`DATE(${mealPlans.date}) = CURRENT_DATE`
-          )
+            sql`DATE(${mealPlans.date}) = CURRENT_DATE`,
+          ),
         )
         .execute();
 
@@ -666,21 +610,26 @@ export const nutritionRouter = {
       .where(inArray(mealSchedule.mealPlanId, mealPlanIds))
       .execute();
 
-      // Format the meal schedules such that the key is the meal plan date and the value is the meal schedules as an array
-      const formattedMealSchedules: Record<string, typeof mealSchedule.$inferSelect[]> = {};
+    // Format the meal schedules such that the key is the meal plan date and the value is the meal schedules as an array
+    const formattedMealSchedules: Record<
+      string,
+      (typeof mealSchedule.$inferSelect)[]
+    > = {};
 
-      for (const mealSchedule of mealSchedules) {
-        // Get the meal plan for the meal schedule
-        const mealPlan = dbMealPlans.find((mealPlan) => mealPlan.id === mealSchedule.mealPlanId);
+    for (const mealSchedule of mealSchedules) {
+      // Get the meal plan for the meal schedule
+      const mealPlan = dbMealPlans.find(
+        (mealPlan) => mealPlan.id === mealSchedule.mealPlanId,
+      );
 
-        // If the meal plan is found, add the meal schedule to the formatted meal schedules
-        if (mealPlan) {
-          const dateStr = new Date(mealPlan.date).toISOString();
-          const key = dateStr.split("T")[0]!;
-          formattedMealSchedules[key] ??= [];
-          formattedMealSchedules[key].push(mealSchedule);
-        }
+      // If the meal plan is found, add the meal schedule to the formatted meal schedules
+      if (mealPlan) {
+        const dateStr = new Date(mealPlan.date).toISOString();
+        const key = dateStr.split("T")[0]!;
+        formattedMealSchedules[key] ??= [];
+        formattedMealSchedules[key].push(mealSchedule);
       }
+    }
 
     return formattedMealSchedules;
   }),
@@ -730,9 +679,9 @@ export const nutritionRouter = {
         throw new Error("User not found");
       }
 
-      // Get meals from the past 24 hours
-      const oneDayAgo = new Date();
-      oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+      // Get meals for the current day
+      // TODO: This is a temporary solution to get the meals for the current day
+      const today = new Date().toISOString().split("T")[0]!;
 
       const recentMeals = await db
         .select({
@@ -749,7 +698,7 @@ export const nutritionRouter = {
           and(
             eq(mealPlans.userId, dbUser.id),
             eq(mealSchedule.completed, true),
-            sql`${mealSchedule.updatedAt} >= ${oneDayAgo.toISOString()}::timestamp`,
+            sql`${mealSchedule.updatedAt} >= ${today}::timestamp`,
           ),
         )
         .orderBy(sql`${mealSchedule.updatedAt} DESC`)
@@ -757,4 +706,378 @@ export const nutritionRouter = {
 
       return recentMeals;
     }),
+
+  analyzeFoodImage: protectedProcedure
+    .input(
+      z.object({
+        imageBase64: z.string(),
+      }),
+    )
+    .output(foodAnalysisSchema)
+    .mutation(async({ input }) => {
+      try {
+        // Call Gemini API to analyze the food image
+        const response = await ai.models.generateContent({
+          model: "gemini-2.0-flash",
+          contents: [
+            {
+              role: "user",
+              parts: [
+                {
+                  text: `Identify the food in the image and estimate its nutritional information based on typical serving sizes. Provide the following for the whole item:
+                          - Food name
+                          - Estimated calories (kcal)
+                          - Estimated macronutrients (grams of protein, carbohydrates, and fats)
+                          - ingredients list (with amounts and units)
+                          - step-by-step cooking instructions
+
+                        Be realistic, assume a normal serving size, and if uncertain, clearly state your assumption.
+                        `,
+                },
+                {
+                  inlineData: {
+                    mimeType: "image/jpeg",
+                    data: input.imageBase64,
+                  },
+                },
+              ],
+            },
+          ],
+          config: {
+            temperature: 0.2,
+            responseMimeType: "application/json",
+            responseSchema: {
+              type: Type.OBJECT,
+              properties: {
+                foodName: { type: Type.STRING },
+                calories: { type: Type.NUMBER },
+                protein: { type: Type.NUMBER },
+                carbs: { type: Type.NUMBER },
+                fats: { type: Type.NUMBER },
+                servingSize: { type: Type.STRING },
+                assumptions: { type: Type.STRING },
+                ingredients: {
+                  type: Type.ARRAY,
+                  items: {
+                    type: Type.OBJECT,
+                    properties: {
+                      name: { type: Type.STRING },
+                      amount: { type: Type.NUMBER },
+                      unit: { type: Type.STRING },
+                    },
+                    required: ["name", "amount", "unit"],
+                  },
+                },
+                instructions: {
+                  type: Type.ARRAY,
+                  items: {
+                    type: Type.OBJECT,
+                    properties: {
+                      stepNumber: { type: Type.NUMBER },
+                      instruction: { type: Type.STRING },
+                    },
+                    required: ["stepNumber", "instruction"],
+                  },
+                },
+              },
+              required: [
+                "foodName",
+                "calories",
+                "protein",
+                "carbs",
+                "fats",
+                "servingSize",
+                "assumptions",
+                "instructions",
+                "ingredients",
+              ],
+            },
+          },
+        });
+
+        if (!response.text) {
+          throw new Error("No response from Gemini");
+        }
+
+        return JSON.parse(response.text) as z.infer<typeof foodAnalysisSchema>;
+      } catch (error) {
+        console.error("Error analyzing food image:", error);
+        // Fallback to a default response for demo purposes
+        return {
+          foodName: "Unknown Food Item",
+          calories: 250,
+          protein: 15,
+          carbs: 30,
+          fats: 10,
+          servingSize: "100g",
+          assumptions: "Assumed a normal serving size of 100g",
+          instructions: [],
+          ingredients: [],
+        };
+      }
+    }),
+
+  validateFoodImage: publicProcedure
+    .input(
+      z.object({
+        imageKey: z.string().optional(),
+        imageBase64: z.string().optional(),
+      }),
+    )
+    .output(
+      z.object({
+        isValidFood: z.boolean(),
+        confidence: z.number(),
+        message: z.string(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      try {
+        if (!input.imageKey && !input.imageBase64) {
+          throw new Error("Either imageKey or imageBase64 must be provided");
+        }
+
+        // Use Gemini to check if the image contains food
+        const response = await ai.models.generateContent({
+          model: "gemini-2.0-flash",
+          contents: [
+            {
+              role: "user",
+              parts: [
+                {
+                  text: "Is this an image of food? Respond with only a JSON object that has three fields: isValidFood (boolean), confidence (number between 0 and 1), and message (string with reasoning). Return false for isValidFood if there is no food or if the image is inappropriate.",
+                },
+                input.imageKey
+                  ? {
+                      text: `Image URL: https://snatched-ai-bucket.s3.amazonaws.com/${input.imageKey}`,
+                    }
+                  : {
+                      inlineData: {
+                        mimeType: "image/jpeg",
+                        data: input.imageBase64!,
+                      },
+                    },
+              ],
+            },
+          ],
+          config: {
+            temperature: 0.2,
+            responseMimeType: "application/json",
+            responseSchema: {
+              type: Type.OBJECT,
+              properties: {
+                isValidFood: { type: Type.BOOLEAN },
+                confidence: { type: Type.NUMBER },
+                message: { type: Type.STRING },
+              },
+              required: ["isValidFood", "confidence", "message"],
+            },
+          },
+        });
+
+        if (!response.text) {
+          throw new Error("No response from Gemini");
+        }
+
+        const result = JSON.parse(response.text) as {
+          isValidFood: boolean;
+          confidence: number;
+          message: string;
+        };
+
+        return result;
+      } catch (error) {
+        console.error("Error validating food image:", error);
+        return {
+          isValidFood: false,
+          confidence: 0,
+          message: "Failed to validate image",
+        };
+      }
+    }),
+
+  generateFoodImageUploadUrl: publicProcedure
+    .input(
+      z.object({
+        mealName: z.string(),
+        fileType: z.string(),
+      }),
+    )
+    .output(
+      z.object({
+        presignedUrl: z.string(),
+        key: z.string(),
+        fileName: z.string(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { mealName, fileType } = input;
+
+      try {
+        // Generate unique file name with UUID
+        const fileExtension = fileType.split("/").pop() ?? "jpg";
+        const fileName = `${uuidv4()}.${fileExtension}`;
+
+        // Create S3 key path
+        const sanitizedMealName = slugify(mealName);
+        const key = `recipes/${sanitizedMealName}.${fileExtension}`;
+
+        // Generate presigned URL for direct upload
+        const putCommand = new PutObjectCommand({
+          Bucket: "snatched-ai-bucket",
+          Key: key,
+          ContentType: fileType,
+        });
+
+        // Generate signed URL that expires in 10 minutes
+        const presignedUrl = await getSignedUrl(ctx.s3, putCommand, {
+          expiresIn: 600,
+        });
+
+        return {
+          presignedUrl,
+          key,
+          fileName,
+        };
+      } catch (error) {
+        console.error("Error generating upload URL:", error);
+        throw new Error("Failed to generate upload URL for food image");
+      }
+    }),
+
+  submitScannedMeal: protectedProcedure
+    .input(scannedMealSubmissionSchema)
+    .mutation(async ({ ctx, input }) => {
+      const userId = Number(ctx.session.user.id);
+      const { ingredients, instructions } = input;
+
+      try {
+        // 1. Get today's meal plan or create if it doesn't exist
+        const [todaysMealPlan] = await db
+          .select()
+          .from(mealPlans)
+          .where(
+            and(
+              eq(mealPlans.userId, userId),
+              sql`DATE(${mealPlans.date}) = CURRENT_DATE`,
+            ),
+          )
+          .execute();
+
+        if (!todaysMealPlan) {
+          throw new Error("No meal plan found for today");
+        }
+
+        const mealPlanId = todaysMealPlan.id;
+
+        // 2. Upsert the recipe from the scanned food data
+        const [recipe] = await db
+          .insert(recipes)
+          .values({
+            title: input.foodName,
+            description: `Scanned meal: ${input.foodName}`,
+            servings: 1,
+            prepTimeMinutes: 5, // Default value for scanned meals
+            calories: input.calories,
+            proteinGrams: input.protein,
+            carbsGrams: input.carbs,
+            fatsGrams: input.fats,
+            imageUrl: input.imageKey
+              ? `https://snatched-ai-bucket.s3.amazonaws.com/${input.imageKey}`
+              : null,
+            categoryId: input.categoryId,
+          })
+          .returning();
+
+        if (!recipe) {
+          throw new Error("Failed to create recipe from scanned meal");
+        }
+
+        // 3. Add ingredients to recipe
+        const ingredientsToInsert = ingredients.map((ingredient, index) => ({
+          recipeId: recipe.id,
+          ingredientName: ingredient.name,
+          amount: ingredient.amount.toString(),
+          unit: ingredient.unit,
+          orderIndex: index + 1,
+        }));
+
+        await db.insert(recipeIngredients).values(ingredientsToInsert);
+
+        // 4. Add instructions to recipe
+        const instructionsToInsert = instructions.map((instruction) => ({
+          recipeId: recipe.id,
+          stepNumber: instruction.stepNumber,
+          instruction: instruction.instruction,
+        }));
+
+        await db.insert(recipeInstructions).values(instructionsToInsert);
+
+        // 5. Add to user recipes
+        await db
+          .insert(userRecipes)
+          .values({
+            userId,
+            recipeId: recipe.id,
+            isFavorite: false,
+            lastCookedAt: new Date().toISOString(),
+          })
+          .onConflictDoUpdate({
+            target: [userRecipes.userId, userRecipes.recipeId],
+            set: {
+              lastCookedAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            },
+          });
+
+        // 6. Find existing meal schedule for the given meal type, or create a new one
+        const [existingMeal] = await db
+          .select()
+          .from(mealSchedule)
+          .where(
+            and(
+              eq(mealSchedule.mealPlanId, mealPlanId),
+              eq(mealSchedule.mealType, input.mealType.toLowerCase()),
+            ),
+          )
+          .execute();
+
+        if (existingMeal) {
+          // Update existing meal schedule
+          await db
+            .update(mealSchedule)
+            .set({
+              recipeId: recipe.id,
+              completed: true,
+              completedAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            })
+            .where(eq(mealSchedule.id, existingMeal.id));
+        } else {
+          // Create new meal schedule
+          await db.insert(mealSchedule).values({
+            mealPlanId,
+            recipeId: recipe.id,
+            mealType: input.mealType.toLowerCase(),
+            scheduledTime: new Date().toLocaleTimeString("en-US", {
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: false,
+            }),
+            completed: true,
+            completedAt: new Date().toISOString(),
+          });
+        }
+
+        return {
+          success: true,
+          recipeId: recipe.id,
+          message: "Meal successfully logged",
+        };
+      } catch (error) {
+        console.error("Error submitting scanned meal:", error);
+        throw new Error("Failed to submit scanned meal");
+      }
+    }),
+
 } satisfies TRPCRouterRecord;

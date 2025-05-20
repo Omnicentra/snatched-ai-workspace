@@ -13,34 +13,42 @@ export async function seedRecipeCategories() {
 
   const categories = [
     {
+      id: 1,
       name: "Breakfast",
       description: "Nutritious breakfast options to start your day right",
     },
     {
+      id: 2,
       name: "Lunch",
       description: "Balanced lunch meals to keep you energized throughout the day",
     },
     {
+      id: 3,
       name: "Dinner",
       description: "Healthy dinner options to complete your day",
     },
     {
+      id: 4,
       name: "Snacks",
       description: "Healthy snacks and small bites between meals",
     },
     {
+      id: 5,
       name: "Desserts",
       description: "Healthier dessert options for occasional treats",
     },
     {
+      id: 6,
       name: "Smoothies",
       description: "Nutritious and delicious smoothies and drinks",
     },
     {
+      id: 7,
       name: "High Protein",
       description: "Meals focused on high protein content for muscle building",
     },
     {
+      id: 8,
       name: "Low Carb",
       description: "Meals with low carbohydrate content",
     },

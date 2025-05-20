@@ -1,0 +1,114 @@
+{
+    "foodName": "Grilled Salmon with Glaze and Grilled Vegetables",
+    "calories": 450,
+    "protein": 30,
+    "carbs": 25,
+    "fats": 25,
+    "servingSize": "1 salmon fillet (6oz) with vegetables",
+    "assumptions":
+      "I am assuming a standard serving size of salmon (4-6 oz) and typical amounts of vegetables. The glaze is assumed to be a honey-soy based glaze.",
+    "instructions": [
+      {
+        "stepNumber": 1,
+        "instruction":
+          "Prepare the glaze: In a small bowl, whisk together honey, soy sauce, minced garlic, ginger, and a pinch of red pepper flakes.",
+      },
+      {
+        "stepNumber": 2,
+        "instruction":
+          "Marinate the salmon: Place the salmon fillet in a dish and pour the glaze over it. Let it marinate for at least 15 minutes.",
+      },
+      {
+        "stepNumber": 3,
+        "instruction":
+          "Prepare the vegetables: Wash and chop the zucchini, yellow squash, and red onion into slices or wedges. Toss the vegetables with olive oil, salt, and pepper.",
+      },
+      {
+        "stepNumber": 4,
+        "instruction":
+          "Preheat the grill: Preheat your grill to medium-high heat.",
+      },
+      {
+        "stepNumber": 5,
+        "instruction":
+          "Grill the vegetables: Place the vegetables on the grill and cook for about 5-7 minutes, flipping occasionally, until they are tender and slightly charred.",
+      },
+      {
+        "stepNumber": 6,
+        "instruction":
+          "Grill the salmon: Place the marinated salmon on the grill, skin-side down if it has skin. Cook for about 4-6 minutes per side, or until the salmon is cooked through and flakes easily with a fork. Baste with extra glaze during the last few minutes of grilling.",
+      },
+      {
+        "stepNumber": 7,
+        "instruction":
+          "Serve: Serve the grilled salmon with the grilled vegetables. Garnish with fresh parsley, if desired.",
+      },
+    ],
+    "ingredients": [
+      {
+        "name": "Salmon fillet",
+        "amount": 6,
+        "unit": "oz"
+      },
+      {
+        "name": "tablespoons",
+        "amount": 2,
+        "unit": "tablespoons"
+      },
+      {
+        "name": "tablespoon",
+        "amount": 1,
+        "unit": "tablespoon"
+      },
+      {
+        "name": "teaspoon",
+        "amount": 1,
+        "unit": "teaspoon"
+      },
+      {
+        "name": "teaspoon",
+        "amount": 1,
+        "unit": "teaspoon"
+      },
+      {
+        "name": "Zucchini",
+        "amount": 1,
+        "unit": "medium"
+      },
+      {
+        "name": "Yellow Squash",
+        "amount": 1,
+        "unit": "medium"
+      },
+      {
+        "name": "Red Onion",
+        "amount": 0.5,
+        "unit": "medium"
+      },
+      {
+        "name": "Cherry Tomatoes",
+        "amount": 6,
+        "unit": "number"
+      },
+      {
+        "name": "Asparagus Spears",
+        "amount": 6,
+        "unit": "number"
+      },
+      {
+        "name": "tablespoon",
+        "amount": 1,
+        "unit": "tablespoon"
+      },
+      {
+        "name": "teaspoon",
+        "amount": 0.25,
+        "unit": "teaspoon"
+      },
+      {
+        "name": "teaspoon",
+        "amount": 0.25,
+        "unit": "teaspoon"
+      }
+    ],
+  }

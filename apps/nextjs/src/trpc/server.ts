@@ -4,6 +4,8 @@ import { createHydrationHelpers } from "@trpc/react-query/rsc";
 
 import type { AppRouter } from "@omc/api";
 import { createCaller, createTRPCContext } from "@omc/api";
+import { s3Client } from "~/server/s3";
+import { logger } from "~/server/logger";
 
 import { createQueryClient } from "./query-client";
 
@@ -17,6 +19,8 @@ const createContext = cache(async () => {
 
   return createTRPCContext({
     headers: heads,
+    s3: s3Client,
+    logger,
   });
 });
 
