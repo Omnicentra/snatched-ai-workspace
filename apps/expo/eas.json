@@ -23,7 +23,8 @@
       "env": {
         "APP_VARIANT": "development",
         "COOLDOWN_WORKOUT_ID": "47",
-        "MIXPANEL_TOKEN": "b28be037875318bfaa4422b70f9666f7"
+        "MIXPANEL_TOKEN": "b28be037875318bfaa4422b70f9666f7",
+        "LAUNCHDARKLY_CLIENT_KEY": "mob-a16cc7b3-1fbb-465c-a5f4-d23c83d5858c"
       },
       "channel": "development"
     },
@@ -37,7 +38,8 @@
       "env": {
         "APP_VARIANT": "development",
         "COOLDOWN_WORKOUT_ID": "47",
-        "MIXPANEL_TOKEN": "b28be037875318bfaa4422b70f9666f7"
+        "MIXPANEL_TOKEN": "b28be037875318bfaa4422b70f9666f7",
+        "LAUNCHDARKLY_CLIENT_KEY": "mob-a16cc7b3-1fbb-465c-a5f4-d23c83d5858c"
       },
       "channel": "development"
     },
@@ -48,7 +50,8 @@
       "env": {
         "APP_VARIANT": "preview",
         "COOLDOWN_WORKOUT_ID": "47",
-        "MIXPANEL_TOKEN": "b28be037875318bfaa4422b70f9666f7"
+        "MIXPANEL_TOKEN": "b28be037875318bfaa4422b70f9666f7",
+        "LAUNCHDARKLY_CLIENT_KEY": "mob-a16cc7b3-1fbb-465c-a5f4-d23c83d5858c"
       }
     },
     "production": {
@@ -58,7 +61,8 @@
       "env": {
         "APP_VARIANT": "production",
         "COOLDOWN_WORKOUT_ID": "25",
-        "MIXPANEL_TOKEN": "bd438b6e0190e73b24cc6f7637cb9507"
+        "MIXPANEL_TOKEN": "bd438b6e0190e73b24cc6f7637cb9507",
+        "LAUNCHDARKLY_CLIENT_KEY": "mob-d140af0b-c264-48cf-be94-09afc4eb6682"
       }
     }
   },

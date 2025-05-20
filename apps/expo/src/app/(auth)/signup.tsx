@@ -1,66 +1,36 @@
-import React, { useEffect, useState } from "react";
+import { StyledButton } from "@/components/core";
+import { Wreath } from "@/components/core/Wreath";
+import { usePostAuth } from "@/hooks/usePostAuth";
+import { appVariant } from "@/lib/utils";
+import { authClient } from "@/utils/auth";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import React, { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   Linking,
-  Platform,
   Text,
-  View,
+  View
 } from "react-native";
-import Purchases from "react-native-purchases";
-import { useRouter } from "expo-router";
-import { StyledButton } from "@/components/core";
-import { Wreath } from "@/components/core/Wreath";
-import { authClient } from "@/utils/auth";
-import { Ionicons } from "@expo/vector-icons";
-import { getOrCreateDeviceId } from "@/utils/device-id";
-import { api } from "@/utils/api";
-import * as Device from "expo-device";
-import * as Sentry from "@sentry/react-native";
-import { appVariant, mixpanel } from "@/lib/utils";
-
+import type { CustomerInfo } from "react-native-purchases";
 export default function SignupScreen() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const { data: session } = authClient.useSession();
-  const { mutate: createUserDevice } = api.userDevices.create.useMutation();
 
-  useEffect(() => {
-    if (session?.user) {
-      void (async () => {
-        try {
-          const deviceId = await getOrCreateDeviceId();
-          createUserDevice({
-            userId: session.user.id,
-            deviceId,
-            deviceName: Device.deviceName,
-            deviceType: Platform.OS,
-          });
-          void mixpanel.identify(session.user.id);
-          void mixpanel.getPeople().setOnce({
-            email: session.user.email,
-            name: session.user.name,
-            avatar: session.user.image,
-            device_id: deviceId,
-            device_type: Platform.OS,
-            device_name: Device.deviceName,
-          });
-          const info = await Purchases.logIn(session.user.email);
-          Sentry.setUser({
-            email: session.user.email,
-            id: session.user.id,
-          });
-          if (info.customerInfo.activeSubscriptions.length > 0) {
-            router.push("/(onboarding)");
-          } else {
-            router.push("/(onboarding)/paywall");
-          }
-        } catch (error) {
-          console.error("Failed to associate device:", error);
-        }
-      })();
-    }
-  }, [session, router]);
+  usePostAuth({
+    session,
+    onSuccess: (customerInfo: CustomerInfo) => {
+      if (customerInfo.activeSubscriptions.length > 0) {
+        router.push("/(onboarding)");
+      } else {
+        router.push("/(onboarding)/paywall");
+      }
+    },
+  });
+
+  
 
   const handleAppleSignIn = async () => {
     setIsLoading(true);

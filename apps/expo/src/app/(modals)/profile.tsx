@@ -1,3 +1,17 @@
+import { mixpanel } from "@/lib/utils";
+import { authClient } from "@/utils/auth";
+import ChatWootWidget from "@chatwoot/react-native-widget";
+import { Ionicons } from "@expo/vector-icons";
+import {
+  useBoolVariationDetail,
+  useLDClient,
+} from "@launchdarkly/react-native-client-sdk";
+import * as Sentry from "@sentry/react-native";
+import Constants from "expo-constants";
+import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
+import * as SecureStore from "expo-secure-store";
+import { StatusBar } from "expo-status-bar";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
@@ -9,16 +23,6 @@ import {
 } from "react-native";
 import type { PurchasesEntitlementInfo } from "react-native-purchases";
 import Purchases from "react-native-purchases";
-import Constants from "expo-constants";
-import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
-import { StatusBar } from "expo-status-bar";
-import { authClient } from "@/utils/auth";
-import { Ionicons } from "@expo/vector-icons";
-import ChatWootWidget from '@chatwoot/react-native-widget';
-import { mixpanel } from "@/lib/utils";
-import * as SecureStore from 'expo-secure-store';
-import { appVariant } from "@/lib/utils";
 
 const MenuItem = ({
   icon,
@@ -52,9 +56,13 @@ export default function ProfileScreen() {
   const [userName, setUserName] = useState("");
   const { data: session } = authClient.useSession();
   const [showWidget, toggleWidget] = useState(false);
-  const [subscriptionStatus, setSubscriptionStatus] = useState<PurchasesEntitlementInfo | null>(null);
-
-
+  const [subscriptionStatus, setSubscriptionStatus] =
+    useState<PurchasesEntitlementInfo | null>(null);
+  const resetOnboardingFlag = useBoolVariationDetail(
+    "can-reset-onboarding",
+    false,
+  );
+  const ldc = useLDClient();
   // Load user data
   useEffect(() => {
     void Purchases.getCustomerInfo().then((customerInfo) => {
@@ -96,7 +104,7 @@ export default function ProfileScreen() {
       icon: (
         <Ionicons name="refresh-circle-outline" size={18} color="#DC2626" />
       ),
-      label: "Reset Onboarding", 
+      label: "Reset Onboarding",
       onPress: () => {
         Alert.alert(
           "Reset Onboarding",
@@ -107,10 +115,10 @@ export default function ProfileScreen() {
               style: "cancel",
             },
             {
-              text: "Reset", 
+              text: "Reset",
               style: "destructive",
               onPress: () => {
-                void SecureStore.setItemAsync('onboarding_complete', 'false');
+                void SecureStore.setItemAsync("onboarding_complete", "false");
                 router.replace("/(onboarding)");
               },
             },
@@ -118,12 +126,10 @@ export default function ProfileScreen() {
         );
       },
       textColor: "text-red-600",
-      show: appVariant !== 'production',
+      show: resetOnboardingFlag.value === true,
     },
     {
-      icon: (
-        <Ionicons name="trash-outline" size={18} color="#DC2626" />
-      ),
+      icon: <Ionicons name="trash-outline" size={18} color="#DC2626" />,
       label: "Delete Account",
       onPress: () => {
         Alert.alert(
@@ -149,6 +155,29 @@ export default function ProfileScreen() {
     },
   ];
 
+  const logout = () => {
+    void authClient.signOut({
+      fetchOptions: {
+        onSuccess: () => {
+          void Purchases.logOut();
+          void mixpanel.track("log out");
+          void mixpanel.reset();
+          void ldc.flush();
+          router.replace("/(auth)/login");
+        },
+      },
+    });
+  };
+
+  useEffect(() => {
+    Sentry.captureMessage("resetOnboardingFlag", {
+      level: "info",
+      extra: {
+        resetOnboardingFlag: resetOnboardingFlag.value,
+      },
+    });
+  }, [resetOnboardingFlag]);
+
   return (
     <LinearGradient
       colors={["#fdf2f8", "#fce7f3", "#fbcfe8"]}
@@ -156,26 +185,25 @@ export default function ProfileScreen() {
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
     >
-      {
-        showWidget &&
-          <ChatWootWidget
-            websiteToken='5c1r9tnJ5Qb8eQUTSU8tbyai'
-            locale='en'
-            baseUrl="https://app.chatwoot.com"
-            closeModal={() => toggleWidget(false)}
-            isModalVisible={showWidget}
-            user={{
-              identifier: session?.user.id,
-              name: session?.user.name,
-              email: session?.user.email,
-              avatar_url: session?.user.image ?? '',
-            }}
-            customAttributes={{
-              subscribed: !!subscriptionStatus,
-              plan: subscriptionStatus?.productIdentifier,
-            }}
-          />
-      }
+      {showWidget && (
+        <ChatWootWidget
+          websiteToken="5c1r9tnJ5Qb8eQUTSU8tbyai"
+          locale="en"
+          baseUrl="https://app.chatwoot.com"
+          closeModal={() => toggleWidget(false)}
+          isModalVisible={showWidget}
+          user={{
+            identifier: session?.user.id,
+            name: session?.user.name,
+            email: session?.user.email,
+            avatar_url: session?.user.image ?? "",
+          }}
+          customAttributes={{
+            subscribed: !!subscriptionStatus,
+            plan: subscriptionStatus?.productIdentifier,
+          }}
+        />
+      )}
       <StatusBar style="dark" />
       <View className="p-6">
         {/* Header */}
@@ -213,33 +241,24 @@ export default function ProfileScreen() {
 
       <ScrollView className="flex-1 px-6">
         <View className="rounded-2xl bg-white px-4 shadow-sm">
-          {menuItems.filter(item => item.show).map((item, index) => (
-            <MenuItem
-              key={index}
-              icon={item.icon}
-              label={item.label}
-              onPress={item.onPress}
-              showBorder={index !== menuItems.length - 1}
-              textColor={item.textColor}
-            />
-          ))}
+          {menuItems
+            .filter((item) => item.show)
+            .map((item, index) => (
+              <MenuItem
+                key={index}
+                icon={item.icon}
+                label={item.label}
+                onPress={item.onPress}
+                showBorder={index !== menuItems.length - 1}
+                textColor={item.textColor}
+              />
+            ))}
         </View>
 
         {/* Logout Button */}
         <Pressable
           className="mt-6 w-full items-center justify-center rounded-xl border border-red-200 bg-white py-4 active:bg-red-50"
-          onPress={() => {
-            void authClient.signOut({
-              fetchOptions: {
-                onSuccess: () => {
-                  void Purchases.logOut();
-                  void mixpanel.track('log out');
-                  void mixpanel.reset();
-                  router.replace("/(auth)/login");
-                },
-              },
-            });
-          }}
+          onPress={logout}
         >
           <Text className="font-inter-medium text-red-500">Log Out</Text>
         </Pressable>
@@ -256,17 +275,21 @@ export default function ProfileScreen() {
             >
               Terms
             </Text>
-            <Text>{', '}</Text>
+            <Text>{", "}</Text>
             <Text
               className="font-inter-medium text-black underline"
               onPress={() => Linking.openURL("https://snatchedai.com/privacy")}
             >
               Privacy Policy
             </Text>
-            <Text>{', and '}</Text>
+            <Text>{", and "}</Text>
             <Text
               className="font-inter-medium text-black underline"
-              onPress={() => Linking.openURL("https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")}
+              onPress={() =>
+                Linking.openURL(
+                  "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/",
+                )
+              }
             >
               EULA
             </Text>

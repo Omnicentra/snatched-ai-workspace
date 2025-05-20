@@ -33,22 +33,10 @@ catalogs:
     typescript:
       specifier: ^5.8.2
       version: 5.8.3
-    zod:
-      specifier: ^3.24.2
-      version: 3.24.3
   react18:
     '@types/react':
       specifier: ^18.3.12
       version: 18.3.20
-    '@types/react-dom':
-      specifier: ^18
-      version: 18.3.7
-    react:
-      specifier: 18.3.1
-      version: 18.3.1
-    react-dom:
-      specifier: 18.3.1
-      version: 18.3.1
 
 importers:
 
@@ -93,6 +81,9 @@ importers:
       '@expo/vector-icons':
         specifier: ^14.0.4
         version: 14.1.0(expo-font@13.0.4(expo@52.0.46(@babel/core@7.27.1)(@babel/preset-env@7.27.1(@babel/core@7.27.1))(@expo/metro-runtime@4.0.1(react-native@0.76.9(@babel/core@7.27.1)(@babel/preset-env@7.27.1(@babel/core@7.27.1))(@types/react@18.3.20)(bufferutil@4.0.9)(react@18.3.1)))(bufferutil@4.0.9)(react-native-webview@13.12.5(react-native@0.76.9(@babel/core@7.27.1)(@babel/preset-env@7.27.1(@babel/core@7.27.1))(@types/react@18.3.20)(bufferutil@4.0.9)(react@18.3.1))(react@18.3.1))(react-native@0.76.9(@babel/core@7.27.1)(@babel/preset-env@7.27.1(@babel/core@7.27.1))(@types/react@18.3.20)(bufferutil@4.0.9)(react@18.3.1))(react@18.3.1))(react@18.3.1))(react-native@0.76.9(@babel/core@7.27.1)(@babel/preset-env@7.27.1(@babel/core@7.27.1))(@types/react@18.3.20)(bufferutil@4.0.9)(react@18.3.1))(react@18.3.1)
+      '@launchdarkly/react-native-client-sdk':
+        specifier: ^10.10.0
+        version: 10.10.0(react-native@0.76.9(@babel/core@7.27.1)(@babel/preset-env@7.27.1(@babel/core@7.27.1))(@types/react@18.3.20)(bufferutil@4.0.9)(react@18.3.1))(react@18.3.1)
       '@legendapp/state':
         specifier: 3.0.0-beta.30
         version: 3.0.0-beta.30(react@18.3.1)
@@ -138,9 +129,6 @@ importers:
       '@trpc/tanstack-react-query':
         specifier: 'catalog:'
         version: 11.1.2(@tanstack/react-query@5.75.1(react@18.3.1))(@trpc/client@11.1.2(@trpc/server@11.1.2(typescript@5.8.3))(typescript@5.8.3))(@trpc/server@11.1.2(typescript@5.8.3))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.8.3)
-      better-auth:
-        specifier: ^1.2.7
-        version: 1.2.7
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -2663,6 +2651,18 @@ packages:
 
   '@jridgewell/trace-mapping@0.3.9':
     resolution: {integrity: sha512-3Belt6tdc8bPgAtbcmdtNJlirVoTmEb5e2gC94PnkwEW9jI6CAHUeoG85tjWP5WquqfavoMtMwiG4P926ZKKuQ==}
+
+  '@launchdarkly/js-client-sdk-common@1.13.0':
+    resolution: {integrity: sha512-3u3nWLKfu7ADbrBlbYq1rDROXG1WcRGRGhHFyAjtDPCCh783sPIb1frC1n4tj6b64bustVrZvLR9dGrQlp6tJQ==}
+
+  '@launchdarkly/js-sdk-common@2.17.0':
+    resolution: {integrity: sha512-HYQNc4xbE58hBOO1yZsqE+BHOC36AYrHPZ5hwvlHoZRSsaoYCPM+Q/n+O+N3JhWXTqGsu6SwUzqUzTyxg8prGg==}
+
+  '@launchdarkly/react-native-client-sdk@10.10.0':
+    resolution: {integrity: sha512-941NPYWUNXA+gth/murw1rcC1M9UozKefZ96IOMYeAIvsZf/PiXHQu1XXC/RSZ+y77JHR3m8FcOGdcOjAqVtow==}
+    peerDependencies:
+      react: '*'
+      react-native: '*'
 
   '@legendapp/state@3.0.0-beta.30':
     resolution: {integrity: sha512-TEPb3SEAJPfLjNsZ54Vb+y5YkZ+ROqDYqmQWpQ1+q1ySitD/zJIVtlxqdLrZAT1FECQgkQzd3G8HY5D9V/V0/g==}
@@ -13001,6 +13001,20 @@ snapshots:
     dependencies:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.0
+
+  '@launchdarkly/js-client-sdk-common@1.13.0':
+    dependencies:
+      '@launchdarkly/js-sdk-common': 2.17.0
+
+  '@launchdarkly/js-sdk-common@2.17.0': {}
+
+  '@launchdarkly/react-native-client-sdk@10.10.0(react-native@0.76.9(@babel/core@7.27.1)(@babel/preset-env@7.27.1(@babel/core@7.27.1))(@types/react@18.3.20)(bufferutil@4.0.9)(react@18.3.1))(react@18.3.1)':
+    dependencies:
+      '@launchdarkly/js-client-sdk-common': 1.13.0
+      '@react-native-async-storage/async-storage': 1.23.1(react-native@0.76.9(@babel/core@7.27.1)(@babel/preset-env@7.27.1(@babel/core@7.27.1))(@types/react@18.3.20)(bufferutil@4.0.9)(react@18.3.1))
+      base64-js: 1.5.1
+      react: 18.3.1
+      react-native: 0.76.9(@babel/core@7.27.1)(@babel/preset-env@7.27.1(@babel/core@7.27.1))(@types/react@18.3.20)(bufferutil@4.0.9)(react@18.3.1)
 
   '@legendapp/state@3.0.0-beta.30(react@18.3.1)':
     dependencies:

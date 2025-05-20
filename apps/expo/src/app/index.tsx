@@ -10,7 +10,6 @@ import { logger } from "@/lib/logger";
 const checkOnboardingStatus = async () => {
   try {
     const secureStoreFlag = await SecureStore.getItemAsync("onboarding_complete");
-    logger.info(`Secure store flag: ${secureStoreFlag}`);
     return secureStoreFlag === "true";
   } catch {
     return false; // Default to showing onboarding if error

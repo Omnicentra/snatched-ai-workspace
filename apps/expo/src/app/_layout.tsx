@@ -14,6 +14,7 @@ import {
   useFonts,
 } from "@expo-google-fonts/inter";
 import { useAssets } from 'expo-asset';
+import { launchDarklyClient } from "@/lib/launchdarkly";
 
 import "react-native-reanimated";
 
@@ -36,6 +37,7 @@ import { getOrCreateDeviceId } from "@/utils/device-id";
 import { checkNotificationPermissions, initializeNotifications } from "@/lib/notifications";
 import { logger } from "@/lib/logger";
 import * as Notifications from "expo-notifications";
+import { LDProvider } from "@launchdarkly/react-native-client-sdk";
 
 const navigationIntegration = Sentry.reactNavigationIntegration({
   enableTimeToInitialDisplay: !isRunningInExpoGo(),
@@ -58,6 +60,7 @@ Sentry.init({
   spotlight: __DEV__,
 });
 
+// Setup Vexo
 if (appVariant === "production") {
   vexo("d78c38b5-7df7-44b0-beca-a067b12c15a5");
 }
@@ -65,6 +68,7 @@ if (appVariant === "production") {
 // Set up an instance of Mixpanel
 void mixpanel.init();
 mixpanel.track("app_opened");
+
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -212,9 +216,10 @@ function RootLayout() {
 
   // Render the navigator
   return (
-    <TRPCProvider>
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <StatusBar style="dark" translucent={true} />
+    <LDProvider client={launchDarklyClient}>
+      <TRPCProvider>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <StatusBar style="dark" translucent={true} />
         <Stack screenOptions={{ headerShown: false }}>
           {/* The `app/index.tsx` will handle redirection logic */}
           <Stack.Screen name="index" />
@@ -226,6 +231,7 @@ function RootLayout() {
         </Stack>
       </GestureHandlerRootView>
     </TRPCProvider>
+    </LDProvider>
   );
 }
 

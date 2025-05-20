@@ -1,61 +1,42 @@
-import { OnboardingHeader, StyledButton } from "@/components/core";
-import { withOnboardingTracking } from '@/components/core/withOnboardingTracking';
-import { Analytics } from "@/lib/analytics";
-import { appVariant, scheme } from "@/lib/utils";
-import { api } from "@/utils/api";
-import { authClient } from "@/utils/auth";
-import { getOrCreateDeviceId } from "@/utils/device-id";
-import { Ionicons } from "@expo/vector-icons";
-import * as Sentry from "@sentry/react-native";
-import Constants from "expo-constants";
-import * as Device from "expo-device";
-import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  Platform,
   SafeAreaView,
   ScrollView,
   Text,
   View,
 } from "react-native";
-import Purchases from "react-native-purchases";
+import Constants from "expo-constants";
+import { useRouter } from "expo-router";
+import { OnboardingHeader, StyledButton } from "@/components/core";
+import { withOnboardingTracking } from "@/components/core/withOnboardingTracking";
+import { usePostAuth } from "@/hooks/usePostAuth";
+import { Analytics } from "@/lib/analytics";
+import { appVariant, scheme } from "@/lib/utils";
+import { authClient } from "@/utils/auth";
+import { Ionicons } from "@expo/vector-icons";
 
 function SignupScreen() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const { data: session } = authClient.useSession();
-  const { mutate: createUserDevice } = api.userDevices.create.useMutation();
 
-  useEffect(() => {
-    if (session?.user) {
-      void (async () => {
-        try {
-          const deviceId = await getOrCreateDeviceId();
-          createUserDevice({
-            userId: session.user.id,
-            deviceId,
-            deviceType: Platform.OS,
-            deviceName: Device.deviceName,
-          });
-          void Analytics.trackUserSignIn(deviceId, {
-            email: session.user.email,
-            name: session.user.name,
-            image: session.user.image,
-          });
-          await Purchases.logIn(session.user.email);
-          Sentry.setUser({
-            email: session.user.email,
-            id: session.user.id,
-          });
-          router.push("/(onboarding)/analyzing");
-        } catch (error) {
-          console.error("Failed to associate device:", error);
-        }
-      })();
-    }
-  }, [session, router]);
+  usePostAuth({
+    session,
+    onTrack: (deviceId) => {
+      if (session?.user) {
+        void Analytics.trackUserSignIn(deviceId, {
+          email: session.user.email,
+          name: session.user.name,
+          image: session.user.image,
+        });
+      }
+    },
+    onSuccess: () => {
+      router.push("/(onboarding)/analyzing");
+    },
+  });
 
   const handleAppleSignIn = async () => {
     setIsLoading(true);
@@ -188,4 +169,4 @@ function SignupScreen() {
   );
 }
 
-export default withOnboardingTracking(SignupScreen, 'signup');
+export default withOnboardingTracking(SignupScreen, "signup");

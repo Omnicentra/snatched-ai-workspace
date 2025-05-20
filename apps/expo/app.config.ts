@@ -243,6 +243,7 @@ const createConfig = ({ config }: ConfigContext): ExpoConfig => ({
       revenuecatProjectAppleApiKey: "appl_ihLfvNYWzXDhzMTPQoGLwVGsJKF",
       revenuecatProjectGoogleApiKey: "goog_zymKRJSOYmVtSusuckLwdQuXgIk",
       mixpanelToken: process.env.MIXPANEL_TOKEN,
+      launchdarklyClientKey: process.env.LAUNCHDARKLY_CLIENT_KEY
     },
   },
   owner: "omnicentra",
