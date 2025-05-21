@@ -271,6 +271,7 @@ export const workoutRouter = {
         where: and(
           eq(workoutPlans.userId, Number(ctx.session.user.id)),
           eq(workoutPlans.status, "active"),
+          gte(workoutPlans.endDate, new Date().toISOString()),
         ),
       });
       
@@ -738,7 +739,7 @@ export const workoutRouter = {
       .execute();
 
     if (!currentPlan) {
-      prettyPrint("No active plan found");
+      ctx.logger.error("No active plan found");
       return null;
     }
 
@@ -864,6 +865,7 @@ export const workoutRouter = {
     .mutation(async ({ ctx, input }) => {
       const { planId, dayNumber } = input;
       const { user } = ctx.session;
+      ctx.logger.info(`Completing workout plan ${planId} day ${dayNumber}`);
 
       // Update workout plan day completion
       const [updatedPlanDay] = await db

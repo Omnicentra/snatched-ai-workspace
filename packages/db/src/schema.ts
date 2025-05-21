@@ -420,7 +420,7 @@ export const recipeIngredients = pgTable(
     recipeId: integer("recipe_id").notNull(),
     ingredientName: varchar("ingredient_name", { length: 100 }).notNull(),
     amount: numeric({ precision: 8, scale: 2 }).notNull(),
-    unit: varchar({ length: 20 }).notNull(),
+    unit: varchar({ length: 30 }).notNull(),
     orderIndex: integer("order_index").notNull(),
     createdAt: timestamp("created_at", {
       withTimezone: true,
