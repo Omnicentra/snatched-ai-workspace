@@ -103,4 +103,13 @@ export const Analytics = {
       timestamp: new Date().toISOString(),
     });
   },
+
+  trackPrepareScanAction: (deviceId: string, userId: string | undefined, action: 'continue' | 'skip') => {
+    void mixpanel.track('prepare_scan_action', {
+      device_id: deviceId,
+      user_id: userId,
+      action,
+      timestamp: new Date().toISOString(),
+    });
+  },
 }; 

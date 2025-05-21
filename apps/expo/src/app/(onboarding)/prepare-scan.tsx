@@ -5,6 +5,9 @@ import { useRouter } from "expo-router";
 import { InfoCard, OnboardingHeader, StyledButton } from "@/components/core";
 import { withOnboardingTracking } from "@/components/core/withOnboardingTracking";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Analytics } from "@/lib/analytics";
+import { getOrCreateDeviceId } from "@/utils/device-id";
+import { authClient } from "@/utils/auth";
 
 // Reusable Tip Card Component
 const TipCard = ({ icon, text }: { icon: React.ReactNode; text: string }) => (
@@ -18,12 +21,17 @@ const TipCard = ({ icon, text }: { icon: React.ReactNode; text: string }) => (
 
 function PrepareScanScreen() {
   const router = useRouter();
+  const { data: session } = authClient.useSession();
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
+    const deviceId = await getOrCreateDeviceId();
+    Analytics.trackPrepareScanAction(deviceId, session?.user.id, 'continue');
     router.push("/(onboarding)/scan-front");
   };
 
-  const handleSkip = () => {
+  const handleSkip = async () => {
+    const deviceId = await getOrCreateDeviceId();
+    Analytics.trackPrepareScanAction(deviceId, session?.user.id, 'skip');
     router.push("/(onboarding)/desired-shape?skipped=true");
   };
 
