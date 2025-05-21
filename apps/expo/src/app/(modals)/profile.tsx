@@ -63,6 +63,7 @@ export default function ProfileScreen() {
     false,
   );
   const ldc = useLDClient();
+
   // Load user data
   useEffect(() => {
     void Purchases.getCustomerInfo().then((customerInfo) => {
@@ -71,6 +72,11 @@ export default function ProfileScreen() {
       }
     });
     if (session?.user) {
+      void ldc.identify({
+        key: session.user.email,
+        name: session.user.name,
+        email: session.user.email,
+      });
       setUserName(session.user.name);
     }
   }, [session?.user]);

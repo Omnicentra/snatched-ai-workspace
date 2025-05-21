@@ -102,6 +102,7 @@ export const recipeSchema = z.object({
   categoryId: z.number().nullable(),
   createdAt: z.string().nullable(),
   updatedAt: z.string().nullable(),
+  isFavorite: z.boolean().optional(),
 });
 
 /**

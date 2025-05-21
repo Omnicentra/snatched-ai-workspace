@@ -88,7 +88,7 @@ function ReviewScreen() {
           </View>
 
           {/* Star Rating */}
-          <View className="mb-8 flex-row justify-center space-x-2">
+          <View className="mb-8 flex-row justify-center gap-x-2">
             {[1, 2, 3, 4, 5].map((rating) => (
               <View key={rating} className="p-1">
                 <Text className="text-4xl">{rating <= 4 ? "⭐" : "⭐"}</Text>

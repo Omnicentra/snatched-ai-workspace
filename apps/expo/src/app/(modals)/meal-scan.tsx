@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Linking,
   Modal,
   Pressable,
   ScrollView,
@@ -9,10 +10,12 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { useCameraPermissions } from "expo-camera";
 import Constants from "expo-constants";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
+import * as MediaLibrary from "expo-media-library";
 import { useRouter } from "expo-router";
 import { logger } from "@/lib/logger";
 import { api } from "@/utils/api";
@@ -28,6 +31,9 @@ import { MEAL_TYPE_TO_CATEGORY, MEAL_TYPES } from "@omc/validators/nutrition";
 
 export default function MealScanScreen() {
   const router = useRouter();
+  const [cameraPermission, requestCameraPermission] = useCameraPermissions();
+  const [mediaPermission, requestMediaPermission] =
+    MediaLibrary.usePermissions();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -59,6 +65,21 @@ export default function MealScanScreen() {
 
   // Take a picture with the camera
   const takePicture = async () => {
+    const permission = await requestCameraPermission();
+    if (!permission.granted) {
+      Alert.alert(
+        "Permission Required",
+        "Please enable camera access in your device settings to use this feature.",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Open Settings",
+            onPress: () => void Linking.openSettings(),
+          },
+        ],
+      );
+      return;
+    }
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ["images"],
       allowsEditing: true,
@@ -77,6 +98,18 @@ export default function MealScanScreen() {
 
   // Pick an image from the gallery
   const pickImage = async () => {
+    const permission = await requestMediaPermission();
+    if (!permission.granted) {
+      Alert.alert(
+        "Permission Required",
+        "Please enable media access in your device settings to use this feature.",
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Open Settings", onPress: () => void Linking.openSettings() },
+        ],
+      );
+      return;
+    }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
       allowsEditing: true,
@@ -305,7 +338,7 @@ export default function MealScanScreen() {
             <Text className="font-inter-bold mt-4 text-center text-2xl text-gray-800">
               Analyze Your Food
             </Text>
-            <Text className="font-inter mt-2 text-center text-base text-gray-600">
+            <Text className="font-inter mt-2 px-2 text-center text-base text-gray-600">
               Take a photo of your meal to get nutritional information
             </Text>
           </View>
@@ -492,7 +525,7 @@ export default function MealScanScreen() {
                     <Text className="font-inter-medium mb-2 text-sm text-gray-500">
                       Meal Type
                     </Text>
-                    <Pressable 
+                    <Pressable
                       onPress={() => setShowMealTypeModal(true)}
                       className="flex-row items-center justify-between rounded-xl border-2 border-gray-100 bg-gray-50 px-4 py-3"
                     >
@@ -513,7 +546,7 @@ export default function MealScanScreen() {
                       onPress={resetCapture}
                       disabled={isSubmitting}
                     >
-                      <Text className="font-inter-semibold text-gray-800 text-xl">
+                      <Text className="font-inter-semibold text-xl text-gray-800">
                         Scan Again
                       </Text>
                     </Pressable>
@@ -525,12 +558,12 @@ export default function MealScanScreen() {
                       {isSubmitting ? (
                         <View className="flex-row items-center">
                           <ActivityIndicator size="small" color="white" />
-                          <Text className="font-inter-semibold ml-2 text-white text-xl">
+                          <Text className="font-inter-semibold ml-2 text-xl text-white">
                             Logging...
                           </Text>
                         </View>
                       ) : (
-                        <Text className="font-inter-semibold text-white text-xl">
+                        <Text className="font-inter-semibold text-xl text-white">
                           Log Meal
                         </Text>
                       )}

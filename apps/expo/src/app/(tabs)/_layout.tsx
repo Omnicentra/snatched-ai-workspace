@@ -1,34 +1,31 @@
 import { cacheImages } from "@/lib/utils";
 import { api } from "@/utils/api";
-import { authClient } from "@/utils/auth";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 import React, { useEffect } from "react";
 import { Platform } from "react-native";
 
 export default function TabLayout() {
-  const { data: session } = authClient.useSession();
   // Get the snatch hacks from API data
   api.snatchHack.getSnatchHacks.useQuery();
-  // api.snatchHack.getUserCompletedHackForToday.useQuery();
   // Get the workouts from API data
   const { data: workoutData } = api.workout.getWorkouts.useQuery();
   // Get the categories from API data
   api.workout.getWorkoutCategories.useQuery();
   api.workout.getUserWorkoutStats.useQuery({
     period: "week",
+  }, {
+    retry: false,
   });
   const {
     data: mealPlanData,
     error: mealPlanError,
     refetch: refetchMealPlan,
   } = api.nutrition.getTodaysMealPlan.useQuery(undefined, {
-    enabled: !!session?.user,
     retry: false,
   });
-  const { data: currentWeekPlan, isFetched } =
+  const { data: currentWeekPlan, isFetched, refetch: refetchWorkoutPlan } =
     api.workout.getCurrentWeekPlan.useQuery(undefined, {
-      enabled: !!session?.user,
       retry: false,
     });
   const { mutate: generateMealPlan } =
@@ -44,6 +41,7 @@ export default function TabLayout() {
     api.workout.generateWeeklyPlan.useMutation({
       onSuccess: () => {
         console.log("Workout plan generated");
+        void refetchWorkoutPlan();
       },
     });
 

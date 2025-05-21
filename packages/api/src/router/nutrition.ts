@@ -1,34 +1,32 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { S3Client } from "@aws-sdk/client-s3";
-import type { TRPCRouterRecord } from "@trpc/server";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { GoogleGenAI, Type } from "@google/genai";
+import type { TRPCRouterRecord } from "@trpc/server";
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { createSelectSchema } from "drizzle-zod";
 import OpenAI from "openai";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 
-import type { Meal, MealPlan } from "@omc/validators/nutrition";
 import { db } from "@omc/db/client";
 import {
   mealPlans,
   mealSchedule,
-  recipeCategories,
   recipeIngredients,
   recipeInstructions,
   recipes,
   user,
-  userRecipes,
+  userRecipes
 } from "@omc/db/schema";
 import { prettyPrint, slugify } from "@omc/validators";
+import type { Meal, MealPlan } from "@omc/validators/nutrition";
 import {
-  mealPlanSchema as _mealPlanSchema,
   foodAnalysisSchema,
   mealLogSchema,
   recipeSchema,
-  scannedMealSubmissionSchema,
+  scannedMealSubmissionSchema
 } from "@omc/validators/nutrition";
 
 import { protectedProcedure, publicProcedure } from "../trpc";
@@ -299,10 +297,6 @@ export const nutritionRouter = {
     .mutation(async ({ ctx }) => {
       const userId = Number(ctx.session.user.id);
 
-      if (!userId) {
-        throw new Error("User not found");
-      }
-
       // Check if user has already generated a meal plan for today
       const [existingMealPlan] = await db
         .select()
@@ -468,6 +462,31 @@ export const nutritionRouter = {
         instructions,
       };
     }),
+  getRecipesByUser: protectedProcedure.query(async ({ ctx }) => {
+    const userId = Number(ctx.session.user.id);
+    const dbRecipes = await db
+      .select({
+        id: recipes.id,
+        title: recipes.title,
+        description: recipes.description,
+        calories: recipes.calories,
+        proteinGrams: recipes.proteinGrams,
+        carbsGrams: recipes.carbsGrams,
+        fatsGrams: recipes.fatsGrams,
+        imageUrl: recipes.imageUrl,
+        createdAt: recipes.createdAt,
+        updatedAt: recipes.updatedAt,
+        prepTimeMinutes: recipes.prepTimeMinutes,
+        isFavorite: userRecipes.isFavorite,
+      })
+      .from(userRecipes)
+      .innerJoin(recipes, eq(userRecipes.recipeId, recipes.id))
+      .where(eq(userRecipes.userId, userId));
+
+    prettyPrint(JSON.stringify(dbRecipes, null, 2));
+
+    return dbRecipes;
+  }),
 
   getTodaysMealPlan: protectedProcedure
     .output(
@@ -817,7 +836,7 @@ export const nutritionRouter = {
       }
     }),
 
-  validateFoodImage: publicProcedure
+  validateFoodImage: protectedProcedure
     .input(
       z.object({
         imageKey: z.string().optional(),
@@ -896,7 +915,7 @@ export const nutritionRouter = {
       }
     }),
 
-  generateFoodImageUploadUrl: publicProcedure
+  generateFoodImageUploadUrl: protectedProcedure
     .input(
       z.object({
         mealName: z.string(),
@@ -1077,6 +1096,138 @@ export const nutritionRouter = {
       } catch (error) {
         console.error("Error submitting scanned meal:", error);
         throw new Error("Failed to submit scanned meal");
+      }
+    }),
+
+  toggleFavoriteRecipe: protectedProcedure
+    .input(
+      z.object({
+        recipeId: z.number(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const userId = Number(ctx.session.user.id);
+
+      // Get current favorite status
+      const [currentStatus] = await db
+        .select()
+        .from(userRecipes)
+        .where(
+          and(
+            eq(userRecipes.userId, userId),
+            eq(userRecipes.recipeId, input.recipeId),
+          ),
+        )
+        .execute();
+
+      if (!currentStatus) {
+        // If no entry exists, create one with isFavorite = true
+        const [newEntry] = await db
+          .insert(userRecipes)
+          .values({
+            userId,
+            recipeId: input.recipeId,
+            isFavorite: true,
+            lastCookedAt: new Date().toISOString(),
+          })
+          .returning();
+
+        return newEntry;
+      }
+
+      // Toggle the favorite status
+      const [updatedEntry] = await db
+        .update(userRecipes)
+        .set({
+          isFavorite: !currentStatus.isFavorite,
+          updatedAt: new Date().toISOString(),
+        })
+        .where(
+          and(
+            eq(userRecipes.userId, userId),
+            eq(userRecipes.recipeId, input.recipeId),
+          ),
+        )
+        .returning();
+
+      return updatedEntry;
+    }),
+
+  logSavedMeal: protectedProcedure
+    .input(
+      z.object({
+        recipeId: z.number(),
+        mealType: z.string(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const userId = Number(ctx.session.user.id);
+
+      try {
+        // 1. Get today's meal plan
+        const [todaysMealPlan] = await db
+          .select()
+          .from(mealPlans)
+          .where(
+            and(
+              eq(mealPlans.userId, userId),
+              sql`DATE(${mealPlans.date}) = CURRENT_DATE`,
+            ),
+          )
+          .execute();
+
+        if (!todaysMealPlan) {
+          throw new Error("No meal plan found for today");
+        }
+
+        const mealPlanId = todaysMealPlan.id;
+
+        // 2. Find existing meal schedule for the given meal type, or create a new one
+        const [existingMeal] = await db
+          .select()
+          .from(mealSchedule)
+          .where(
+            and(
+              eq(mealSchedule.mealPlanId, mealPlanId),
+              eq(mealSchedule.mealType, input.mealType.toLowerCase()),
+            ),
+          )
+          .execute();
+
+        if (existingMeal) {
+          // Update existing meal schedule
+          await db
+            .update(mealSchedule)
+            .set({
+              recipeId: input.recipeId,
+              completed: true,
+              completedAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            })
+            .where(eq(mealSchedule.id, existingMeal.id));
+        } else {
+          // Create new meal schedule
+          await db.insert(mealSchedule).values({
+            mealPlanId,
+            recipeId: input.recipeId,
+            mealType: input.mealType.toLowerCase(),
+            scheduledTime: new Date().toLocaleTimeString("en-US", {
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: false,
+            }),
+            completed: true,
+            completedAt: new Date().toISOString(),
+          });
+        }
+
+        return {
+          success: true,
+          message: "Meal successfully logged",
+        };
+      } catch (error) {
+        console.error("Error logging saved meal:", error);
+        throw new Error("Failed to log saved meal");
       }
     }),
 

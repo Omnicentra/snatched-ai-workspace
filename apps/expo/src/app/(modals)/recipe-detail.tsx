@@ -36,6 +36,7 @@ const RecipeDetailScreen = () => {
     api.nutrition.toggleMealCompletion.useMutation({
       onSuccess: () => {
         void utils.nutrition.getTodaysMealPlan.invalidate();
+        void utils.nutrition.getUserMealSchedules.invalidate();
         void utils.nutrition.getRecentlyLoggedMeals.invalidate();
       },
       onError: (error) => {

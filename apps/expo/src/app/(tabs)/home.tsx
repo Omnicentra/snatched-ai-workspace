@@ -5,6 +5,7 @@ import { NutritionStats } from "@/components/home/NutritionStats";
 import { RecentlyLogged } from "@/components/home/RecentlyLogged";
 import { SnatchHackCard } from "@/components/home/SnatchHackCard";
 import { TodaysPlanCard } from "@/components/home/TodaysPlanCard";
+import { dayLetters } from "@/constants/common";
 import { onboardingStore$ } from "@/stores/onboarding.store";
 import { api } from "@/utils/api";
 import { authClient } from "@/utils/auth";
@@ -24,6 +25,7 @@ import {
   Text,
   View,
 } from "react-native";
+
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -56,20 +58,21 @@ export default function HomeScreen() {
     };
   }, [session?.user.createdAt]);
 
-  // Generate week dates starting from Monday
-  const dayLetters = ["M", "T", "W", "T", "F", "S", "S"] as const;
-
-  const weekDates = Array.from({ length: 7 }, (_, index) => {
-    const letter = dayLetters[index % 7];
-    if (!letter) return null;
-    return {
-      letter,
-      number: new Date(
-        monday.getTime() + index * 24 * 60 * 60 * 1000,
-      ).getDate(),
-      fullDate: new Date(monday.getTime() + index * 24 * 60 * 60 * 1000),
-    };
-  }).filter((date): date is NonNullable<typeof date> => date !== null);
+  const weekDates = useMemo(
+    () =>
+      Array.from({ length: 7 }, (_, index) => {
+        const letter = dayLetters[index % 7];
+        if (!letter) return null;
+        return {
+          letter,
+          number: new Date(
+            monday.getTime() + index * 24 * 60 * 60 * 1000,
+          ).getDate(),
+          fullDate: new Date(monday.getTime() + index * 24 * 60 * 60 * 1000),
+        };
+      }).filter((date): date is NonNullable<typeof date> => date !== null),
+    [monday],
+  );
 
   // Find the index of today in our week array
   const todayIndex = weekDates.findIndex(
@@ -110,12 +113,12 @@ export default function HomeScreen() {
       const mealSchedule = mealSchedules?.[dateStr];
       const hasCompletedMeals = !!mealSchedule?.every((meal) => meal.completed);
 
-      // Check snatch hack completion from local store
-      const hasCompletedSnatchHack =
+      // Check snatch hack completion
+      const hasCompletedSnatchHack = Boolean(
         userCompletedHacks?.find((h) =>
-          isSameDay(new Date(h.completedAt), new Date(dateStr)),
-        ) ?? false;
-
+          isSameDay(new Date(h.completedDate), new Date(dateStr)),
+        ),
+      );
       return hasCompletedWorkout && hasCompletedMeals && hasCompletedSnatchHack;
     },
     [workoutPlan, mealSchedules, userCompletedHacks],
@@ -132,6 +135,7 @@ export default function HomeScreen() {
     setRefreshing(true);
     void Promise.all([
       utils.nutrition.getTodaysMealPlan.invalidate(),
+      utils.nutrition.getUserMealSchedules.invalidate(),
       utils.nutrition.getRecentlyLoggedMeals.invalidate(),
       utils.workout.getCurrentWeekPlan.invalidate(),
       utils.user.getBodyRatingByDate.invalidate(),

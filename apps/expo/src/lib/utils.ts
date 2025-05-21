@@ -6,6 +6,7 @@ import type { WorkoutWithExercises } from "../types";
 import { Mixpanel } from "mixpanel-react-native";
 import { Asset } from "expo-asset";
 import { Image } from "expo-image";
+
 // EXPO CONFIG
 export const appVariant = String(Constants.expoConfig?.extra?.eas?.appVariant) || 'development'
 

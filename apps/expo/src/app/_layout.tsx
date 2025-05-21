@@ -49,7 +49,7 @@ Sentry.init({
   // For more information, visit: https://docs.sentry.io/platforms/react-native/data-management/data-collected/
   environment: appVariant,
   tracesSampleRate: 1.0,
-  integrations: [navigationIntegration, Sentry.mobileReplayIntegration()],
+  integrations: [],
   release: String(Constants.expoConfig?.version),
   enableNativeFramesTracking: !isRunningInExpoGo(),
   // Configure Session Replay

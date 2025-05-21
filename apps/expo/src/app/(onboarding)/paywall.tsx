@@ -11,7 +11,7 @@ import { transformationStore$ } from "@/stores/transformation.store";
 import { api } from "@/utils/api";
 import { authClient } from "@/utils/auth";
 import { getOrCreateDeviceId } from "@/utils/device-id";
-import { Feather, Ionicons } from "@expo/vector-icons";
+import { Feather } from "@expo/vector-icons";
 import { use$ } from "@legendapp/state/react";
 import * as Sentry from "@sentry/react-native";
 import Constants from "expo-constants";
@@ -19,18 +19,21 @@ import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import type { NativeScrollEvent, NativeSyntheticEvent } from "react-native";
 import {
   Alert,
+  AppState,
   Dimensions,
   Linking,
+  Modal,
   Platform,
   Pressable,
   SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import type { PurchasesPackage } from "react-native-purchases";
@@ -40,129 +43,6 @@ import { logger } from "~/lib/logger";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CAROUSEL_ITEM_WIDTH = SCREEN_WIDTH - 40; // 20px padding on each side
-const SECTION_HEIGHT = 400;
-
-// Re-usable component for the checklist feature
-const _PlanChecklist = () => {
-  const items = [
-    { text: "Targeted waist exercises", icon: "🏋️‍♀️" },
-    { text: "Core strengthening routine", icon: "💪" },
-    { text: "Nutrition guidance", icon: "🥗" },
-    { text: "Progress tracking reminders", icon: "🔔" },
-  ];
-  return (
-    <View className="rounded-lg bg-gray-800/50 p-4">
-      {items.map((item, index) => (
-        <View
-          key={index}
-          className="mb-3 flex-row items-center rounded-lg bg-gray-700/60 p-3"
-        >
-          <View className="mr-3 h-6 w-6 items-center justify-center rounded-md bg-purple-500">
-            <Ionicons name="checkmark" size={16} color="white" />
-          </View>
-          <Text className="font-inter-medium text-sm text-gray-200">
-            {item.text} <Text>{item.icon}</Text>
-          </Text>
-        </View>
-      ))}
-    </View>
-  );
-};
-
-// Community Section Component
-const _CommunitySection = () => {
-  const posts = [
-    {
-      title: "Waist training sleep routine",
-      content:
-        "Yo I heard deep sleep is key for recovery. I've been hitting 9 hrs a night + magnesium...",
-      author: "Alex",
-      stats: "5'11",
-      time: "1 hour ago",
-      reactions: { comments: 24, likes: 31, dislikes: 4 },
-    },
-    {
-      title: "Is hanging from a bar a scam? 💭",
-      content:
-        "I see people saying you can gain an inch from just hanging daily but idk if that's cap...",
-      author: "Nathan",
-      stats: "5'10",
-      time: "3 hours ago",
-      reactions: { comments: 24, likes: 45, dislikes: 13 },
-    },
-  ];
-
-  return (
-    <View
-      style={{ height: SECTION_HEIGHT }}
-      className="rounded-2xl bg-gray-900 p-4"
-    >
-      <Text className="font-inter-bold mb-4 text-2xl text-white">
-        Exclusive community
-      </Text>
-      <View className="flex-1 justify-between">
-        {posts.map((post, index) => (
-          <View key={index} className="mb-3 rounded-xl bg-gray-800/80 p-4">
-            <View className="mb-2 flex-row items-center justify-between">
-              <Text className="font-inter-semibold text-base text-white">
-                {post.title}
-              </Text>
-              <View className="rounded-full bg-pink-400 px-2 py-1">
-                <Text className="font-inter-medium text-xs text-white">
-                  {index === 0 ? "27" : "32"}
-                </Text>
-              </View>
-            </View>
-            <Text className="font-inter-medium mb-2 text-sm text-gray-400">
-              {post.content}
-            </Text>
-            <View className="mb-2 flex-row items-center">
-              <Text className="font-inter-medium text-xs text-gray-500">
-                {post.author}
-              </Text>
-              <Text className="font-inter-medium mx-2 text-xs text-gray-600">
-                •
-              </Text>
-              <Text className="font-inter-medium text-xs text-gray-500">
-                {post.stats}
-              </Text>
-              <Text className="font-inter-medium mx-2 text-xs text-gray-600">
-                •
-              </Text>
-              <Text className="font-inter-medium text-xs text-gray-500">
-                {post.time}
-              </Text>
-            </View>
-            <View className="flex-row gap-x-4">
-              <View className="flex-row items-center">
-                <Ionicons name="chatbubble-outline" size={14} color="#9CA3AF" />
-                <Text className="font-inter-medium ml-1 text-xs text-gray-400">
-                  {post.reactions.comments}
-                </Text>
-              </View>
-              <View className="flex-row items-center">
-                <Ionicons name="thumbs-up-outline" size={14} color="#9CA3AF" />
-                <Text className="font-inter-medium ml-1 text-xs text-gray-400">
-                  {post.reactions.likes}
-                </Text>
-              </View>
-              <View className="flex-row items-center">
-                <Ionicons
-                  name="thumbs-down-outline"
-                  size={14}
-                  color="#9CA3AF"
-                />
-                <Text className="font-inter-medium ml-1 text-xs text-gray-400">
-                  {post.reactions.dislikes}
-                </Text>
-              </View>
-            </View>
-          </View>
-        ))}
-      </View>
-    </View>
-  );
-};
 
 // Add new Testimonial Component
 const TestimonialCarousel = () => {
@@ -298,6 +178,10 @@ function PaywallScreen() {
   const router = useRouter();
   const { data: session } = authClient.useSession();
   const [isPurchasing, setIsPurchasing] = useState(false);
+  const [isPromoModalVisible, setIsPromoModalVisible] = useState(false);
+  const [promoCode, setPromoCode] = useState("");
+  const leftAppForPromoRef = useRef(false);
+  const appState = useRef(AppState.currentState);
 
   const [packages, setPackages] = useState<PurchasesPackage[]>([]);
   const [selectedPackage, setSelectedPackage] = useState<PurchasesPackage>();
@@ -309,7 +193,7 @@ function PaywallScreen() {
         transformationStore$.snatchedImage.set(data.transformedImageUri);
       },
       onError: (error) => {
-        logger.error("Failed to transform image", error);
+        logger.error("Failed to transform image", error.message);
         Sentry.captureException(error);
       },
     });
@@ -433,7 +317,7 @@ function PaywallScreen() {
         ]);
       }
     } catch (error) {
-      logger.error("Error processing purchase:", error);
+      logger.error("Error processing purchase:");
       if (error instanceof Error) {
         Alert.alert("Purchase Failed", error.message);
         Sentry.captureException(error);
@@ -452,6 +336,57 @@ function PaywallScreen() {
   const handleSelectPackage = useCallback((pkg: PurchasesPackage) => {
     setSelectedPackage(pkg);
   }, []);
+
+  // Handle app state changes for promo code redemption
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (nextAppState) => {
+      if (appState.current === "active" && leftAppForPromoRef.current) {
+        // User has returned to the app after potentially redeeming a promo code
+        void (async () => {
+          try {
+            await Purchases.syncPurchases();
+            const customerInfo = await Purchases.getCustomerInfo();
+            // Check if customerInfo exists and has premium entitlement
+            if (customerInfo.entitlements.active.premium) {
+              await Promise.all([
+                SecureStore.setItemAsync("onboarding_complete", "true"),
+                transformationStore$.snatchedImage.set(null),
+                imageTransformation({
+                  imageKeys: {
+                    front: frontImageKey,
+                  },
+                }),
+                router.replace({
+                  pathname: "/(onboarding)/results",
+                  params: { unlocked: "true" },
+                }),
+              ]);
+            }
+          } catch (error) {
+            logger.error("Error syncing purchases:", error);
+            Sentry.captureException(error);
+          } finally {
+            leftAppForPromoRef.current = false;
+          }
+        })();
+      }
+      appState.current = nextAppState;
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [router, frontImageKey, imageTransformation]);
+
+  const handlePromoCodeSubmit = async () => {
+    if (promoCode.trim()) {
+      const url = `https://apps.apple.com/redeem?ctx=offercodes&id=6744844397&code=${promoCode.trim()}`;
+      leftAppForPromoRef.current = true; // Set flag before leaving app
+      await Linking.openURL(url);
+      setIsPromoModalVisible(false);
+      setPromoCode("");
+    }
+  };
 
   return (
     <LinearGradient colors={["#f472b6", "#FED0E2"]} style={styles.container}>
@@ -501,35 +436,35 @@ function PaywallScreen() {
 
             {/* Features List */}
             <View className="gap-y-4 px-1">
-              <View className="flex-row items-center space-x-4 rounded-xl bg-white/90 p-4">
+              <View className="flex-row items-center gap-x-4 rounded-xl bg-white/90 p-4">
                 <Text className="text-2xl">💪 </Text>
                 <Text className="font-inter-medium text-lg text-gray-900">
                   Personalized workout plan
                 </Text>
               </View>
 
-              <View className="flex-row items-center space-x-4 rounded-xl bg-white/90 p-4">
+              <View className="flex-row items-center gap-x-4 rounded-xl bg-white/90 p-4">
                 <Text className="text-2xl">🥗 </Text>
                 <Text className="font-inter-medium text-lg text-gray-900">
                   Nutrition and Diet Plan
                 </Text>
               </View>
 
-              <View className="flex-row items-center space-x-4 rounded-xl bg-white/90 p-4">
+              <View className="flex-row items-center gap-x-4 rounded-xl bg-white/90 p-4">
                 <Text className="text-2xl">📊 </Text>
                 <Text className="font-inter-medium text-lg text-gray-900">
                   Calories Tracking
                 </Text>
               </View>
 
-              <View className="flex-row items-center space-x-4 rounded-xl bg-white/90 p-4">
+              <View className="flex-row items-center gap-x-4 rounded-xl bg-white/90 p-4">
                 <Text className="text-2xl">😎 </Text>
                 <Text className="font-inter-medium text-lg text-gray-900">
                   Secret snatched tips
                 </Text>
               </View>
 
-              <View className="flex-row items-center space-x-4 rounded-xl bg-white/90 p-4">
+              <View className="flex-row items-center gap-x-4 rounded-xl bg-white/90 p-4">
                 <Text className="text-2xl">📈 </Text>
                 <Text className="font-inter-medium text-lg text-gray-900">
                   Body analysis
@@ -542,7 +477,7 @@ function PaywallScreen() {
           <View style={styles.footer}>
             {/* Legal Links */}
             <View className="mb-4 items-center">
-              <Text className="text-center text-xs text-gray-400">
+              <Text className="text-center text-xs text-gray-100">
                 By continuing, you agree to our{" "}
                 <Text
                   className="font-inter-medium text-primary underline"
@@ -583,53 +518,109 @@ function PaywallScreen() {
               variant="primary"
               style={{ backgroundColor: "#f472b6", marginBottom: 20 }}
             />
-            <Pressable
-              onPress={async () => {
-                try {
-                  setIsPurchasing(true);
-                  const restoredInfo = await Purchases.restorePurchases();
-                  if (restoredInfo.activeSubscriptions.length > 0) {
-                    Alert.alert(
-                      "Success",
-                      "Your purchases have been restored!",
-                    );
-                    await Promise.all([
-                      SecureStore.setItemAsync("onboarding_complete", "true"),
-                      // reset the after transformation image
-                      transformationStore$.snatchedImage.set(null),
-                      imageTransformation({
-                        imageKeys: {
-                          front: frontImageKey,
-                        },
-                      }),
-                      router.replace({
-                        pathname: "/(onboarding)/results",
-                        params: { unlocked: "true" },
-                      }),
-                    ]);
-                  } else {
-                    Alert.alert(
-                      "No Purchases",
-                      "No previous purchases found to restore",
-                    );
+            
+            {/* Footer Links Container */}
+            <View className="mb-4 flex-row items-center justify-center gap-x-6">
+              <Pressable
+                onPress={() => setIsPromoModalVisible(true)}
+              >
+                <Text className="font-inter-medium text-center text-white">
+                  Have a promo code?
+                </Text>
+              </Pressable>
+
+              <Pressable
+                onPress={async () => {
+                  try {
+                    setIsPurchasing(true);
+                    const restoredInfo = await Purchases.restorePurchases();
+                    if (restoredInfo.activeSubscriptions.length > 0) {
+                      Alert.alert(
+                        "Success",
+                        "Your purchases have been restored!",
+                      );
+                      await Promise.all([
+                        SecureStore.setItemAsync("onboarding_complete", "true"),
+                        // reset the after transformation image
+                        transformationStore$.snatchedImage.set(null),
+                        imageTransformation({
+                          imageKeys: {
+                            front: frontImageKey,
+                          },
+                        }),
+                        router.replace({
+                          pathname: "/(onboarding)/results",
+                          params: { unlocked: "true" },
+                        }),
+                      ]);
+                    } else {
+                      Alert.alert(
+                        "No Purchases",
+                        "No previous purchases found to restore",
+                      );
+                    }
+                  } catch (error) {
+                    console.error("Error restoring purchases:", error);
+                    if (error instanceof Error) {
+                      Alert.alert("Error", error.message);
+                      Sentry.captureException(error);
+                    } else {
+                      Alert.alert("Error", "Failed to restore purchases");
+                      Sentry.captureException(error);
+                    }
+                  } finally {
+                    setIsPurchasing(false);
                   }
-                } catch (error) {
-                  console.error("Error restoring purchases:", error);
-                  if (error instanceof Error) {
-                    Alert.alert("Error", error.message);
-                    Sentry.captureException(error);
-                  } else {
-                    Alert.alert("Error", "Failed to restore purchases");
-                    Sentry.captureException(error);
-                  }
-                } finally {
-                  setIsPurchasing(false);
-                }
-              }}
-            >
-              <Text style={styles.restoreText}>Restore Purchases</Text>
-            </Pressable>
+                }}
+              >
+                <Text className="font-inter-medium text-center text-white">
+                  Restore Purchases
+                </Text>
+              </Pressable>
+            </View>
           </View>
+
+          {/* Promo Code Modal */}
+          <Modal
+            animationType="slide"
+            transparent={true}
+            visible={isPromoModalVisible}
+            onRequestClose={() => setIsPromoModalVisible(false)}
+          >
+            <View className="flex-1 justify-center bg-black/50">
+              <View className="mx-4 rounded-2xl bg-white p-6">
+                <Text className="font-inter-semibold mb-4 text-center text-xl text-gray-900">
+                  Enter Promo Code
+                </Text>
+                <TextInput
+                  className="mb-4 rounded-lg border border-gray-300 bg-gray-50 p-4 font-inter-medium text-base text-gray-900"
+                  placeholder="Enter your code"
+                  value={promoCode}
+                  onChangeText={setPromoCode}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+                <View className="flex-row gap-x-3">
+                  <Pressable
+                    className="flex-1 rounded-lg bg-gray-200 p-4"
+                    onPress={() => setIsPromoModalVisible(false)}
+                  >
+                    <Text className="font-inter-medium text-center text-base text-gray-700">
+                      Cancel
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    className="flex-1 rounded-lg bg-pink-500 p-4"
+                    onPress={handlePromoCodeSubmit}
+                  >
+                    <Text className="font-inter-medium text-center text-base text-white">
+                      Redeem
+                    </Text>
+                  </Pressable>
+                </View>
+              </View>
+            </View>
+          </Modal>
         </View>
       </SafeAreaView>
     </LinearGradient>

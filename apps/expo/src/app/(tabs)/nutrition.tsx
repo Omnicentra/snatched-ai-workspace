@@ -6,6 +6,7 @@ import {
   Animated,
   Dimensions,
   Easing,
+  Modal,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -222,9 +223,9 @@ const MealCard = ({
 
 export default function NutritionPlanScreen() {
   const router = useRouter();
-  const [showMilestone, setShowMilestone] = useState(false);
+  const [showFoodOptionsModal, setShowFoodOptionsModal] = useState(false);
   const confettiRef = useRef<ConfettiCannon>(null);
-  const { width: screenWidth } = Dimensions.get("window");
+  // const { width: screenWidth } = Dimensions.get("window");
   const utils = api.useUtils();
   const {
     data: mealPlanData,
@@ -236,6 +237,7 @@ export default function NutritionPlanScreen() {
     api.nutrition.toggleMealCompletion.useMutation({
       onSuccess: () => {
         void refetch();
+        void utils.nutrition.getUserMealSchedules.invalidate();
         void utils.nutrition.getRecentlyLoggedMeals.invalidate();
       },
       onError: (error) => {
@@ -308,7 +310,7 @@ export default function NutritionPlanScreen() {
       style={{ flexGrow: 1, paddingTop: Constants.statusBarHeight }}
     >
       {/* Confetti Cannon */}
-      <ConfettiCannon
+      {/* <ConfettiCannon
         ref={confettiRef}
         count={150}
         origin={{ x: screenWidth / 2, y: -20 }}
@@ -317,58 +319,15 @@ export default function NutritionPlanScreen() {
         explosionSpeed={400}
         fallSpeed={3000}
         colors={["#a855f7", "#ec4899", "#f9a8d4", "#ffffff", "#ddd6fe"]}
-      />
+      /> */}
 
       {/* Header */}
       <View className="flex-row items-center justify-between px-6 pb-3 pt-6">
         <Text className="font-inter-bold text-2xl text-black">Nutrition</Text>
-        {/* <View className="flex-row gap-2">
-          <Pressable
-            className="rounded-full bg-gray-100 p-2"
-            onPress={() => setShowMilestone(true)}
-          >
-            <MaterialCommunityIcons
-              name="trophy-outline"
-              size={24}
-              color="#f472b6"
-            />
-          </Pressable>
-        </View> */}
       </View>
 
       {/* Meal Lists */}
       <View className="flex-1 px-6">
-        {/* Meal Scan CTA Button */}
-        <Pressable
-          className="mb-6 flex-row items-center justify-center overflow-hidden rounded-3xl bg-white py-6 shadow-lg"
-          onPress={() => router.push({ pathname: "/(modals)/meal-scan" })}
-          style={{
-            height: 100,
-            shadowColor: "#ec4899",
-            shadowOffset: { width: 0, height: 8 },
-            shadowOpacity: 0.5,
-            shadowRadius: 15,
-            elevation: 12,
-            transform: [{ translateY: 0 }],
-          }}
-        >
-          <View className="absolute right-0 top-0 h-20 w-20 rounded-full bg-gradient-to-br from-pink-50 to-pink-100 opacity-70" />
-          <View className="absolute bottom-0 left-0 h-16 w-16 rounded-full bg-gradient-to-tr from-pink-50 to-pink-100 opacity-60" />
-          <View className="flex-row items-center px-4">
-            <View className="mr-4 h-14 w-14 items-center justify-center rounded-full bg-pink-50">
-              <MaterialCommunityIcons name="camera" size={32} color="#ec4899" />
-            </View>
-            <View>
-              <Text className="font-inter-bold text-2xl text-gray-800">
-                Scan a meal
-              </Text>
-              <Text className="font-inter text-base text-gray-600">
-                Get instant nutritional info
-              </Text>
-            </View>
-          </View>
-        </Pressable>
-
         {/* Macro Progress */}
         <View className="mb-8 overflow-hidden rounded-3xl bg-white p-5 shadow-md">
           <View className="flex-row justify-between">
@@ -453,14 +412,84 @@ export default function NutritionPlanScreen() {
           )}
         </ScrollView>
 
+        {/* Floating Action Button */}
+        <View className="absolute bottom-6 right-6">
+          <Pressable
+            className="h-[4.5rem] w-[4.5rem] items-center justify-center rounded-full bg-pink-500 shadow-lg shadow-pink-500/30"
+            onPress={() => setShowFoodOptionsModal(true)}
+          >
+            <MaterialCommunityIcons name="plus" size={36} color="white" />
+          </Pressable>
+        </View>
+
+        {/* Food Options Modal */}
+        <Modal
+          visible={showFoodOptionsModal}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setShowFoodOptionsModal(false)}
+        >
+          <View className="flex-1 justify-end bg-black/50">
+            <View className="rounded-t-3xl bg-transparent p-6">
+              <View className="mb-6 flex-row items-center justify-end">
+                <Pressable
+                  className="rounded-full bg-gray-100 p-2"
+                  onPress={() => setShowFoodOptionsModal(false)}
+                >
+                  <Ionicons name="close" size={24} color="#333" />
+                </Pressable>
+              </View>
+              <View className="mb-2 flex-row items-center rounded-xl px-4 py-4 gap-x-4 hover:bg-gray-50">
+                <Pressable
+                  className="mb-2 flex-1 items-center rounded-xl bg-white px-4 py-4 hover:bg-gray-50"
+                  onPress={() => {
+                    setShowFoodOptionsModal(false);
+                    router.push("/(modals)/saved-foods");
+                  }}
+                >
+                  <MaterialCommunityIcons
+                    name="bookmark-outline"
+                    size={24}
+                    color="#666"
+                  />
+                  <View className="ml-3">
+                    <Text className="font-inter-semibold text-gray-800">
+                      Saved Foods
+                    </Text>
+                  </View>
+                </Pressable>
+
+                <Pressable
+                  className="mb-2 flex-1 items-center rounded-xl bg-white px-4 py-4 hover:bg-gray-50"
+                  onPress={() => {
+                    setShowFoodOptionsModal(false);
+                    router.push("/(modals)/meal-scan");
+                  }}
+                >
+                  <MaterialCommunityIcons
+                    name="camera"
+                    size={24}
+                    color="#666"
+                  />
+                  <View className="ml-3">
+                    <Text className="font-inter-semibold text-gray-800">
+                      Scan Food
+                    </Text>
+                  </View>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </Modal>
+
         <View className="h-6" />
       </View>
 
-      <MilestoneModal
+      {/* <MilestoneModal
         isVisible={showMilestone}
         onClose={() => setShowMilestone(false)}
         type="nutrition"
-      />
+      /> */}
     </LinearGradient>
   );
 }
