@@ -73,6 +73,7 @@ export default function ProfileScreen() {
     });
     if (session?.user) {
       void ldc.identify({
+        kind: "user",
         key: session.user.email,
         name: session.user.name,
         email: session.user.email,
