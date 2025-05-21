@@ -1,3 +1,27 @@
+import type { NativeScrollEvent, NativeSyntheticEvent } from "react-native";
+import type { PurchasesPackage } from "react-native-purchases";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import {
+  Alert,
+  AppState,
+  Dimensions,
+  Linking,
+  Modal,
+  Platform,
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
+import Purchases from "react-native-purchases";
+import Constants from "expo-constants";
+import { Image } from "expo-image";
+import { LinearGradient } from "expo-linear-gradient";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import * as SecureStore from "expo-secure-store";
 import testimonial1 from "@/assets/images/testimonials/image1.jpeg";
 import testimonial2 from "@/assets/images/testimonials/image2.jpeg";
 import testimonial3 from "@/assets/images/testimonials/image3.jpeg";
@@ -14,30 +38,6 @@ import { getOrCreateDeviceId } from "@/utils/device-id";
 import { Feather } from "@expo/vector-icons";
 import { use$ } from "@legendapp/state/react";
 import * as Sentry from "@sentry/react-native";
-import Constants from "expo-constants";
-import { Image } from "expo-image";
-import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
-import * as SecureStore from "expo-secure-store";
-import React, { useCallback, useEffect, useRef, useState } from "react";
-import type { NativeScrollEvent, NativeSyntheticEvent } from "react-native";
-import {
-  Alert,
-  AppState,
-  Dimensions,
-  Linking,
-  Modal,
-  Platform,
-  Pressable,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
-import type { PurchasesPackage } from "react-native-purchases";
-import Purchases from "react-native-purchases";
 
 import { logger } from "~/lib/logger";
 
@@ -176,6 +176,8 @@ interface Plan {
 
 function PaywallScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ skipped?: string }>();
+  const isSkipped = params.skipped === "true";
   const { data: session } = authClient.useSession();
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [isPromoModalVisible, setIsPromoModalVisible] = useState(false);
@@ -201,6 +203,31 @@ function PaywallScreen() {
   const snatchedImage = use$(transformationStore$.snatchedImage);
 
   const frontImageKey = use$(onboardingStore$.onboarding.frontViewPhoto);
+
+  // Shared function for handling successful purchase or restored purchase
+  const handleSuccessfulPurchase = async () => {
+    // Always reset the after transformation image
+    transformationStore$.snatchedImage.set(null);
+
+    await Promise.all([
+      SecureStore.setItemAsync("onboarding_complete", "true"),
+      // Only transform image if not skipped
+      isSkipped 
+        ? null 
+        : imageTransformation({
+            imageKeys: {
+              front: frontImageKey,
+            },
+          }),
+      // Route to different screens based on whether photos were skipped or not
+      isSkipped
+        ? router.replace("/(onboarding)/notifications")
+        : router.replace({
+            pathname: "/(onboarding)/results",
+            params: { unlocked: "true" },
+          }),
+    ]);
+  };
 
   useEffect(() => {
     void (async () => {
@@ -301,20 +328,7 @@ function PaywallScreen() {
         });
       }
       if (customerInfo.entitlements.active.premium) {
-        await Promise.all([
-          SecureStore.setItemAsync("onboarding_complete", "true"),
-          // reset the after transformation image
-          transformationStore$.snatchedImage.set(null),
-          imageTransformation({
-            imageKeys: {
-              front: frontImageKey,
-            },
-          }),
-          router.replace({
-            pathname: "/(onboarding)/results",
-            params: { unlocked: "true" },
-          }),
-        ]);
+        await handleSuccessfulPurchase();
       }
     } catch (error) {
       logger.error("Error processing purchase:");
@@ -345,22 +359,13 @@ function PaywallScreen() {
         void (async () => {
           try {
             await Purchases.syncPurchases();
+            if (session?.user.email) {
+              await Purchases.logIn(session.user.email);
+            }
             const customerInfo = await Purchases.getCustomerInfo();
             // Check if customerInfo exists and has premium entitlement
             if (customerInfo.entitlements.active.premium) {
-              await Promise.all([
-                SecureStore.setItemAsync("onboarding_complete", "true"),
-                transformationStore$.snatchedImage.set(null),
-                imageTransformation({
-                  imageKeys: {
-                    front: frontImageKey,
-                  },
-                }),
-                router.replace({
-                  pathname: "/(onboarding)/results",
-                  params: { unlocked: "true" },
-                }),
-              ]);
+              await handleSuccessfulPurchase();
             }
           } catch (error) {
             logger.error("Error syncing purchases:", error);
@@ -376,7 +381,7 @@ function PaywallScreen() {
     return () => {
       subscription.remove();
     };
-  }, [router, frontImageKey, imageTransformation]);
+  }, [router, frontImageKey, imageTransformation, isSkipped]);
 
   const handlePromoCodeSubmit = async () => {
     if (promoCode.trim()) {
@@ -518,12 +523,10 @@ function PaywallScreen() {
               variant="primary"
               style={{ backgroundColor: "#f472b6", marginBottom: 20 }}
             />
-            
+
             {/* Footer Links Container */}
             <View className="mb-4 flex-row items-center justify-center gap-x-6">
-              <Pressable
-                onPress={() => setIsPromoModalVisible(true)}
-              >
+              <Pressable onPress={() => setIsPromoModalVisible(true)}>
                 <Text className="font-inter-medium text-center text-white">
                   Have a promo code?
                 </Text>
@@ -539,20 +542,7 @@ function PaywallScreen() {
                         "Success",
                         "Your purchases have been restored!",
                       );
-                      await Promise.all([
-                        SecureStore.setItemAsync("onboarding_complete", "true"),
-                        // reset the after transformation image
-                        transformationStore$.snatchedImage.set(null),
-                        imageTransformation({
-                          imageKeys: {
-                            front: frontImageKey,
-                          },
-                        }),
-                        router.replace({
-                          pathname: "/(onboarding)/results",
-                          params: { unlocked: "true" },
-                        }),
-                      ]);
+                      await handleSuccessfulPurchase();
                     } else {
                       Alert.alert(
                         "No Purchases",
@@ -593,7 +583,7 @@ function PaywallScreen() {
                   Enter Promo Code
                 </Text>
                 <TextInput
-                  className="mb-4 rounded-lg border border-gray-300 bg-gray-50 p-4 font-inter-medium text-base text-gray-900"
+                  className="font-inter-medium mb-4 rounded-lg border border-gray-300 bg-gray-50 p-4 text-base text-gray-900"
                   placeholder="Enter your code"
                   value={promoCode}
                   onChangeText={setPromoCode}

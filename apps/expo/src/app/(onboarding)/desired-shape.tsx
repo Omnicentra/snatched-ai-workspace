@@ -25,6 +25,7 @@ import { onboardingStore$ } from '@/stores/onboarding.store'
 import { desiredBodyShapeEnum } from '@omc/validators/onboarding'
 import type { z } from 'zod'
 import { withOnboardingTracking } from '@/components/core/withOnboardingTracking'
+import { useLocalSearchParams } from 'expo-router'
 
 import athletic from '@/assets/images/body-shapes/athletic.png'
 import hourglass from '@/assets/images/body-shapes/hourglass.png'
@@ -174,6 +175,7 @@ const BodyShapeCard = ({
 
 function DesiredShape() {
   const router = useRouter()
+  const params = useLocalSearchParams<{ skipped?: string }>()
   const [currentPageIndex, setCurrentPageIndex] = useState(0)
   const [selectedShapeId, setSelectedShapeId] = useState<BodyShapeId | null>(null)
   const flatListRef = useRef<FlatList>(null)
@@ -184,7 +186,13 @@ function DesiredShape() {
         // Validate the selected shape against the enum
         const validatedShape = desiredBodyShapeEnum.parse(selectedShapeId)
         onboardingStore$.onboarding.desiredShape.set(validatedShape)
-        router.push('/(onboarding)/timeline-goal')
+        
+        // Pass along the skipped parameter if it exists
+        if (params.skipped === 'true') {
+          router.push('/(onboarding)/timeline-goal?skipped=true')
+        } else {
+          router.push('/(onboarding)/timeline-goal')
+        }
       }
     } catch (error) {
       if (error instanceof Error) {

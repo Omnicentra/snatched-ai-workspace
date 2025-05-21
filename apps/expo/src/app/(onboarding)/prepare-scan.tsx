@@ -1,10 +1,10 @@
-import React from 'react'
-import { View, Text, SafeAreaView, ScrollView, Linking } from 'react-native'
-import { useRouter } from 'expo-router'
-import Constants from 'expo-constants'
-import { OnboardingHeader, StyledButton, InfoCard } from '@/components/core'
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'
-import { withOnboardingTracking } from '@/components/core/withOnboardingTracking'
+import React from "react";
+import { Linking, SafeAreaView, ScrollView, Text, View } from "react-native";
+import Constants from "expo-constants";
+import { useRouter } from "expo-router";
+import { InfoCard, OnboardingHeader, StyledButton } from "@/components/core";
+import { withOnboardingTracking } from "@/components/core/withOnboardingTracking";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 
 // Reusable Tip Card Component
 const TipCard = ({ icon, text }: { icon: React.ReactNode; text: string }) => (
@@ -12,28 +12,34 @@ const TipCard = ({ icon, text }: { icon: React.ReactNode; text: string }) => (
     <View className="mr-3 h-8 w-8 items-center justify-center rounded-full bg-pink-50">
       {icon}
     </View>
-    <Text className="flex-1 font-inter text-sm text-gray-600">{text}</Text>
+    <Text className="font-inter flex-1 text-sm text-gray-600">{text}</Text>
   </View>
-)
+);
 
 function PrepareScanScreen() {
-  const router = useRouter()
+  const router = useRouter();
 
   const handleContinue = () => {
-    router.push('/(onboarding)/scan-front')
-  }
+    router.push("/(onboarding)/scan-front");
+  };
+
+  const handleSkip = () => {
+    router.push("/(onboarding)/desired-shape?skipped=true");
+  };
 
   const openPrivacyPolicy = () => {
     // Replace with your actual URL
-    void Linking.openURL('https://snatchedai.com/privacy')
-  }
+    void Linking.openURL("https://snatchedai.com/privacy");
+  };
   const openTerms = () => {
     // Replace with your actual URL
-    void Linking.openURL('https://snatchedai.com/terms')
-  }
+    void Linking.openURL("https://snatchedai.com/terms");
+  };
   const openEULA = () => {
-    void Linking.openURL('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/')
-  }
+    void Linking.openURL(
+      "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/",
+    );
+  };
 
   return (
     <SafeAreaView
@@ -55,8 +61,8 @@ function PrepareScanScreen() {
         </View>
 
         {/* Main Title */}
-        <Text className="mb-3 text-center font-inter-bold text-3xl text-black">
-          Thank you for trusting{'\n'}Snatched AI
+        <Text className="font-inter-bold mb-3 text-center text-3xl text-black">
+          Thank you for trusting{"\n"}Snatched AI
         </Text>
 
         {/* Subtitle */}
@@ -66,7 +72,7 @@ function PrepareScanScreen() {
 
         {/* Photo Tips Section */}
         <View className="mb-6">
-          <Text className="mb-4 font-inter-medium text-base text-black">
+          <Text className="font-inter-medium mb-4 text-base text-black">
             We'll need 3 photos to create your custom plan:
           </Text>
           <TipCard
@@ -99,7 +105,7 @@ function PrepareScanScreen() {
 
         {/* Quick Tips Section */}
         <View className="mb-6">
-          <Text className="mb-4 font-inter-medium text-base text-black">
+          <Text className="font-inter-medium mb-4 text-base text-black">
             For best results:
           </Text>
           <TipCard
@@ -139,29 +145,37 @@ function PrepareScanScreen() {
         />
       </ScrollView>
       <View className="mt-auto px-8">
-        <StyledButton
-          title="I'm ready to take photos"
-          onPress={handleContinue}
-          variant="primary"
-          icon={<Ionicons name="camera-outline" size={20} color="white" />}
-        />
+        <View className="justify-center gap-y-4">
+          <StyledButton
+            title="I'm ready to take photos"
+            onPress={handleContinue}
+            variant="primary"
+            icon={<Ionicons name="camera-outline" size={20} color="white" />}
+          />
+          <StyledButton
+            title="Skip for now"
+            onPress={handleSkip}
+            variant="secondary"
+            className="mt-3"
+          />
+        </View>
         <View className="mt-4 items-center">
           <Text className="text-center text-xs text-gray-600">
-            By continuing, you agree to our{' '}
+            By continuing, you agree to our{" "}
             <Text
               className="font-inter-medium text-black underline"
               onPress={openTerms}
             >
               Terms
             </Text>
-            <Text>{', '}</Text>
+            <Text>{", "}</Text>
             <Text
               className="font-inter-medium text-black underline"
               onPress={openPrivacyPolicy}
             >
               Privacy Policy
             </Text>
-            <Text>{', and '}</Text>
+            <Text>{", and "}</Text>
             <Text
               className="font-inter-medium text-black underline"
               onPress={openEULA}
@@ -172,7 +186,7 @@ function PrepareScanScreen() {
         </View>
       </View>
     </SafeAreaView>
-  )
+  );
 }
 
-export default withOnboardingTracking(PrepareScanScreen, 'prepare_scan')
+export default withOnboardingTracking(PrepareScanScreen, "prepare_scan");

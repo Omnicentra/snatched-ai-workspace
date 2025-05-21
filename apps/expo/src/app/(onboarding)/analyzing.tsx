@@ -59,7 +59,8 @@ function AnalyzingScreen() {
   const router = useRouter();
   const [progress, setProgress] = useState(0);
   const [currentStatusIndex, setCurrentStatusIndex] = useState(0);
-  const params = useLocalSearchParams<{ progress?: string }>();
+  const params = useLocalSearchParams<{ progress?: string, skipped?: string }>();
+  const isSkipped = params.skipped === "true";
 
   const { mutate: generateBodyRating } = api.user.bodyRating.useMutation({
     onSuccess: (data) => {
@@ -101,26 +102,29 @@ function AnalyzingScreen() {
       },
     });
 
-  // const { currentSnatchedScore, potentialSnatchedScore } = use$(
-  //   transformationStore$.bodyRating,
-  // );
   const frontImageKey = use$(onboardingStore$.onboarding.frontViewPhoto);
   const sideImageKey = use$(onboardingStore$.onboarding.sideViewPhoto);
   const backImageKey = use$(onboardingStore$.onboarding.backViewPhoto);
   const desiredBodyShape = use$(onboardingStore$.onboarding.desiredShape);
 
   useEffect(() => {
-    generateBodyRating({
-      imageKeys: {
-        front: frontImageKey,
-        side: sideImageKey,
-        back: backImageKey,
-      },
-      desiredBodyShape,
-    });
-    if (params.progress !== "true") {
-      generateBlurredImage({ imageKey: frontImageKey, blurAmount: 100 });
+    // Only call bodyRating and blurredImage if not skipped
+    if (!isSkipped) {
+      generateBodyRating({
+        imageKeys: {
+          front: frontImageKey,
+          side: sideImageKey,
+          back: backImageKey,
+        },
+        desiredBodyShape,
+      });
+      
+      if (params.progress !== "true") {
+        generateBlurredImage({ imageKey: frontImageKey, blurAmount: 100 });
+      }
     }
+    
+    // Always generate these regardless of skipped status
     generateMealPlan();
     generateWorkoutPlan();
 
@@ -140,6 +144,8 @@ function AnalyzingScreen() {
           setTimeout(() => {
             if (params.progress === "true") {
               router.replace("/(onboarding)/results?progress=true");
+            } else if (isSkipped) {
+              router.replace("/(onboarding)/results?skipped=true");
             } else {
               router.replace("/(onboarding)/results");
             }

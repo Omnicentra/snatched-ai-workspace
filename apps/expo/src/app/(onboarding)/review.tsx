@@ -3,7 +3,7 @@ import { Pressable, SafeAreaView, ScrollView, Text, View } from "react-native";
 import Constants from "expo-constants";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import * as StoreReview from "expo-store-review";
 import testimonial1 from "@/assets/images/testimonials/image1.jpeg";
 import testimonial2 from "@/assets/images/testimonials/image2.jpeg";
@@ -17,6 +17,8 @@ import { logger } from "@/lib/logger";
 function ReviewScreen() {
   const [isDisabled, setIsDisabled] = useState(true);
   const router = useRouter();
+  const params = useLocalSearchParams<{ skipped?: string }>();
+  const isSkipped = params.skipped === "true";
 
   useEffect(() => {
     const checkReview = async () => {
@@ -150,7 +152,11 @@ function ReviewScreen() {
             <StyledButton
               title="Continue"
               disabled={isDisabled}
-              onPress={() => router.push("/(onboarding)/paywall")}
+              onPress={() => 
+                isSkipped 
+                  ? router.push("/(onboarding)/paywall?skipped=true") 
+                  : router.push("/(onboarding)/paywall")
+              }
               className="flex flex-row gap-x-3 rounded-full"
               variant="primary"
               style={{ backgroundColor: "#f472b6" }}

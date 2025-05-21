@@ -63,9 +63,11 @@ export default function AppEntry() {
   // If onboarding is complete but no session, go to auth
   if (session?.user) {
     void ldc.identify({
-      key: session.user.id,
+      kind: 'user',
+      key: session.user.email,
       name: session.user.name,
       email: session.user.email,
+      avatar: session.user.image ?? '',
     });
     return <Redirect href="/(tabs)/home" />;
   }

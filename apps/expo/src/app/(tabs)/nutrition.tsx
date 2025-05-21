@@ -1,26 +1,24 @@
 import type { RouterOutputs } from "@/utils/api";
-import type { GestureResponderEvent } from "react-native";
+import { api } from "@/utils/api";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import Constants from "expo-constants";
+import { Image } from "expo-image";
+import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
+import type { GestureResponderEvent } from "react-native";
 import {
   ActivityIndicator,
   Animated,
-  Dimensions,
   Easing,
   Modal,
   Pressable,
   RefreshControl,
   ScrollView,
   Text,
-  View,
+  View
 } from "react-native";
 import ConfettiCannon from "react-native-confetti-cannon";
-import Constants from "expo-constants";
-import { Image } from "expo-image";
-import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
-import { MilestoneModal } from "@/app/(modals)/milestone-modal";
-import { api } from "@/utils/api";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 
 // Define types for clarity
 type MealPlanData = RouterOutputs["nutrition"]["getTodaysMealPlan"];

@@ -12,7 +12,6 @@ class LaunchDarklyClient {
   }
 
   public static getInstance(): ReactNativeLDClient {
-    logger.info(appVariant);
     logger.info(launchdarklyClientKey);
     LaunchDarklyClient.instance ??= new ReactNativeLDClient(
       LaunchDarklyClient.CLIENT_KEY,
@@ -20,7 +19,7 @@ class LaunchDarklyClient {
       {
         debug: appVariant === 'development',
         applicationInfo: {
-          id: "ld-rn-test-app",
+          id: "snatched-ai",
           version: Constants.expoConfig?.version,
           name: "snatched-ai",
         },

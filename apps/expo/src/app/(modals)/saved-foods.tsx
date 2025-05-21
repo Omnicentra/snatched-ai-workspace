@@ -19,7 +19,7 @@ export default function SavedFoodsScreen() {
   const [selectedMeal, setSelectedMeal] = useState<Recipe | null>(null);
   const [mealTypeModalVisible, setMealTypeModalVisible] = useState(false);
 
-  const { data: meals } = api.nutrition.getRecipesByUser.useQuery();
+  const { data: meals, refetch: refetchMeals } = api.nutrition.getRecipesByUser.useQuery();
   const { mutate: toggleFavorite } = api.nutrition.toggleFavoriteRecipe.useMutation({
     onSuccess: () => {
       void utils.nutrition.getRecipesByUser.invalidate();
@@ -29,6 +29,8 @@ export default function SavedFoodsScreen() {
     onSuccess: () => {
       setMealTypeModalVisible(false);
       setSelectedMeal(null);
+      void refetchMeals();
+      void utils.nutrition.getTodaysMealPlan.invalidate();
       void utils.nutrition.getRecentlyLoggedMeals.invalidate();
     },
   });

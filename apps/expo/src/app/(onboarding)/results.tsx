@@ -20,10 +20,19 @@ function ResultsScreen() {
   const router = useRouter();
   const confettiRef = useRef<ConfettiCannon>(null); // Create a ref for the confetti cannon
   const bodyRating = use$(transformationStore$.bodyRating);
-  const searchParams = useLocalSearchParams<{ unlocked?: string, progress?: string }>();
+  const searchParams = useLocalSearchParams<{ unlocked?: string, progress?: string, skipped?: string }>();
   const isUnlocked = searchParams.unlocked === "true";
   const isProgress = searchParams.progress === "true";
+  const isSkipped = searchParams.skipped === "true";
   const { data: session } = authClient.useSession();
+
+  // Function with proper typing
+  const getDisplayValue = (value: string | number | null | undefined): string | number => {
+    if (isUnlocked || isProgress) {
+      return value ?? "🔒";
+    }
+    return "🔒";
+  };
 
   // Get the number of issues that are not null
   const issueCount = [
@@ -40,7 +49,11 @@ function ResultsScreen() {
       void router.push("/(onboarding)/notifications");
     } else {
       // Navigate to review screen first, then paywall
-      void router.push("/(onboarding)/review");
+      if (isSkipped) {
+        void router.push("/(onboarding)/review?skipped=true");
+      } else {
+        void router.push("/(onboarding)/review");
+      }
     }
   };
 
@@ -119,7 +132,7 @@ function ResultsScreen() {
                     Current snatched score
                   </Text>
                   <Text className="font-inter-bold text-center text-3xl text-pink-400">
-                    {bodyRating.currentSnatchedScore ?? 55}{" "}
+                    {isSkipped ? "🔒" : getDisplayValue(bodyRating.currentSnatchedScore ?? 55)}{" "}
                     {/* Use actual value or fallback */}
                   </Text>
                 </View>
@@ -129,7 +142,7 @@ function ResultsScreen() {
                     Potential snatched score
                   </Text>
                   <Text className="font-inter-bold text-center text-3xl text-pink-400">
-                    {bodyRating.potentialSnatchedScore ?? 98}{" "}
+                    {isSkipped ? "🔒" : getDisplayValue(bodyRating.potentialSnatchedScore ?? 98)}{" "}
                     {/* Use actual value or fallback */}
                   </Text>
                 </View>
@@ -141,7 +154,7 @@ function ResultsScreen() {
               <Text className="font-inter-medium text-center text-gray-600">
                 You can reduce your waist by{" "}
                 <Text className="font-inter-bold">
-                  {bodyRating.potentialWaistReductionInches ?? "🔒"}
+                  {isSkipped ? "🔒" : getDisplayValue(bodyRating.potentialWaistReductionInches ?? "🔒")}
                 </Text>{" "}
                 inch(es) <Text className="">📈</Text>
               </Text>
@@ -159,13 +172,13 @@ function ResultsScreen() {
                 {/* Issue Count Badge */}
                 <View className="rounded-full bg-red-500/80 px-2.5 py-2">
                   <Text className="font-inter-medium text-xs text-white">
-                    {issueCount} Issues found
+                    {isSkipped ? "?" : issueCount} Issues found
                   </Text>
                 </View>
               </View>
 
               <View className="gap-y-4">
-                {isUnlocked || isProgress ? (
+                {(isUnlocked || isProgress) && !isSkipped ? (
                   [bodyRating.issue1, bodyRating.issue2, bodyRating.issue3].map(
                     (issue, index) => (
                       <View key={index} className="flex-row items-start">
@@ -181,7 +194,11 @@ function ResultsScreen() {
                 ) : (
                   <View className="items-center justify-center py-8">
                     <Text className="text-4xl mb-2">🔒</Text>
-                    <Text className="font-inter-medium text-gray-600">Unlock to view your issues</Text>
+                    <Text className="font-inter-medium text-gray-600">
+                      {isSkipped 
+                        ? "Take body scans to receive personalized feedback" 
+                        : "Unlock to view your issues"}
+                    </Text>
                   </View>
                 )}
               </View>
@@ -189,27 +206,6 @@ function ResultsScreen() {
 
             {/* Visual Preview Grid */}
             <View className="relative">
-              {/* Glow Effect */}
-              {/* <View
-                className="absolute"
-                style={{
-                  top: '50%', // Center vertically
-                  left: '50%', // Center horizontally
-                  width: 40,
-                  height: 40,
-                  marginTop: -20, // Offset by half height
-                  marginLeft: -20, // Offset by half width
-                  backgroundColor: '#FDF2F8', // Faint pink base
-                  borderRadius: 20,
-                  transform: [{ scale: 4 }], // Increased scale for broader glow
-                  shadowColor: '#F9A8D4', // Pink shadow color
-                  shadowOffset: { width: 0, height: 0 },
-                  shadowOpacity: 0.8, // Maintained opacity
-                  shadowRadius: 45, // Increased radius for wider spread
-                  opacity: 0.7 // Maintained base opacity
-                }}
-              /> */}
-
               {/* Replace LinearGradient with View */}
               <View
                 style={{
@@ -257,7 +253,7 @@ function ResultsScreen() {
                         {title}
                       </Text>
                       <Text className="font-inter-bold text-center text-2xl text-pink-400">
-                        {isUnlocked || isProgress ? value : "🔒"}
+                        {isSkipped ? "🔒" : getDisplayValue(value)}
                       </Text>
                     </View>
                   </View>

@@ -67,6 +67,11 @@ export const VisualizeGoalSection = ({
                 <Image
                   source={beforeAfter}
                   className="h-full w-full"
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    borderRadius: 15,
+                  }}
                   contentFit="cover"
                 />
                 <View className="absolute bottom-3 left-3 rounded-full bg-pink-400/20 px-3 py-1">

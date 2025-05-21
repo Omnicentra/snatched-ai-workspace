@@ -8,7 +8,7 @@ import {
   View,
 } from "react-native";
 import Constants from "expo-constants";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { OnboardingHeader, StyledButton } from "@/components/core";
 import { withOnboardingTracking } from "@/components/core/withOnboardingTracking";
 import { usePostAuth } from "@/hooks/usePostAuth";
@@ -19,11 +19,11 @@ import { Ionicons } from "@expo/vector-icons";
 
 function SignupScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ skipped?: string }>();
   const [isLoading, setIsLoading] = useState(false);
   const { data: session } = authClient.useSession();
 
   usePostAuth({
-    session,
     onTrack: (deviceId) => {
       if (session?.user) {
         void Analytics.trackUserSignIn(deviceId, {
@@ -34,7 +34,11 @@ function SignupScreen() {
       }
     },
     onSuccess: () => {
-      router.push("/(onboarding)/analyzing");
+      if (params.skipped === 'true') {
+        router.push("/(onboarding)/analyzing?skipped=true");
+      } else {
+        router.push("/(onboarding)/analyzing");
+      }
     },
   });
 
@@ -47,9 +51,8 @@ function SignupScreen() {
           callbackURL: `${scheme}://`,
         },
         {
-          onSuccess: (ctx) => {
-            console.log("Apple sign in success:");
-            console.log(JSON.stringify(ctx, null, 2));
+          onSuccess: () => {
+            console.log("Apple sign in success");
           },
           onError: (ctx) => {
             console.error("Apple sign in error:", ctx.error);
@@ -79,8 +82,8 @@ function SignupScreen() {
           callbackURL: `${scheme}://`,
         },
         {
-          onSuccess: (ctx) => {
-            console.log("Google sign in success:");
+          onSuccess: () => {
+            console.log("Google sign in success");
           },
           onError: (ctx) => {
             console.error("Google sign in error:", ctx.error);

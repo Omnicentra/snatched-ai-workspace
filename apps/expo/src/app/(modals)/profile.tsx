@@ -1,4 +1,4 @@
-import { mixpanel } from "@/lib/utils";
+import { appVariant, mixpanel } from "@/lib/utils";
 import { authClient } from "@/utils/auth";
 import ChatWootWidget from "@chatwoot/react-native-widget";
 import { Ionicons } from "@expo/vector-icons";
@@ -132,7 +132,7 @@ export default function ProfileScreen() {
         );
       },
       textColor: "text-red-600",
-      show: resetOnboardingFlag.value === true,
+      show: resetOnboardingFlag.value === true || appVariant === "development",
     },
     {
       icon: <Ionicons name="trash-outline" size={18} color="#DC2626" />,

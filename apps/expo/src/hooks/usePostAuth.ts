@@ -59,6 +59,7 @@ export function usePostAuth({ onSuccess, onTrack }: UsePostAuthProps) {
             kind: "user",
             key: session.user.email,
             name: session.user.name,
+            email: session.user.email,
           });
 
           // Call success callback if provided

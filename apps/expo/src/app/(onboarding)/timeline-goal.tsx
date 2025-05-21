@@ -5,7 +5,7 @@ import { authClient } from '@/utils/auth'
 import { use$ } from '@legendapp/state/react'
 import { timelineEnum } from '@omc/validators/onboarding'
 import Constants from 'expo-constants'
-import { useRouter } from 'expo-router'
+import { useLocalSearchParams, useRouter } from 'expo-router'
 import React, { useEffect } from 'react'
 import { SafeAreaView, ScrollView, View } from 'react-native'
 import type { z } from 'zod'
@@ -52,6 +52,7 @@ const timelineOptions: TimelineOption[] = [
 
 function TimelineGoalScreen() {
   const router = useRouter()
+  const params = useLocalSearchParams<{ skipped?: string }>()
   const selectedTimeline = use$(onboardingStore$.onboarding.goalTimeline);
   const { data: session } = authClient.useSession();
 
@@ -62,9 +63,17 @@ function TimelineGoalScreen() {
   const handleContinue = () => {
     // Store selectedTimeline in the store
     if (session) {
-      router.push('/(onboarding)/analyzing')
+      if (params.skipped === 'true') {
+        router.push('/(onboarding)/analyzing?skipped=true')
+      } else {
+        router.push('/(onboarding)/analyzing')
+      }
     } else {
-      router.push('/(onboarding)/signup')
+      if (params.skipped === 'true') {
+        router.push('/(onboarding)/signup?skipped=true')
+      } else {
+        router.push('/(onboarding)/signup')
+      }
     }
   }
 
