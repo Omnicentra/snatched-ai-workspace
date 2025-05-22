@@ -17,6 +17,8 @@ export default function TabLayout() {
   }, {
     retry: false,
   });
+  // Get the saved recipes from API data
+  api.nutrition.getRecipesByUser.useQuery();
   const {
     data: mealPlanData,
     error: mealPlanError,

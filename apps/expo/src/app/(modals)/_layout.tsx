@@ -1,17 +1,47 @@
 import { Stack } from "expo-router";
+import React from "react";
 
 export default function ModalsLayout() {
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="recipe-detail" options={{ presentation: "modal" }} />
-      <Stack.Screen name="profile" />
-      <Stack.Screen name="visual-preview" />
-      <Stack.Screen name="snatch-hack-detail" options={{ presentation: "modal" }} />
-      <Stack.Screen name="meal-scan" />
-      <Stack.Screen name="personal-info" options={{ presentation: "modal" }} />
-      <Stack.Screen name="subscription" options={{ presentation: "modal" }} />
-      <Stack.Screen name="workout-detail" />
-      <Stack.Screen name="all-workouts" options={{ presentation: "modal" }} />
+    <Stack screenOptions={{
+      headerShown: false,
+    }}>
+      <Stack.Screen
+        name="workout-detail"
+        options={{
+          presentation: "modal",
+        }}
+      />
+      <Stack.Screen
+        name="recipe-detail"
+        options={{
+          presentation: "modal",
+        }}
+      />
+      <Stack.Screen
+        name="meal-plan"
+        options={{
+          presentation: "modal",
+        }}
+      />
+      <Stack.Screen
+        name="meal-scan"
+        options={{
+          presentation: "modal",
+        }}
+      />
+      <Stack.Screen
+        name="saved-foods"
+        options={{
+          presentation: "modal",
+        }}
+      />
+      <Stack.Screen
+        name="all-workouts"
+        options={{
+          presentation: "modal",
+        }}
+      />
     </Stack>
   );
 }

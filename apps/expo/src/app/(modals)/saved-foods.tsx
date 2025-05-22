@@ -7,7 +7,8 @@ import { useRouter } from "expo-router";
 import { api } from "@/utils/api";
 import type { RouterOutputs } from "@/utils/api";
 import { MEAL_TYPES } from "@omc/validators/nutrition";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { BackButton } from "@/components/common/BackButton";
 
 const DEFAULT_IMAGE = "https://images.unsplash.com/photo-1495521821757-a1efb6729352?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80";
 
@@ -25,13 +26,14 @@ export default function SavedFoodsScreen() {
       void utils.nutrition.getRecipesByUser.invalidate();
     },
   });
-  const { mutate: logMeal, status: logMealStatus } = api.nutrition.logSavedMeal.useMutation({
+  const { mutate: logMeal , isPending } = api.nutrition.logSavedMeal.useMutation({
     onSuccess: () => {
       setMealTypeModalVisible(false);
       setSelectedMeal(null);
       void refetchMeals();
       void utils.nutrition.getTodaysMealPlan.invalidate();
       void utils.nutrition.getRecentlyLoggedMeals.invalidate();
+      router.back();
     },
   });
 
@@ -40,21 +42,13 @@ export default function SavedFoodsScreen() {
     setMealTypeModalVisible(true);
   };
 
-  const isLoading = logMealStatus === "pending";
-
   return (
     <LinearGradient
       colors={["#fdf2f8", "#fff"]}
       style={{ flex: 1, height: "100%", paddingTop: Constants.statusBarHeight }}
     >
       <View className="flex-row items-center justify-between border-b border-gray-100 p-4">
-        <Pressable onPress={() => router.back()}>
-          <Ionicons name="close" size={28} color="#333" />
-        </Pressable>
-        <Text className="font-inter-semibold text-lg text-gray-900">
-          Saved Foods
-        </Text>
-        <View style={{ width: 28 }} />
+        <BackButton title="Saved Foods" />
       </View>
 
       <ScrollView className="flex-1 px-6 pt-4">
@@ -78,7 +72,7 @@ export default function SavedFoodsScreen() {
             >
               {/* Left Content */}
               <View className="flex-1 p-4">
-                <View className="mb-2 flex-row items-center justify-between">
+                <View className="flex-row items-center justify-between -translate-y-1">
                   <View className="flex-row items-center">
                     <MaterialCommunityIcons
                       name="clock-outline"
@@ -96,7 +90,7 @@ export default function SavedFoodsScreen() {
                         e.stopPropagation();
                         handleLogMeal(meal);
                       }}
-                      disabled={isLoading}
+                      disabled={isPending}
                     >
                       <MaterialCommunityIcons
                         name="plus-circle"
@@ -145,10 +139,11 @@ export default function SavedFoodsScreen() {
               </View>
 
               {/* Right Image */}
-              <View className="h-32 w-32">
+              <View className="w-32">
                 <Image
                   source={{ uri: meal.imageUrl ?? DEFAULT_IMAGE }}
                   style={{
+                    height: "100%",
                     position: "absolute",
                     top: 0,
                     left: 0,
@@ -231,7 +226,7 @@ export default function SavedFoodsScreen() {
                       });
                     }
                   }}
-                  disabled={isLoading}
+                  disabled={isPending}
                 >
                   <Text className="font-inter-medium text-center text-base text-gray-900">
                     {type.label}
