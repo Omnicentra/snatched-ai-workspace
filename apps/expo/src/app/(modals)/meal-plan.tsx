@@ -369,7 +369,7 @@ export default function MealPlanScreen() {
                 time={meal.scheduledTime}
                 completed={meal.completed}
                 onPress={() => navigateToRecipeDetail(meal.recipe.id)}
-                onToggleComplete={handleToggleComplete}
+                onToggleComplete={() => handleToggleComplete(meal)}
               />
             ))
           ) : (

@@ -8,17 +8,17 @@ import { Platform } from "react-native";
 export default function TabLayout() {
   // Get the snatch hacks from API data
   api.snatchHack.getSnatchHacks.useQuery();
-  // Get the workouts from API data
-  const { data: workoutData } = api.workout.getWorkouts.useQuery();
-  // Get the categories from API data
   api.workout.getWorkoutCategories.useQuery();
   api.workout.getUserWorkoutStats.useQuery({
     period: "week",
   }, {
     retry: false,
   });
+  const { data: recipes } = api.nutrition.getRecipesByUser.useQuery();
+  // Get the workouts from API data
+  const { data: workoutData } = api.workout.getWorkouts.useQuery();
+  // Get the categories from API data
   // Get the saved recipes from API data
-  api.nutrition.getRecipesByUser.useQuery();
   const {
     data: mealPlanData,
     error: mealPlanError,

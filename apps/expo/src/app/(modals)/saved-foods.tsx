@@ -155,7 +155,6 @@ export default function SavedFoodsScreen() {
                   contentFit="cover"
                   cachePolicy="memory-disk"
                   transition={200}
-                  placeholder={DEFAULT_IMAGE}
                 />
               </View>
             </Pressable>
