@@ -34,6 +34,13 @@ export default function OnboardingLayout() {
       <Stack.Screen name="review" />
       <Stack.Screen name="signup" />
       <Stack.Screen name="paywall" />
+      <Stack.Screen 
+        name="special-offer" 
+        options={{
+          animation: 'slide_from_bottom',
+          animationDuration: 300,
+        }}
+      />
       <Stack.Screen name="notifications" />
       <Stack.Screen name="notification-time" />
 

@@ -176,8 +176,12 @@ interface Plan {
 
 function PaywallScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ skipped?: string }>();
+  const params = useLocalSearchParams<{
+    skipped?: string;
+    specialOffer?: string;
+  }>();
   const isSkipped = params.skipped === "true";
+  const isSpecialOffer = params.specialOffer === "true";
   const { data: session } = authClient.useSession();
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [isPromoModalVisible, setIsPromoModalVisible] = useState(false);
@@ -212,8 +216,8 @@ function PaywallScreen() {
     await Promise.all([
       SecureStore.setItemAsync("onboarding_complete", "true"),
       // Only transform image if not skipped
-      isSkipped 
-        ? null 
+      isSkipped
+        ? null
         : imageTransformation({
             imageKeys: {
               front: frontImageKey,
@@ -333,8 +337,12 @@ function PaywallScreen() {
     } catch (error) {
       logger.error("Error processing purchase:");
       if (error instanceof Error) {
-        Alert.alert("Purchase Failed", error.message);
-        Sentry.captureException(error);
+        logger.debug(error.message);
+        if (error.message === "Purchase was cancelled.") {
+          router.push("/(onboarding)/special-offer");
+        } else {
+          Sentry.captureException(error);
+        }
       } else {
         Alert.alert(
           "Purchase Failed",
@@ -401,7 +409,13 @@ function PaywallScreen() {
             <View style={styles.header}>
               <View className="flex-row items-center justify-center">
                 <Pressable
-                  onPress={() => router.back()}
+                  onPress={() => {
+                    if (!isSpecialOffer) {
+                      router.push("/(onboarding)/special-offer");
+                    } else {
+                      router.back();
+                    }
+                  }}
                   hitSlop={20}
                   className="absolute left-0 -translate-y-1"
                 >
