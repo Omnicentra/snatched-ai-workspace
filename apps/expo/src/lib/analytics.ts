@@ -84,7 +84,7 @@ export const Analytics = {
       planName: string;
       price: number;
       currency: string;
-      interval: 'week' | 'year';
+      interval: 'week' | 'month' | 'year';
     }
   ) => {
     void mixpanel.track('subscription_purchased', {

@@ -12,18 +12,31 @@ import {
     SafeAreaView,
     StyleSheet,
     Text,
-    View
+    View,
+    Alert,
 } from "react-native";
+import Purchases from "react-native-purchases";
+import * as SecureStore from "expo-secure-store";
+import * as Sentry from "@sentry/react-native";
+import { authClient } from "@/utils/auth";
+import { getOrCreateDeviceId } from "@/utils/device-id";
+import { Analytics } from "@/lib/analytics";
+import { transformationStore$ } from "@/stores/transformation.store";
+import { onboardingStore$ } from "@/stores/onboarding.store";
+import { use$ } from "@legendapp/state/react";
+import { logger } from "~/lib/logger";
 
 const { width } = Dimensions.get("window");
 
 export default function SpecialOfferScreen() {
   const router = useRouter();
   const [isPurchasing, setIsPurchasing] = useState(false);
+  const { data: session } = authClient.useSession();
   const fadeAnim = new Animated.Value(0);
   const scaleAnim = new Animated.Value(0.9);
   const timerOpacity = new Animated.Value(0);
   const timerScale = new Animated.Value(0.5);
+  const frontImageKey = use$(onboardingStore$.onboarding.frontViewPhoto);
 
   useEffect(() => {
     // Sequence of animations
@@ -59,13 +72,87 @@ export default function SpecialOfferScreen() {
     ]).start();
   }, []);
 
-  const handleContinue = () => {
-    setIsPurchasing(true);
-    // Navigate back to paywall with special offer flag
-    router.push({
-      pathname: "/(onboarding)/paywall",
-      params: { specialOffer: "true" },
-    });
+  const handleSuccessfulPurchase = async () => {
+    try {
+      await SecureStore.setItemAsync("onboarding_complete", "true");
+      
+      if (!frontImageKey) {
+        router.replace("/(onboarding)/notifications");
+        return;
+      }
+
+      router.replace({
+        pathname: "/(onboarding)/results",
+        params: { unlocked: "true" },
+      });
+    } catch (error) {
+      logger.error("Error handling successful purchase:", error);
+      Sentry.captureException(error);
+    }
+  };
+
+  const handleContinue = async () => {
+    if (isPurchasing) return;
+
+    try {
+      setIsPurchasing(true);
+
+      // Get available packages
+      const offerings = await Purchases.getOfferings();
+      const availablePackages = offerings.all.special?.availablePackages;
+
+      if (!availablePackages?.length) {
+        throw new Error("No packages available");
+      }
+      
+      availablePackages.forEach((pkg) => logger.info(pkg.product.identifier));
+
+      // Find the special offer package
+      const specialOfferPackage = availablePackages.find(
+        (pkg) => pkg.product.identifier === "snatched_monthly_offer_80"
+      );
+
+      if (!specialOfferPackage) {
+        throw new Error("Special offer package not found");
+      }
+
+      // Make the purchase
+      const { customerInfo, productIdentifier } = await Purchases.purchasePackage(
+        specialOfferPackage
+      );
+
+      // Track analytics
+      const deviceId = await getOrCreateDeviceId();
+      const userId = session?.user.id;
+
+      if (userId) {
+        Analytics.trackSubscriptionPurchase(deviceId, userId, {
+          planId: productIdentifier,
+          planName: specialOfferPackage.product.identifier,
+          price: specialOfferPackage.product.price,
+          currency: specialOfferPackage.product.currencyCode,
+          interval: "month",
+        });
+      }
+
+      if (customerInfo.entitlements.active.premium) {
+        await handleSuccessfulPurchase();
+      }
+    } catch (error) {
+      logger.error("Error processing special offer purchase:");
+      if (error instanceof Error) {
+        logger.debug(error.message);
+        if (error.message !== "Purchase was cancelled.") {
+          Alert.alert(
+            "Purchase Failed",
+            "Unable to process your purchase. Please try again."
+          );
+          Sentry.captureException(error);
+        }
+      }
+    } finally {
+      setIsPurchasing(false);
+    }
   };
 
   return (
@@ -155,9 +242,9 @@ export default function SpecialOfferScreen() {
                 <View style={styles.priceRow}>
                   <View>
                     <Text style={styles.planType}>Yearly</Text>
-                    <Text style={styles.planDuration}>12mo • £19.99</Text>
+                    <Text style={styles.planDuration}>12mo • £30.29</Text>
                   </View>
-                  <Text style={styles.discountedPrice}>£1.67/mo</Text>
+                  <Text style={styles.discountedPrice}>£5.99/mo</Text>
                 </View>
               </LinearGradient>
             </View>
@@ -222,7 +309,7 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     alignItems: "center",
-    paddingTop: 20,
+    paddingVertical: 20,
   },
   cardGlow: {
     shadowColor: "#7C3AED",
