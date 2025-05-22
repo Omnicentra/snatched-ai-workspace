@@ -12,7 +12,6 @@ class LaunchDarklyClient {
   }
 
   public static getInstance(): ReactNativeLDClient {
-    logger.info(launchdarklyClientKey);
     LaunchDarklyClient.instance ??= new ReactNativeLDClient(
       LaunchDarklyClient.CLIENT_KEY,
       AutoEnvAttributes.Enabled,

@@ -123,12 +123,6 @@ export default function TabLayout() {
           ),
         }}
       />
-      <Tabs.Screen
-        name="nutrition-old"
-        options={{
-          href: null,
-        }}
-      />
     </Tabs>
   );
 }
