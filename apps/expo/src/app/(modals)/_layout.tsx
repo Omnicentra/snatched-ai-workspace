@@ -42,6 +42,12 @@ export default function ModalsLayout() {
           presentation: "modal",
         }}
       />
+      <Stack.Screen
+        name="workout-start"
+      />
+      <Stack.Screen
+        name="workout-complete"
+      />
     </Stack>
   );
 }

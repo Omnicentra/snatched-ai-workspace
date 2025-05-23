@@ -385,7 +385,7 @@ export const workoutRouter = {
     .mutation(async ({ ctx, input }) => {
       try {
         const { workoutId, durationMinutes, caloriesBurned } = input;
-        const { user } = ctx.session;
+        const userId = Number(ctx.session.user.id);
         // Check if workout exists
         const workout = await db.query.workouts.findFirst({
           where: eq(workouts.id, workoutId),
@@ -402,7 +402,7 @@ export const workoutRouter = {
         const [progressRecord] = await db
           .insert(userWorkoutProgress)
           .values({
-            userId: Number(user.id),
+            userId,
             workoutId,
             completedAt: new Date().toISOString(),
             durationMinutes,
@@ -863,8 +863,8 @@ export const workoutRouter = {
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const { planId, dayNumber } = input;
-      const { user } = ctx.session;
+      const { planId, dayNumber, workoutId } = input;
+      const userId = Number(ctx.session.user.id);
       ctx.logger.info(`Completing workout plan ${planId} day ${dayNumber}`);
 
       // Update workout plan day completion
@@ -877,6 +877,7 @@ export const workoutRouter = {
         })
         .where(
           and(
+            eq(workoutPlanDays.workoutId, workoutId),
             eq(workoutPlanDays.planId, planId),
             eq(workoutPlanDays.dayNumber, dayNumber),
           ),
@@ -884,18 +885,22 @@ export const workoutRouter = {
         .returning();
 
       if (!updatedPlanDay) {
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to update workout plan day",
+        ctx.logger.error("Failed to update workout plan day", {
+          userId,
+          planId,
+          dayNumber,
+          workoutId,
         });
+        return {
+          success: false,
+          message: "Failed to update workout plan day",
+        };
       }
-
-      prettyPrint(updatedPlanDay);
 
       // Update user milestone progress
       const currentMilestone = await db.query.userMilestoneProgress.findFirst({
         where: and(
-          eq(userMilestoneProgress.userId, Number(user.id)),
+          eq(userMilestoneProgress.userId, userId),
           eq(userMilestoneProgress.completed, false)
         ),
         orderBy: [desc(userMilestoneProgress.id)],
@@ -909,7 +914,7 @@ export const workoutRouter = {
 
         if (firstLevel) {
           await db.insert(userMilestoneProgress).values({
-            userId: Number(user.id),
+            userId,
             levelId: firstLevel.id,
             currentDay: 1,
             completed: false,
@@ -941,7 +946,7 @@ export const workoutRouter = {
 
             if (nextLevel) {
               await db.insert(userMilestoneProgress).values({
-                userId: Number(user.id),
+                userId,
                 levelId: nextLevel.id,
                 currentDay: 1,
                 completed: false,
@@ -978,11 +983,11 @@ export const workoutRouter = {
     }),
 
   getUserMilestoneProgress: protectedProcedure.query(async ({ ctx }) => {
-    const { user } = ctx.session;
+    const userId = Number(ctx.session.user.id);
 
     const currentMilestone = await db.query.userMilestoneProgress.findFirst({
       where: and(
-        eq(userMilestoneProgress.userId, Number(user.id)),
+        eq(userMilestoneProgress.userId, userId),
         eq(userMilestoneProgress.completed, false)
       ),
       orderBy: [desc(userMilestoneProgress.id)],
@@ -996,7 +1001,7 @@ export const workoutRouter = {
 
       if (firstLevel) {
         const [newMilestone] = await db.insert(userMilestoneProgress).values({
-          userId: Number(user.id),
+          userId,
           levelId: firstLevel.id,
           currentDay: 1,
           completed: false,

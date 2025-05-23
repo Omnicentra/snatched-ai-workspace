@@ -93,7 +93,6 @@ function TransformationIntroScreen() {
 
   return (
     <SafeAreaView
-      style={{ paddingTop: Constants.statusBarHeight }}
       className="flex-1 bg-white"
     >
       {/* Use ScrollView for content that might exceed screen height */}
@@ -108,11 +107,11 @@ function TransformationIntroScreen() {
           progress={10 / 20}
           title="Snatched AI creates long-term results" // Consistent title
           subtitle="Your final snatch" // Keeping subtitle from original code
-          subtitleClassName="text-xl font-inter-bold mt-5"
+          subtitleClassName="text-xl font-inter-bold"
         />
 
         {/* --- Graph Section --- */}
-        <View className="mb-12 mt-5">
+        <View className="my-5">
           {/* Container for Graph + Axes + Labels */}
           <View className="relative" style={{ height: graphHeight }}>
             {/* Axes Lines (Static - appear instantly or with graph container) */}

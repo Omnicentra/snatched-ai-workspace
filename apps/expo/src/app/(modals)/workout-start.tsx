@@ -58,7 +58,7 @@ export default function WorkoutStartScreen() {
   );
 
   // Track workout progress mutation
-  const trackProgressMutation = api.workout.trackWorkoutProgress.useMutation();
+  const {mutateAsync: trackProgress} = api.workout.trackWorkoutProgress.useMutation();
 
   // Current exercise data
   const currentExercise = workoutData?.exercises[currentExerciseIndex];
@@ -132,7 +132,7 @@ export default function WorkoutStartScreen() {
 
     try {
       // Track workout progress
-      await trackProgressMutation.mutateAsync({
+      void trackProgress({
         workoutId,
         durationMinutes: Math.ceil(totalTimeElapsed / 60),
         caloriesBurned: Math.round(caloriesBurned),
