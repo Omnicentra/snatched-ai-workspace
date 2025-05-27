@@ -19,10 +19,8 @@ import type { CustomerInfo } from "react-native-purchases";
 export default function LoginScreen() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
-  const { data: session } = authClient.useSession();
 
   usePostAuth({
-    session,
     onSuccess: (customerInfo: CustomerInfo) => {
       if (customerInfo.activeSubscriptions.length > 0) {
         router.push("/(tabs)/home");

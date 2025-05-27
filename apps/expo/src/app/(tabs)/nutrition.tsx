@@ -1,12 +1,14 @@
+import squigglyArrow from "@/assets/images/squiggly-arrow.png";
 import { RecentlyLoggedCard } from "@/components/nutrition/RecentlyLoggedCard";
 import { SuggestedMealPlanCard } from "@/components/nutrition/SuggestedMealPlanCard";
 import type { RouterOutputs } from "@/utils/api";
 import { api } from "@/utils/api";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import Constants from "expo-constants";
+import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   Modal,
   Pressable,
@@ -14,9 +16,6 @@ import {
   useWindowDimensions,
   View
 } from "react-native";
-import { Image } from "expo-image";
-import * as Device from "expo-device";
-import squigglyArrow from "@/assets/images/squiggly-arrow.png";
 
 // Define types for clarity
 type MealPlanData = RouterOutputs["nutrition"]["getTodaysMealPlan"];
@@ -32,7 +31,6 @@ export default function NutritionPlanScreen() {
   const { data: recentMeals = [] } = api.nutrition.getRecentlyLoggedMeals.useQuery();
 
   // Calculate arrow size based on screen dimensions and aspect ratio
-  const aspectRatio = dimensions.height / dimensions.width;
   const arrowSize = Math.sqrt(dimensions.width * dimensions.height) * 0.16; // Size based on geometric mean
   const arrowBottom = arrowSize * 0.6; // Position proportional to arrow size
 
@@ -81,14 +79,6 @@ export default function NutritionPlanScreen() {
         : [],
     [mealPlanData, calculateMacros]
   );
-
-  useEffect(() => {
-    // log the dimension and device name
-    console.log(Device.deviceName);
-    console.log(dimensions.width, dimensions.height);
-    console.log('Aspect ratio:', aspectRatio);
-    console.log('Arrow size:', arrowSize);
-  }, [dimensions, aspectRatio, arrowSize]);
 
   return (
     <LinearGradient
