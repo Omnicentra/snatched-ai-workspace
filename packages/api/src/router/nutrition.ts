@@ -437,8 +437,8 @@ export const nutritionRouter = {
               role: "user",
               parts: [
                 {
-                  text: `Identify the food in the image and estimate its nutritional information based on typical serving sizes. Provide the following for the whole item:
-                          - Food name
+                  text: `Identify the food or drink in the image and estimate its nutritional information based on typical serving sizes. Provide the following for the whole item:
+                          - Food / Drink name
                           - Estimated calories (kcal)
                           - Estimated macronutrients (grams of protein, carbohydrates, and fats)
                           - ingredients list (with amounts and units)
@@ -558,7 +558,7 @@ export const nutritionRouter = {
               role: "user",
               parts: [
                 {
-                  text: "Is this an image of food? Respond with only a JSON object that has three fields: isValidFood (boolean), confidence (number between 0 and 1), and message (string with reasoning). Return false for isValidFood if there is no food or if the image is inappropriate.",
+                  text: "Is this an image of food or drink? Respond with only a JSON object that has three fields: isValidFood (boolean), confidence (number between 0 and 1), and message (string with reasoning). Return false for isValidFood if there is no food or if the image is inappropriate.",
                 },
                 input.imageKey
                   ? {
