@@ -8,6 +8,7 @@ import { cacheImages } from "@/lib/utils";
 import { api } from "@/utils/api";
 import { authClient } from "@/utils/auth";
 import { useLDClient } from "@launchdarkly/react-native-client-sdk";
+import * as Sentry from "@sentry/react-native";
 
 // Check onboarding completion status from SecureStore
 const checkOnboardingStatus = async () => {
@@ -76,7 +77,7 @@ export default function AppEntry() {
         void refetchMealPlan();
       },
       onError: (error) => {
-        logger.error("Error generating meal plan:", error);
+        Sentry.captureException(error);
       },
     });
 
@@ -85,6 +86,9 @@ export default function AppEntry() {
     api.workout.generateWeeklyPlan.useMutation({
       onSuccess: () => {
         void refetchWorkoutPlan();
+      },
+      onError: (error) => {
+        Sentry.captureException(error);
       },
     });
 
