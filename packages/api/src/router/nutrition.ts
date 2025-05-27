@@ -985,6 +985,7 @@ export const nutritionRouter = {
         }
 
         const mealPlanId = todaysMealPlan.id;
+        ctx.logger.info("Meal plan ID", { mealPlanId });
 
         // 2. Upsert the recipe from the scanned food data
         const [recipe] = await db
