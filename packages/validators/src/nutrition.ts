@@ -155,5 +155,4 @@ export type Meal = z.infer<typeof mealSchema>;
 export type Recipe = z.infer<typeof recipeSchema>;
 export type MealPlan = z.infer<typeof mealPlanSchema>;
 export type FoodAnalysis = z.infer<typeof foodAnalysisSchema>;
-export type MealLog = z.infer<typeof mealLogSchema>;
 export type ScannedMealSubmission = z.infer<typeof scannedMealSubmissionSchema>; 
