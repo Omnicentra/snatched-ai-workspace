@@ -2,7 +2,7 @@
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { GoogleGenAI, Type } from "@google/genai";
-import type { TRPCRouterRecord } from "@trpc/server";
+import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { createSelectSchema } from "drizzle-zod";
 import { v4 as uuidv4 } from "uuid";
@@ -657,7 +657,10 @@ export const nutritionRouter = {
           .execute();
 
         if (!todaysMealPlan) {
-          throw new Error("No meal plan found for today");
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "No meal plan found for today",
+          });
         }
 
         const mealPlanId = todaysMealPlan.id;
@@ -683,11 +686,14 @@ export const nutritionRouter = {
           .returning();
 
         if (!recipe) {
-          throw new Error("Failed to create recipe from scanned meal");
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Failed to create recipe from scanned meal",
+          });
         }
 
         // 3. Add ingredients to recipe
-        const ingredientsToInsert = ingredients.map((ingredient, index) => ({
+        const ingredientsToInsert = ingredients.filter((i) => Number(i.amount) > 0).map((ingredient, index) => ({
           recipeId: recipe.id,
           ingredientName: ingredient.name,
           amount: ingredient.amount.toFixed(2),

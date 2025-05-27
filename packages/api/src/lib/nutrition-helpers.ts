@@ -67,11 +67,11 @@ export const createNewRecipe = async (s3: S3Client, meal: Meal) => {
 
   // Insert ingredients
   await Promise.all(
-    meal.ingredients.map((ingredient, index) =>
+    meal.ingredients.filter((i) => Number(i.amount) > 0).map((ingredient, index) =>
       db.insert(recipeIngredients).values({
         recipeId: recipe.id,
         ingredientName: ingredient.name,
-        amount: ingredient.amount.toString(),
+        amount: ingredient.amount.toFixed(2),
         unit: ingredient.unit,
         orderIndex: index + 1,
       }),
