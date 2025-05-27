@@ -155,10 +155,10 @@ export const mealLogSchema = z.object({
  */
 export const scannedMealSubmissionSchema = z.object({
   foodName: z.string(),
-  calories: z.number(),
-  protein: z.number(),
-  carbs: z.number(),
-  fats: z.number(),
+  calories: z.number().multipleOf(0.01),
+  protein: z.number().multipleOf(0.01),
+  carbs: z.number().multipleOf(0.01),
+  fats: z.number().multipleOf(0.01),
   imageKey: z.string().optional(),
   imageBase64: z.string().optional(),
   mealType: z.string(),

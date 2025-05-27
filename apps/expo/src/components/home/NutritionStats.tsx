@@ -13,7 +13,7 @@ import { api } from "@/utils/api";
 import { Ionicons } from "@expo/vector-icons";
 import { use$ } from "@legendapp/state/react";
 import * as Sentry from "@sentry/react-native";
-import { differenceInDays } from "date-fns";
+import { differenceInDays, isToday } from "date-fns";
 
 import { formatPostgresTimestampToDate } from "@omc/validators";
 
@@ -42,7 +42,7 @@ export const NutritionStats = ({
   const { data } = api.user.getBodyRatingByDate.useQuery(
     { date: dateString },
     { enabled: !!dateString },
-);
+  );
 
   // Sync DB body rating with transformation store when data changes
   useEffect(() => {
@@ -69,6 +69,11 @@ export const NutritionStats = ({
     return { canRequest, canShow };
   }, [nextImageTransformationTime, currentImage, snatchedImage]);
 
+  const transformationButtonDisabled = useMemo(
+    () => !canShow && !canRequest,
+    [canShow, canRequest],
+  );
+
   // Calculate days since last scan
   const { daysSinceLastScan, canTakeNewScan } = useMemo(() => {
     if (!data) {
@@ -81,7 +86,7 @@ export const NutritionStats = ({
     const daysSinceLastScan = lastBodyRating
       ? differenceInDays(now, lastBodyRatingDate)
       : null;
-    const canTakeNewScan = (daysSinceLastScan === null || daysSinceLastScan >= 7);
+    const canTakeNewScan = daysSinceLastScan === null || daysSinceLastScan >= 7;
     logger.debug(
       `daysSinceLastScan: ${daysSinceLastScan}, canTakeNewScan: ${canTakeNewScan}`,
     );
@@ -100,8 +105,6 @@ export const NutritionStats = ({
         Sentry.captureException(error);
       },
     });
-
-  const buttonDisabled = !canShow && !canRequest;
 
   const handlePress = canShow
     ? () => router.push("/(modals)/transformation-preview")
@@ -183,10 +186,11 @@ export const NutritionStats = ({
           </View>
 
           {/* New Scan Button */}
-          {canTakeNewScan && (
+          {canTakeNewScan && isToday(selectedDate) && (
             <Pressable
               className="mb-3 flex-row items-center rounded-full bg-pink-50 px-4 py-2"
               onPress={() => router.push("/(modals)/progress-front")}
+              disabled={!canShow && !canRequest}
             >
               <Ionicons name="camera" size={18} color="#F472B6" />
               <Text className="font-inter-medium ml-2 text-sm text-pink-500">
@@ -203,12 +207,13 @@ export const NutritionStats = ({
           )}
 
           {/* Transformation Button */}
+
           <Pressable
             className={`flex-row items-center rounded-full px-4 py-2 ${
               canShow || canRequest ? "bg-pink-50" : "bg-gray-100"
             }`}
             onPress={handlePress}
-            disabled={buttonDisabled}
+            disabled={transformationButtonDisabled}
           >
             <Ionicons
               name="image"
