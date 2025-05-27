@@ -92,10 +92,10 @@ export const recipeSchema = z.object({
   description: z.string().nullable(),
   servings: z.number(),
   prepTimeMinutes: z.number().nullable(),
-  calories: z.number(),
-  proteinGrams: z.number(),
-  carbsGrams: z.number(),
-  fatsGrams: z.number(),
+  calories: z.union([z.number(), z.string()]),
+  proteinGrams: z.union([z.number(), z.string()]),
+  carbsGrams: z.union([z.number(), z.string()]),
+  fatsGrams: z.union([z.number(), z.string()]),
   imageUrl: z.string().nullable(),
   rating: z.string().nullable(),
   reviewCount: z.number().nullable(),
@@ -129,25 +129,6 @@ export const foodAnalysisSchema = z.object({
   assumptions: z.string().optional(),
   instructions: z.array(instructionSchema).optional(),
   ingredients: z.array(ingredientSchema).optional(),
-});
-
-/**
- * Schema for meal log entries
- */
-export const mealLogSchema = z.object({
-  id: z.number(),
-  mealType: z.string(),
-  scheduledTime: z.string(),
-  completedAt: z.string().nullable(),
-  recipe: z.object({
-    id: z.number(),
-    title: z.string(),
-    imageUrl: z.string().nullable(),
-    calories: z.number(),
-    proteinGrams: z.number(),
-    carbsGrams: z.number(),
-    fatsGrams: z.number(),
-  }),
 });
 
 /**
