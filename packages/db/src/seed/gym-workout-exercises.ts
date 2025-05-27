@@ -55,6 +55,7 @@ export async function seedGymWorkoutExercises() {
     // Define gym workout titles
     const gymWorkoutTitles = [
       'Full Body Power',
+      'Full Body Circuit',
       'Beginner Full Body',
       'Upper Body Push Power',
       'Back & Biceps Blast',
@@ -68,7 +69,28 @@ export async function seedGymWorkoutExercises() {
       'Athletic Power',
       'Shoulder Sculptor',
       'Functional Strength',
-      'Active Recovery'
+      'Active Recovery',
+      'Lower Body Strength',
+      'Booty Builder',
+      'Leg Day',
+      'Leg Day Intensity',
+      'Leg Day Power',
+      'Lower Body Burn',
+      'Lower Body Power',
+      'Lower Body Strength',
+      'Arms & Shoulders Sculptor',
+      'Upper Body Power',
+      'Upper Body Powerhouse',
+      'Upper Body Strength',
+      'Ab Definition',
+      'Core Activation',
+      'Core and Recovery',
+      'Core Conditioning',
+      'Core Crusher',
+      'Core Power',
+      'Core Strengthening',
+      'Shoulders & Core',
+      'Cardio and Core',
     ]
 
     // Get all gym workouts

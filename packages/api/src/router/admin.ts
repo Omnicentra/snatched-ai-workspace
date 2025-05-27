@@ -22,6 +22,9 @@ import {
   fitnessBlockers,
   userDevices,
   userMilestoneProgress,
+  userBodyRatings,
+  userSnatchHacks,
+  userImageTransformations
 } from "@omc/db/schema";
 
 import { adminProcedure, createTRPCRouter } from "../trpc";
@@ -80,6 +83,9 @@ export const adminRouter = createTRPCRouter({
         await db.delete(previousExperiences).where(eq(previousExperiences.userId, userId));
         await db.delete(userDevices).where(eq(userDevices.userId, userId));
         await db.delete(userMilestoneProgress).where(eq(userMilestoneProgress.userId, userId));
+        await db.delete(userBodyRatings).where(eq(userBodyRatings.userId, userId));
+        await db.delete(userSnatchHacks).where(eq(userSnatchHacks.userId, userId));
+        await db.delete(userImageTransformations).where(eq(userImageTransformations.userId, userId));
 
         // Delete user's sessions
         await db.delete(userSession).where(eq(userSession.userId, userId));
