@@ -32,7 +32,7 @@ const MacroPill = ({
   unit = "g",
 }: {
   label: string;
-  amount: number;
+  amount: number | string;
   unit?: string;
 }) => (
   <View className="flex-row items-center rounded-xl bg-gray-50 px-1.5 py-2.5">
@@ -58,10 +58,10 @@ const MealCard = ({
   onToggleComplete,
 }: {
   title: string;
-  calories: number;
-  proteinGrams: number;
-  carbsGrams: number;
-  fatsGrams: number;
+  calories: number | string;
+  proteinGrams: number | string;
+  carbsGrams: number | string;
+  fatsGrams: number | string;
   imageUrl: string | null;
   time: string;
   completed: boolean;

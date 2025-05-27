@@ -44,9 +44,9 @@ export default function NutritionPlanScreen() {
       return mealPlanData.meals.reduce((acc: number, meal: ScheduledMeal) => {
         if (!meal.completed) return acc;
 
-        if (macroType === "protein") return acc + meal.recipe.proteinGrams;
-        if (macroType === "carbs") return acc + meal.recipe.carbsGrams;
-        return acc + meal.recipe.fatsGrams;
+        if (macroType === "protein") return acc + Number(meal.recipe.proteinGrams);
+        if (macroType === "carbs") return acc + Number(meal.recipe.carbsGrams);
+        return acc + Number(meal.recipe.fatsGrams);
       }, 0);
     },
     [mealPlanData]
@@ -133,7 +133,7 @@ export default function NutritionPlanScreen() {
                   <View
                     className="h-full"
                     style={{
-                      width: `${(macro.current / macro.target) * 100}%`,
+                      width: `${(macro.current / Number(macro.target)) * 100}%`,
                       backgroundColor: macro.color,
                     }}
                   />

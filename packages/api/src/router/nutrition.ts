@@ -2,7 +2,8 @@
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { GoogleGenAI, Type } from "@google/genai";
-import { TRPCError, type TRPCRouterRecord } from "@trpc/server";
+import { TRPCError  } from "@trpc/server";
+import type {TRPCRouterRecord} from "@trpc/server";
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { createSelectSchema } from "drizzle-zod";
 import { v4 as uuidv4 } from "uuid";
@@ -27,7 +28,8 @@ import {
 import { protectedProcedure, publicProcedure } from "../trpc";
 import {
   generateMealPlanWithGemini,
-  getOrCreateRecipe
+  getOrCreateRecipe,
+  removeTrailingZeros
 } from "../lib/nutrition-helpers";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY });
@@ -200,7 +202,13 @@ export const nutritionRouter = {
       .innerJoin(recipes, eq(userRecipes.recipeId, recipes.id))
       .where(eq(userRecipes.userId, userId));
 
-    return dbRecipes;
+    return dbRecipes.map(recipe => ({
+      ...recipe,
+      calories: removeTrailingZeros(recipe.calories),
+      proteinGrams: removeTrailingZeros(recipe.proteinGrams),
+      carbsGrams: removeTrailingZeros(recipe.carbsGrams),
+      fatsGrams: removeTrailingZeros(recipe.fatsGrams),
+    }));
   }),
 
   getTodaysMealPlan: protectedProcedure
@@ -277,12 +285,25 @@ export const nutritionRouter = {
       return {
         mealPlan: {
           id: todaysMealPlan.id,
-          targetCalories: todaysMealPlan.targetCalories,
-          targetProtein: todaysMealPlan.targetProtein,
-          targetCarbs: todaysMealPlan.targetCarbs,
-          targetFats: todaysMealPlan.targetFats,
+          targetCalories: removeTrailingZeros(todaysMealPlan.targetCalories),
+          targetProtein: removeTrailingZeros(todaysMealPlan.targetProtein),
+          targetCarbs: removeTrailingZeros(todaysMealPlan.targetCarbs),
+          targetFats: removeTrailingZeros(todaysMealPlan.targetFats),
         },
-        meals: mealsWithDetails,
+        meals: mealsWithDetails.map(meal => ({
+          ...meal,
+          recipe: {
+            ...meal.recipe,
+            calories: removeTrailingZeros(meal.recipe.calories),
+            proteinGrams: removeTrailingZeros(meal.recipe.proteinGrams),
+            carbsGrams: removeTrailingZeros(meal.recipe.carbsGrams),
+            fatsGrams: removeTrailingZeros(meal.recipe.fatsGrams),
+            ingredients: meal.recipe.ingredients.map(ingredient => ({
+              ...ingredient,
+              amount: removeTrailingZeros(ingredient.amount)
+            }))
+          }
+        }))
       };
     }),
   getUserMealSchedules: protectedProcedure.query(async ({ ctx }) => {
@@ -373,7 +394,7 @@ export const nutritionRouter = {
 
       // Get meals for the current day
       // TODO: This is a temporary solution to get the meals for the current day
-      const today = new Date().toISOString().split("T")[0]!;
+      const today = new Date().toISOString().split("T")[0];
 
       const recentMeals = await ctx.db
         .select({

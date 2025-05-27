@@ -11,6 +11,12 @@ import { recipeIngredients, recipeInstructions, recipes } from "@omc/db/schema";
 const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY });
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+// Helper function to remove trailing zeros
+export const removeTrailingZeros = (str: string | number) => {
+  // Convert to string to remove trailing zeros
+  return Number(str).toString();
+};
+
 // Helper function to generate and upload an image for a recipe
 export const generateAndUploadImage = async (
   s3: S3Client,
