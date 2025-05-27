@@ -225,7 +225,7 @@ async function createNewWorkout(s3: S3Client, workout: Workout) {
 export const workoutRouter = {
   getWorkouts: publicProcedure.query(async ({ ctx }) => {
     try {
-      const workoutResults = await db
+      const workoutResults = await ctx.db
         .select({
           id: workouts.id,
           title: workouts.title,
@@ -471,7 +471,7 @@ export const workoutRouter = {
     .query(async ({ ctx, input }) => {
       try {
         const { period } = input;
-        const { user } = ctx.session;
+        const userId = Number(ctx.session.user.id);
 
         // Build date filter based on period
         let dateFilter = undefined;
@@ -490,7 +490,7 @@ export const workoutRouter = {
         // Get user workout progress records
         const workoutRecords = await db.query.userWorkoutProgress.findMany({
           where: (fields) => {
-            const userFilter = eq(fields.userId, Number(user.id));
+            const userFilter = eq(fields.userId, userId);
             return period === "all"
               ? userFilter
               : sql`${userFilter} AND ${dateFilter}`;

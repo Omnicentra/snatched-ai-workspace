@@ -51,17 +51,12 @@ export default function AppEntry() {
   });
 
   // Prefetch other data
-  const { isFetched: isWorkoutClassesFetched } =
-    api.workout.getWorkoutClasses.useQuery(undefined, {
-      enabled: !!session?.user,
-    });
+  const { isFetched: isWorkoutClassesFetched } = api.workout.getWorkoutClasses.useQuery();
+  const { isFetched: isCategoriesFetched } = api.workout.getWorkoutCategories.useQuery();
   const { isFetched: isSnatchHacksFetched } =
     api.snatchHack.getSnatchHacks.useQuery(undefined, {
       enabled: !!session?.user,
-    });
-  const { isFetched: isCategoriesFetched } =
-    api.workout.getWorkoutCategories.useQuery(undefined, {
-      enabled: !!session?.user,
+      retry: false,
     });
   const { isFetched: isStatsFetched } =
     api.workout.getUserWorkoutStats.useQuery(
@@ -71,6 +66,7 @@ export default function AppEntry() {
   const { data: recipes, isFetched: isRecipesFetched } =
     api.nutrition.getRecipesByUser.useQuery(undefined, {
       enabled: !!session?.user,
+      retry: false,
     });
 
   // Generate meal plan if needed
@@ -138,6 +134,12 @@ export default function AppEntry() {
 
   // Check if all data is ready
   useEffect(() => {
+    logger.info("isSessionPending", { isSessionPending, session });
+    if (!isSessionPending && !session) {
+      setIsDataReady(true);
+      return;
+    }
+
     const isAllDataReady = !isSessionPending &&
       isWorkoutClassesFetched &&
       isSnatchHacksFetched &&

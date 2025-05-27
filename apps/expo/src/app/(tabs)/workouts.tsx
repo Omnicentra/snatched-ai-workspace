@@ -1,13 +1,12 @@
-import React from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
-import Constants from "expo-constants";
-import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
-import { LoadingScreen } from "@/components/core/LoadingScreen";
 import { TodaysPlanCard } from "@/components/home/TodaysPlanCard";
 import { workoutStore } from "@/stores/workout.store";
 import { api } from "@/utils/api";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import Constants from "expo-constants";
+import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
+import React from "react";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 interface WorkoutClass {
@@ -53,7 +52,7 @@ const WorkoutClassCard = ({
 export default function WorkoutClassSelectionScreen() {
   const router = useRouter();
   const { bottom } = useSafeAreaInsets();
-  const { data: workoutClassesData, isLoading } =
+  const { data: workoutClassesData } =
     api.workout.getWorkoutClasses.useQuery();
 
   const handleClassSelection = (workoutClass: WorkoutClass) => {
@@ -105,7 +104,11 @@ export default function WorkoutClassSelectionScreen() {
   return (
     <LinearGradient
       colors={["#f9fafb", "#fff"]}
-      style={{ flex: 1, paddingTop: Constants.statusBarHeight, paddingBottom: bottom }}
+      style={{
+        flex: 1,
+        paddingTop: Constants.statusBarHeight,
+        paddingBottom: bottom,
+      }}
     >
       <View className="flex-row items-center justify-between p-6">
         <Text className="font-inter-bold text-2xl text-black">Workouts</Text>
@@ -123,25 +126,22 @@ export default function WorkoutClassSelectionScreen() {
       </View>
 
       {/* Workout Classes */}
-      {isLoading ? (
-        <LoadingScreen message="Loading workout classes..." />
-      ) : (
-        <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false}>
-          {workoutClassesData?.map((workoutClass: WorkoutClass) => {
-            const config = getClassConfig(workoutClass.name);
-            return (
-              <WorkoutClassCard
-                key={workoutClass.id}
-                name={workoutClass.name}
-                description={workoutClass.description ?? ""}
-                icon={config.icon}
-                gradientColors={config.gradientColors}
-                onPress={() => handleClassSelection(workoutClass)}
-              />
-            );
-          })}
-        </ScrollView>
-      )}
+
+      <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false}>
+        {workoutClassesData?.map((workoutClass: WorkoutClass) => {
+          const config = getClassConfig(workoutClass.name);
+          return (
+            <WorkoutClassCard
+              key={workoutClass.id}
+              name={workoutClass.name}
+              description={workoutClass.description ?? ""}
+              icon={config.icon}
+              gradientColors={config.gradientColors}
+              onPress={() => handleClassSelection(workoutClass)}
+            />
+          );
+        })}
+      </ScrollView>
     </LinearGradient>
   );
 }
