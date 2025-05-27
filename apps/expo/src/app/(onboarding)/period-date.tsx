@@ -1,22 +1,23 @@
 // app/(onboarding)/period-date.tsx
-import React, { useEffect, useState } from 'react'
+import { InfoCard, OnboardingHeader, StyledButton } from '@/components/core'
+import { withOnboardingTracking } from '@/components/core/withOnboardingTracking'
+import { onboardingStore$ } from '@/stores/onboarding.store'
+import { Ionicons } from '@expo/vector-icons'
+import { use$ } from '@legendapp/state/react'
+import Constants from 'expo-constants'
+import * as Haptics from 'expo-haptics'
+import { useRouter } from 'expo-router'
+import React, { useEffect } from 'react'
 import {
-  View,
-  Text,
+  Pressable,
   SafeAreaView,
   ScrollView,
-  Pressable
+  Text,
+  View
 } from 'react-native'
-import { useRouter } from 'expo-router'
-import Constants from 'expo-constants'
-import { OnboardingHeader, InfoCard, StyledButton } from '@/components/core'
-import { Ionicons } from '@expo/vector-icons'
-import { Calendar, DateData } from 'react-native-calendars'
-import * as Haptics from 'expo-haptics'
-import { onboardingStore$ } from '@/stores/onboarding.store'
+import type { DateData } from 'react-native-calendars'
+import { Calendar } from 'react-native-calendars'
 import { z } from 'zod'
-import { use$ } from '@legendapp/state/react'
-import { withOnboardingTracking } from '@/components/core/withOnboardingTracking'
 
 // Function to get today's date in YYYY-MM-DD format
 const getTodayDateString = () => {

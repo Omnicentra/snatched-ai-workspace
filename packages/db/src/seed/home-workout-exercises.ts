@@ -1,25 +1,89 @@
 import { db } from '../client'
-import { workoutExercises } from '../schema'
-import { eq } from 'drizzle-orm'
+import { exercises, workoutClasses, workoutExercises, workouts, workoutToClass } from '../schema'
+import { and, eq, inArray } from 'drizzle-orm'
 
-export async function seedWorkoutExercises() {
-  console.log('🌱 Seeding workout exercises...')
+export async function seedHomeWorkoutExercises() {
+  console.log('🌱 Seeding home workout exercises...')
 
   try {
+    // Get the Home workout class
+    const homeClass = await db.query.workoutClasses.findFirst({
+      where: eq(workoutClasses.name, 'Home')
+    })
+
+    if (!homeClass) {
+      throw new Error('Home workout class not found')
+    }
+
+    // Define home exercise names
+    const homeExerciseNames = [
+      'Push-ups',
+      'Squats',
+      'Lunges',
+      'Plank',
+      'Burpees',
+      'Mountain Climbers',
+      'Jumping Jacks',
+      'Crunches',
+      'Russian Twists',
+      'Leg Raises',
+      'Side Planks',
+      'Deep Breathing',
+    ]
+
+    // Get all home exercises
+    const homeExercises = await db.query.exercises.findMany({
+      where: inArray(exercises.name, homeExerciseNames)
+    })
+
+    // Create a map of exercise names to IDs for easier lookup
+    const exerciseMap = new Map(homeExercises.map(ex => [ex.name, ex.id]))
+
+    // Define home workout titles
+    const homeWorkoutTitles = [
+      'Full Body Blast',
+      'Total Body Tone',
+      'Booty Builder',
+      'Leg Day Intensity',
+      'Arms & Shoulders Sculptor',
+      'Upper Body Power',
+      'Ab Definition',
+      'Core Power',
+      'HIIT Burn',
+      'Quick HIIT',
+      'Post-Workout Cooldown',
+    ]
+
+    // Get all home workouts
+    const homeWorkouts = await db.query.workouts.findMany({
+      where: inArray(workouts.title, homeWorkoutTitles)
+    })
+
+    // Create a map of workout titles to IDs for easier lookup
+    // const workoutMap = new Map(homeWorkouts.map(w => [w.title, w.id]))
+
+    // Add workout class relations for all home workouts
+    for (const workout of homeWorkouts) {
+      // Check if relation already exists
+      const existingRelation = await db.query.workoutToClass.findFirst({
+        where: and(
+          eq(workoutToClass.workoutId, workout.id),
+          eq(workoutToClass.classId, homeClass.id)
+        )
+      })
+
+      if (!existingRelation) {
+        await db.insert(workoutToClass).values({
+          workoutId: workout.id,
+          classId: homeClass.id
+        })
+        console.log(`🏠 Added Home class relation to workout "${workout.title}"`)
+      }
+    }
+
     // Get all workouts and exercises
     const allWorkouts = await db.query.workouts.findMany()
     const allExercises = await db.query.exercises.findMany()
-
-    // Exit if no workouts or exercises
-    if (!allWorkouts.length) {
-      console.error('No workouts found. Please seed workouts first.')
-      return
-    }
-
-    if (!allExercises.length) {
-      console.error('No exercises found. Please seed exercises first.')
-      return
-    }
 
     // Mapping of workouts to exercises with sets, reps, and rest times
     const workoutExercisesData = [

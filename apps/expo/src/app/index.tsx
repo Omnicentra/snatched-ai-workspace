@@ -2,17 +2,19 @@ import React, { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { Redirect } from "expo-router";
 import * as SecureStore from "expo-secure-store";
-import { authClient } from "@/utils/auth";
 import * as SplashScreen from "expo-splash-screen";
 import { logger } from "@/lib/logger";
-import { useLDClient } from "@launchdarkly/react-native-client-sdk";
-import { api } from "@/utils/api";
 import { cacheImages } from "@/lib/utils";
+import { api } from "@/utils/api";
+import { authClient } from "@/utils/auth";
+import { useLDClient } from "@launchdarkly/react-native-client-sdk";
 
 // Check onboarding completion status from SecureStore
 const checkOnboardingStatus = async () => {
   try {
-    const secureStoreFlag = await SecureStore.getItemAsync("onboarding_complete");
+    const secureStoreFlag = await SecureStore.getItemAsync(
+      "onboarding_complete",
+    );
     return secureStoreFlag === "true";
   } catch {
     return false; // Default to showing onboarding if error
@@ -21,55 +23,81 @@ const checkOnboardingStatus = async () => {
 
 export default function AppEntry() {
   const [isLoading, setIsLoading] = React.useState(true);
+  const [isDataReady, setIsDataReady] = React.useState(false);
   const [isOnboardingComplete, setIsOnboardingComplete] = React.useState(false);
-  const { data: session, isPending: isSessionLoading } = authClient.useSession();
+  const { data: session, isPending: isSessionPending } = authClient.useSession();
   const ldc = useLDClient();
-  
+
   // Prefetch API data when user is authenticated
   const { data: workoutData } = api.workout.getWorkouts.useQuery(undefined, {
     enabled: !!session?.user,
   });
-  const { data: mealPlanData, error: mealPlanError, refetch: refetchMealPlan } = 
-    api.nutrition.getTodaysMealPlan.useQuery(undefined, {
-      retry: false,
-      enabled: !!session?.user,
-    });
-  const { data: currentWeekPlan, isFetched, refetch: refetchWorkoutPlan } = 
-    api.workout.getCurrentWeekPlan.useQuery(undefined, {
-      retry: false,
-      enabled: !!session?.user,
-    });
-  
-  // Prefetch other data
-  api.snatchHack.getSnatchHacks.useQuery(undefined, { enabled: !!session?.user });
-  api.workout.getWorkoutCategories.useQuery(undefined, { enabled: !!session?.user });
-  api.workout.getUserWorkoutStats.useQuery(
-    { period: "week" }, 
-    { retry: false, enabled: !!session?.user }
-  );
-  const { data: recipes } = api.nutrition.getRecipesByUser.useQuery(undefined, { enabled: !!session?.user });
-  
-  // Generate meal plan if needed
-  const { mutate: generateMealPlan } = api.nutrition.generateMealPlan.useMutation({
-    onSuccess: () => {
-      void refetchMealPlan();
-    },
-    onError: (error) => {
-      logger.error("Error generating meal plan:", error);
-    },
+  const {
+    data: mealPlanData,
+    error: mealPlanError,
+    refetch: refetchMealPlan,
+    isFetched: isMealPlanFetched,
+  } = api.nutrition.getTodaysMealPlan.useQuery(undefined, {
+    retry: false,
+    enabled: !!session?.user,
+  });
+  const {
+    data: currentWeekPlan,
+    isFetched: isWorkoutPlanFetched,
+    refetch: refetchWorkoutPlan,
+  } = api.workout.getCurrentWeekPlan.useQuery(undefined, {
+    retry: false,
+    enabled: !!session?.user,
   });
 
+  // Prefetch other data
+  const { isFetched: isWorkoutClassesFetched } =
+    api.workout.getWorkoutClasses.useQuery(undefined, {
+      enabled: !!session?.user,
+    });
+  const { isFetched: isSnatchHacksFetched } =
+    api.snatchHack.getSnatchHacks.useQuery(undefined, {
+      enabled: !!session?.user,
+    });
+  const { isFetched: isCategoriesFetched } =
+    api.workout.getWorkoutCategories.useQuery(undefined, {
+      enabled: !!session?.user,
+    });
+  const { isFetched: isStatsFetched } =
+    api.workout.getUserWorkoutStats.useQuery(
+      { period: "week" },
+      { retry: false, enabled: !!session?.user },
+    );
+  const { data: recipes, isFetched: isRecipesFetched } =
+    api.nutrition.getRecipesByUser.useQuery(undefined, {
+      enabled: !!session?.user,
+    });
+
+  // Generate meal plan if needed
+  const { mutate: generateMealPlan } =
+    api.nutrition.generateMealPlan.useMutation({
+      onSuccess: () => {
+        void refetchMealPlan();
+      },
+      onError: (error) => {
+        logger.error("Error generating meal plan:", error);
+      },
+    });
+
   // Generate workout plan if needed
-  const { mutate: generateWorkoutPlan } = api.workout.generateWeeklyPlan.useMutation({
-    onSuccess: () => {
-      void refetchWorkoutPlan();
-    },
-  });
+  const { mutate: generateWorkoutPlan } =
+    api.workout.generateWeeklyPlan.useMutation({
+      onSuccess: () => {
+        void refetchWorkoutPlan();
+      },
+    });
 
   // Cache images when workout data is available
   useEffect(() => {
     if (workoutData) {
-      const imageUrls = workoutData.map((workout) => workout.imageUrl).filter(Boolean) as string[];
+      const imageUrls = workoutData
+        .map((workout) => workout.imageUrl)
+        .filter(Boolean) as string[];
       void cacheImages(imageUrls);
     }
   }, [workoutData]);
@@ -77,55 +105,80 @@ export default function AppEntry() {
   // Cache meal images when data is available
   useEffect(() => {
     if (mealPlanData) {
-      const mealImageUrls = mealPlanData.meals.map((meal) => meal.recipe.imageUrl).filter(Boolean) as string[];
+      const mealImageUrls = mealPlanData.meals
+        .map((meal) => meal.recipe.imageUrl)
+        .filter(Boolean) as string[];
       void cacheImages(mealImageUrls);
     }
   }, [mealPlanData]);
 
   // Handle missing workout plan
   useEffect(() => {
-    if (!currentWeekPlan && isFetched) {
+    if (!currentWeekPlan && isWorkoutPlanFetched) {
+      logger.info("Generating workout plan", { cause: currentWeekPlan });
       generateWorkoutPlan();
     }
-  }, [currentWeekPlan, isFetched, generateWorkoutPlan]);
+  }, [currentWeekPlan, isWorkoutPlanFetched, generateWorkoutPlan]);
 
   // Handle missing meal plan
   useEffect(() => {
     if (mealPlanError) {
+      logger.info("Generating meal plan", { cause: mealPlanError });
       generateMealPlan();
     }
   }, [mealPlanError, generateMealPlan]);
 
   useEffect(() => {
     if (recipes) {
-      void cacheImages(recipes.map((recipe) => recipe.imageUrl).filter(Boolean) as string[]);
+      void cacheImages(
+        recipes.map((recipe) => recipe.imageUrl).filter(Boolean) as string[],
+      );
     }
   }, [recipes]);
 
+  // Check if all data is ready
+  useEffect(() => {
+    const isAllDataReady = !isSessionPending &&
+      isWorkoutClassesFetched &&
+      isSnatchHacksFetched &&
+      isCategoriesFetched &&
+      isStatsFetched &&
+      isRecipesFetched &&
+      isMealPlanFetched &&
+      isWorkoutPlanFetched;
+
+    setIsDataReady(isAllDataReady);
+  }, [
+    isSessionPending,
+    isWorkoutClassesFetched,
+    isSnatchHacksFetched,
+    isCategoriesFetched,
+    isStatsFetched,
+    isRecipesFetched,
+    isMealPlanFetched,
+    isWorkoutPlanFetched,
+  ]);
+
   useEffect(() => {
     async function initializeApp() {
+      logger.info("Initializing app", { isDataReady, isOnboardingComplete, session: session?.user });
       try {
         // Check onboarding status
         const completed = await checkOnboardingStatus();
         setIsOnboardingComplete(completed);
-        
-        // Wait for session check to complete
-        if (!isSessionLoading) {
+
+        // Hide splash screen only after data is ready
+        if (isDataReady) {
           if (session?.user) {
             // Identify user with LaunchDarkly
             void ldc.identify({
-              kind: 'user',
+              kind: "user",
               key: session.user.email,
               name: session.user.name,
               email: session.user.email,
-              avatar: session.user.image ?? '',
+              avatar: session.user.image ?? "",
             });
-            // Brief delay to allow initial data fetching
-            await new Promise(resolve => setTimeout(resolve, 1000));
           }
-          
-          // Hide splash screen and immediately start navigation
-          // by setting isLoading to false in the same tick
           await SplashScreen.hideAsync();
           setIsLoading(false);
         }
@@ -138,10 +191,10 @@ export default function AppEntry() {
     }
 
     void initializeApp();
-  }, [isSessionLoading]); // Re-run when session loading state changes
+  }, [isDataReady]); // Re-run when session loading or data ready state changes
 
   // Show loading spinner while checking status
-  if (isLoading) {
+  if (isLoading || !isDataReady) {
     return (
       <View className="flex-1 items-center justify-center">
         <ActivityIndicator size="large" color="#EC4899" />

@@ -45,9 +45,6 @@ function FrequencyScreen() {
   const selectedFrequency = use$(onboardingStore$.onboarding.frequency)
 
   const setFrequency = (level: ActivityLevel) => {
-    console.log('***********************')
-    console.log(onboardingStore$.onboarding.frequency.get())
-    console.log('***********************')
     if (activityLevelEnum.safeParse(level).success) {
       onboardingStore$.onboarding.frequency.set(level)
     }

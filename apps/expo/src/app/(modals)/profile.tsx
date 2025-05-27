@@ -1,3 +1,5 @@
+import { logger } from "@/lib/logger";
+import { requestNotificationPermissions } from "@/lib/notifications";
 import { appVariant, mixpanel } from "@/lib/utils";
 import { authClient } from "@/utils/auth";
 import ChatWootWidget from "@chatwoot/react-native-widget";
@@ -7,6 +9,7 @@ import {
   useLDClient,
 } from "@launchdarkly/react-native-client-sdk";
 import * as Sentry from "@sentry/react-native";
+import * as Notifications from "expo-notifications";
 import Constants from "expo-constants";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
@@ -16,6 +19,7 @@ import React, { useEffect, useState } from "react";
 import {
   Alert,
   Linking,
+  Platform,
   Pressable,
   ScrollView,
   Text,
@@ -72,15 +76,47 @@ export default function ProfileScreen() {
       }
     });
     if (session?.user) {
-      void ldc.identify({
-        kind: "user",
-        key: session.user.email,
-        name: session.user.name,
-        email: session.user.email,
-      });
+      // void ldc.identify({
+      //   kind: "user",
+      //   key: session.user.email,
+      //   name: session.user.name,
+      //   email: session.user.email,
+      // });
       setUserName(session.user.name);
     }
   }, [session?.user]);
+
+  const handleNotifications = async () => {
+    try {
+      // Use our helper function to request permissions
+      const permissionGranted = await requestNotificationPermissions();
+
+      if (permissionGranted) {
+        logger.info("Notification permissions granted");
+
+        // Navigate to time selection screen
+        router.replace("/(onboarding)/notification-time");
+      } else {
+        logger.info("Notification permissions denied");
+        // On iOS, guide the user to enable notifications in settings
+        if (Platform.OS === "ios") {
+          Alert.alert(
+            "Enable Notifications",
+            "To receive workout reminders, please enable notifications in your device settings.",
+            [
+              { text: "Not Now", style: "cancel" },
+              {
+                text: "Open Settings",
+                onPress: () => void Notifications.requestPermissionsAsync(),
+              },
+            ],
+          );
+        }
+      }
+    } catch (error) {
+      logger.error("Error requesting notification permissions:", error);
+    }
+  };
 
   const menuItems = [
     {
@@ -98,7 +134,7 @@ export default function ProfileScreen() {
     {
       icon: <Ionicons name="notifications-outline" size={18} color="#1F2937" />,
       label: "Notifications",
-      onPress: () => router.push("/(onboarding)/notification-time"),
+      onPress: () => handleNotifications(),
       show: true,
     },
     {
@@ -177,7 +213,7 @@ export default function ProfileScreen() {
   };
 
   useEffect(() => {
-    Sentry.captureMessage("resetOnboardingFlag", {
+    Sentry.captureMessage(resetOnboardingFlag.value ? "resetOnboardingFlag is ACTIVE" : "resetOnboardingFlag is INACTIVE", {
       level: "info",
       extra: {
         resetOnboardingFlag: resetOnboardingFlag.value,

@@ -15,6 +15,10 @@
     "./nutrition": {
       "types": "./dist/nutrition.d.ts",
       "default": "./src/nutrition.ts"
+    },
+    "./workout": {
+      "types": "./dist/workout.d.ts",
+      "default": "./src/workout.ts"
     }
   },
   "license": "MIT",

@@ -528,15 +528,7 @@ export const nutritionRouter = {
       }),
     )
     .query(async ({ ctx }) => {
-      const [dbUser] = await db
-        .select()
-        .from(user)
-        .where(eq(user.email, ctx.session.user.email))
-        .execute();
-
-      if (!dbUser) {
-        throw new Error("User not found");
-      }
+      const userId = Number(ctx.session.user.id);
 
       // Get today's meal plan
       const today = new Date().toISOString().split("T")[0];
@@ -545,13 +537,18 @@ export const nutritionRouter = {
         .from(mealPlans)
         .where(
           and(
-            eq(mealPlans.userId, dbUser.id),
+            eq(mealPlans.userId, userId),
             sql`${mealPlans.date} = ${today}::date`,
           ),
         )
         .execute();
 
       if (!todaysMealPlan) {
+        ctx.logger.error("No meal plan found for today", {
+          router: "getTodaysMealPlan",
+          userId,
+          date: today,
+        });
         throw new Error("No meal plan found for today");
       }
 
@@ -1068,8 +1065,7 @@ export const nutritionRouter = {
             .set({
               recipeId: recipe.id,
               completed: true,
-              completedAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
+              completedAt: sql`CURRENT_TIMESTAMP`,
             })
             .where(eq(mealSchedule.id, existingMeal.id));
         } else {
@@ -1084,7 +1080,7 @@ export const nutritionRouter = {
               hour12: false,
             }),
             completed: true,
-            completedAt: new Date().toISOString(),
+            completedAt: sql`CURRENT_TIMESTAMP`,
           });
         }
 
@@ -1177,6 +1173,13 @@ export const nutritionRouter = {
           .execute();
 
         if (!todaysMealPlan) {
+          ctx.logger.error("No meal plan found for today", {
+            router: "logSavedMeal",
+            recipeId: input.recipeId,
+            mealType: input.mealType,
+            userId,
+            date: new Date().toISOString(),
+          });
           throw new Error("No meal plan found for today");
         }
 
@@ -1201,8 +1204,7 @@ export const nutritionRouter = {
             .set({
               recipeId: input.recipeId,
               completed: true,
-              completedAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
+              completedAt: sql`CURRENT_TIMESTAMP`,
             })
             .where(eq(mealSchedule.id, existingMeal.id));
         } else {
@@ -1217,7 +1219,7 @@ export const nutritionRouter = {
               hour12: false,
             }),
             completed: true,
-            completedAt: new Date().toISOString(),
+            completedAt: sql`CURRENT_TIMESTAMP`,
           });
         }
 

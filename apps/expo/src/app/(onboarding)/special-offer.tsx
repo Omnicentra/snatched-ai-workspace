@@ -1,45 +1,105 @@
 import logoWhite from "@/assets/images/logo2.png";
 import { BackButton } from "@/components/common/BackButton";
 import { StyledButton } from "@/components/core";
+import { Analytics } from "@/lib/analytics";
+import { onboardingStore$ } from "@/stores/onboarding.store";
+import { authClient } from "@/utils/auth";
+import { getOrCreateDeviceId } from "@/utils/device-id";
+import { use$ } from "@legendapp/state/react";
+import * as Sentry from "@sentry/react-native";
 import Constants from "expo-constants";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
+import * as SecureStore from "expo-secure-store";
 import React, { useEffect, useState } from "react";
 import {
-    Animated,
-    Dimensions,
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    View,
-    Alert,
+  Alert,
+  Animated,
+  Dimensions,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 import Purchases from "react-native-purchases";
-import * as SecureStore from "expo-secure-store";
-import * as Sentry from "@sentry/react-native";
-import { authClient } from "@/utils/auth";
-import { getOrCreateDeviceId } from "@/utils/device-id";
-import { Analytics } from "@/lib/analytics";
-import { transformationStore$ } from "@/stores/transformation.store";
-import { onboardingStore$ } from "@/stores/onboarding.store";
-import { use$ } from "@legendapp/state/react";
 import { logger } from "~/lib/logger";
 
 const { width } = Dimensions.get("window");
 
+// Add utility function for formatting time
+function formatTime(seconds: number): string {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+}
+
 export default function SpecialOfferScreen() {
   const router = useRouter();
   const [isPurchasing, setIsPurchasing] = useState(false);
+  const [lifetimePrice, setLifetimePrice] = useState<number>(30.29);
   const { data: session } = authClient.useSession();
   const fadeAnim = new Animated.Value(0);
   const scaleAnim = new Animated.Value(0.9);
   const timerOpacity = new Animated.Value(0);
   const timerScale = new Animated.Value(0.5);
   const frontImageKey = use$(onboardingStore$.onboarding.frontViewPhoto);
+  // Initialize timer with 5 minutes (300 seconds)
+  const [timeRemaining, setTimeRemaining] = useState(300);
+
+  // Track screen view on mount
+  useEffect(() => {
+    const trackScreenView = async () => {
+      try {
+        const deviceId = await getOrCreateDeviceId();
+        Analytics.trackSpecialOfferView(deviceId, session?.user.id);
+      } catch (error) {
+        logger.error("Failed to track special offer view:", error);
+      }
+    };
+
+    void trackScreenView();
+  }, [session?.user.id]);
+
+  // Timer effect
+  useEffect(() => {
+    let timerId: NodeJS.Timeout;
+
+    if (timeRemaining > 0) {
+      timerId = setInterval(() => {
+        setTimeRemaining((prevTime) => {
+          if (prevTime <= 1) {
+            // Clear interval and redirect when timer reaches 0
+            clearInterval(timerId);
+            router.replace("/(onboarding)/paywall");
+            return 0;
+          }
+          return prevTime - 1;
+        });
+      }, 1000);
+    }
+
+    // Cleanup function
+    return () => {
+      if (timerId) {
+        clearInterval(timerId);
+      }
+    };
+  }, [timeRemaining, router]);
+
+  const fetchLifetimePackage = async () => {
+    const offerings = await Purchases.getOfferings();
+    const allPackages = offerings.all.default?.availablePackages;
+    const lifetimePackage = allPackages?.find(pkg => pkg.product.identifier.toLowerCase().includes("lifetime"));
+
+    if (lifetimePackage) {
+      setLifetimePrice(lifetimePackage.product.price);
+    }
+  }
 
   useEffect(() => {
     // Sequence of animations
+    void fetchLifetimePackage()
     Animated.sequence([
       // Fade in and scale up main content
       Animated.parallel([
@@ -126,12 +186,21 @@ export default function SpecialOfferScreen() {
       const userId = session?.user.id;
 
       if (userId) {
+        // Track regular subscription purchase
         Analytics.trackSubscriptionPurchase(deviceId, userId, {
           planId: productIdentifier,
           planName: specialOfferPackage.product.identifier,
           price: specialOfferPackage.product.price,
           currency: specialOfferPackage.product.currencyCode,
           interval: "month",
+        });
+
+        // Track special offer purchase separately
+        Analytics.trackSpecialOfferPurchase(deviceId, userId, {
+          planId: productIdentifier,
+          planName: specialOfferPackage.product.identifier,
+          price: specialOfferPackage.product.price,
+          currency: specialOfferPackage.product.currencyCode,
         });
       }
 
@@ -211,19 +280,23 @@ export default function SpecialOfferScreen() {
             <Text style={styles.subtitle}>You will never see this again</Text>
 
             {/* Timer */}
-            <View>
-              <Animated.View
-                className="shadow-lg shadow-white/90"
+            <View style={styles.cardGlow}>
+              <Animated.View 
                 style={[
                   styles.timerContainer,
                   {
                     opacity: timerOpacity,
-                    transform: [{ scale: timerScale }],
-                  },
+                    transform: [{ scale: timerScale }]
+                  }
                 ]}
               >
                 <Text style={styles.timerLabel}>This offer will expire in</Text>
-                <Text style={styles.timer}>5:00</Text>
+                <Text style={[
+                  styles.timer,
+                  timeRemaining <= 60 && styles.timerWarning
+                ]}>
+                  {formatTime(timeRemaining)}
+                </Text>
               </Animated.View>
             </View>
           </Animated.View>
@@ -242,7 +315,7 @@ export default function SpecialOfferScreen() {
                 <View style={styles.priceRow}>
                   <View>
                     <Text style={styles.planType}>Yearly</Text>
-                    <Text style={styles.planDuration}>12mo • £30.29</Text>
+                    <Text style={styles.planDuration}>12mo • £{lifetimePrice}</Text>
                   </View>
                   <Text style={styles.discountedPrice}>£5.99/mo</Text>
                 </View>
@@ -375,6 +448,9 @@ const styles = StyleSheet.create({
     fontFamily: "inter-bold",
     fontSize: 40,
     color: "white",
+  },
+  timerWarning: {
+    color: '#FCA5A5', // Light red color for warning
   },
   priceBox: {
     borderRadius: 24,

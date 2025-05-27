@@ -1,405 +1,147 @@
-// app/(tabs)/workouts.tsx
-import type { RouterOutputs } from "@/utils/api";
-import React, { useState } from "react";
-import {
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  Text,
-  View,
-} from "react-native";
-import { Image } from "expo-image";
+import React from "react";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import Constants from "expo-constants";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { MilestoneModal } from "@/app/(modals)/milestone-modal";
-import { StyledButton } from "@/components/core";
-import { TodaysPlanCard } from "@/components/home/TodaysPlanCard";
-import { api } from "@/utils/api";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LoadingScreen } from "@/components/core/LoadingScreen";
-import defaultImage from "@/assets/images/placeholders/workout-placeholder.png";
+import { TodaysPlanCard } from "@/components/home/TodaysPlanCard";
+import { workoutStore } from "@/stores/workout.store";
+import { api } from "@/utils/api";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-type UserWorkoutStats = RouterOutputs["workout"]["getUserWorkoutStats"];
+interface WorkoutClass {
+  id: number;
+  name: string;
+  description: string | null;
+  createdAt: string | null;
+}
 
-// Category Pill Component
-const CategoryPill = ({
-  label,
-  isActive,
+// Workout Class Card Component
+const WorkoutClassCard = ({
+  name,
+  description,
+  icon,
+  gradientColors: _gradientColors, // unused now
   onPress,
 }: {
-  label: string;
-  isActive: boolean;
+  name: string;
+  description: string;
+  icon: keyof typeof MaterialCommunityIcons.glyphMap;
+  gradientColors: [string, string, string];
   onPress: () => void;
 }) => (
   <Pressable
-    className={`mr-3 rounded-full px-4 py-2.5 ${
-      isActive ? "bg-black" : "border border-gray-200"
-    }`}
+    className="mb-6 rounded-3xl bg-white p-6 shadow-sm"
     onPress={onPress}
   >
-    <Text
-      className={`font-inter-medium text-sm ${
-        isActive ? "text-white" : "text-gray-500"
-      }`}
-    >
-      {label}
-    </Text>
-  </Pressable>
-);
-
-// Stats Summary Component
-const StatsSummary = ({ stats }: { stats?: UserWorkoutStats }) => {
-  if (!stats) {
-    return (
-      <View className="mb-8 flex-row justify-between rounded-3xl bg-white p-6 shadow-sm">
-        <View className="items-center">
-          <Text className="font-inter-bold text-2xl text-black">-</Text>
-          <Text className="font-inter text-xs text-gray-500">Workouts</Text>
-        </View>
-        <View className="items-center">
-          <Text className="font-inter-bold text-2xl text-green-500">-</Text>
-          <Text className="font-inter text-xs text-gray-500">Cal Burned</Text>
-        </View>
-        <View className="items-center">
-          <Text className="font-inter-bold text-2xl text-pink-500">-</Text>
-          <Text className="font-inter text-xs text-gray-500">Active Time</Text>
-        </View>
+    <View className="flex-row items-center gap-x-4">
+      <View className="flex h-14 w-14 items-center justify-center rounded-full bg-pink-50">
+        <MaterialCommunityIcons name={icon} size={26} color="#F472B6" />
       </View>
-    );
-  }
-
-  return (
-    <View className="mb-8 flex-row justify-between rounded-3xl bg-white p-6 shadow-sm">
-      <View className="items-center">
-        <Text className="font-inter-bold text-2xl text-black">
-          {stats.totalWorkouts}
+      <View className="flex-1">
+        <Text className="font-inter-bold mb-1 text-base text-black">
+          {name}
         </Text>
-        <Text className="font-inter text-xs text-gray-500">Workouts</Text>
+        <Text className="font-inter text-sm text-gray-500">{description}</Text>
       </View>
-      <View className="items-center">
-        <Text className="font-inter-bold text-2xl text-green-500">
-          {Math.round(stats.totalCalories)}
-        </Text>
-        <Text className="font-inter text-xs text-gray-500">Cal Burned</Text>
-      </View>
-      <View className="items-center">
-        <Text className="font-inter-bold text-2xl text-pink-500">
-          {stats.totalDuration}m
-        </Text>
-        <Text className="font-inter text-xs text-gray-500">Active Time</Text>
-      </View>
-    </View>
-  );
-};
-
-// Workout Card Component (Large for Recommended)
-const WorkoutCardLarge = ({
-  title,
-  duration,
-  description,
-  rating,
-  imageUrl,
-  id,
-  onPress,
-}: {
-  title: string;
-  duration: string;
-  description: string;
-  rating: string;
-  imageUrl: string;
-  id: number;
-  onPress: (id: number) => void;
-}) => (
-  <Pressable
-    className="mb-4 overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm"
-    onPress={() => onPress(id)}
-  >
-    <View className="h-48 w-full bg-gray-100">
-      <Image
-        source={{ uri: imageUrl }}
-        style={{
-          width: "100%",
-          height: "100%",
-        }}
-        contentFit="cover"
-        cachePolicy="memory-disk"
-        transition={200}
-        placeholder={defaultImage}
-      />
-      <LinearGradient
-        colors={["rgba(0,0,0,0.5)", "transparent"]}
-        className="absolute inset-x-0 top-0 h-24"
-      />
-      <View className="absolute right-4 top-4 rounded-full bg-black/70 px-3 py-1.5">
-        <Text className="font-inter-medium text-sm text-white">{duration}</Text>
-      </View>
-    </View>
-    <View className="p-4">
-      <View className="mb-2 flex-row items-start justify-between">
-        <Text className="font-inter-bold flex-1 text-lg text-black">
-          {title}
-        </Text>
-        <View className="flex-row items-center">
-          <Ionicons name="star" size={16} color="#FACC15" />
-          <Text className="font-inter-medium ml-1 text-sm text-black">
-            {rating}
-          </Text>
-        </View>
-      </View>
-      <Text className="font-inter text-sm text-gray-500">{description}</Text>
+      <MaterialCommunityIcons name="chevron-right" size={24} color="#9CA3AF" />
     </View>
   </Pressable>
 );
 
-// Workout Card Component (Small for Quick Workouts)
-const WorkoutCardSmall = ({
-  title,
-  description,
-  imageUrl,
-  id,
-  onPress,
-}: {
-  title: string;
-  description: string;
-  imageUrl: string;
-  id: number;
-  onPress: (id: number) => void;
-}) => (
-  <Pressable
-    className="overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm"
-    onPress={() => onPress(id)}
-  >
-    <View className="h-32 bg-gray-100">
-      <Image
-        source={{ uri: imageUrl }}
-        style={{
-          width: "100%",
-          height: "100%",
-        }}
-        contentFit="cover"
-        cachePolicy="memory-disk"
-        transition={200}
-        placeholder={defaultImage}
-      />
-      <LinearGradient
-        colors={["rgba(0,0,0,0.4)", "transparent"]}
-        className="absolute inset-x-0 top-0 h-16"
-      />
-    </View>
-    <View className="p-4">
-      <Text className="font-inter-bold mb-1 text-base text-black">{title}</Text>
-      <Text className="font-inter text-sm text-gray-500">{description}</Text>
-    </View>
-  </Pressable>
-);
-
-export default function WorkoutLibraryScreen() {
+export default function WorkoutClassSelectionScreen() {
   const router = useRouter();
-  const [activeCategory, setActiveCategory] = useState<string | null>(null);
-  const [searchQuery, _] = useState("");
-  const [showMilestone, setShowMilestone] = useState(false);
-  const { data: stats } = api.workout.getUserWorkoutStats.useQuery({
-    period: "week",
-  });
+  const { bottom } = useSafeAreaInsets();
+  const { data: workoutClassesData, isLoading } =
+    api.workout.getWorkoutClasses.useQuery();
 
-  // Fetch workouts using tRPC
-  const {
-    data: workoutsData,
-    isLoading,
-    isRefetching,
-    refetch,
-  } = api.workout.getWorkouts.useQuery();
-
-  // Get the categories from API data
-  const { data: categoriesData } = api.workout.getWorkoutCategories.useQuery();
-
-  // Set initial active category when categories load
-  React.useEffect(() => {
-    if (categoriesData?.length && !activeCategory && categoriesData[0]?.name) {
-      setActiveCategory(categoriesData[0].name);
-    }
-  }, [categoriesData, activeCategory]);
-
-  // Filter workouts based on active category and search query
-  const filteredWorkouts = React.useMemo(() => {
-    if (!workoutsData) return [];
-
-    return workoutsData.filter((workout) => {
-      // Filter by category if one is selected
-      const matchesCategory =
-        !activeCategory ||
-        (workout.categoryId &&
-          categoriesData?.some(
-            (cat) =>
-              cat.id === workout.categoryId && cat.name === activeCategory,
-          ));
-
-      // Filter by search term
-      const matchesSearch =
-        workout.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (workout.description
-          ?.toLowerCase()
-          .includes(searchQuery.toLowerCase()) ??
-          false);
-
-      return matchesCategory && matchesSearch;
-    });
-  }, [workoutsData, categoriesData, activeCategory, searchQuery]);
-
-  // Group workouts by difficulty level
-  const recommendedWorkouts = React.useMemo(() => {
-    return filteredWorkouts
-      .filter((workout) => workout.difficultyLevel === "intermediate")
-      .slice(0, 3);
-  }, [filteredWorkouts]);
-
-  // Quick workouts are shorter duration workouts
-  const quickWorkouts = React.useMemo(() => {
-    return filteredWorkouts
-      .filter((workout) => workout.durationMinutes <= 30)
-      .slice(0, 4);
-  }, [filteredWorkouts]);
-
-  // Extract categories from data
-  const categories = React.useMemo(() => {
-    if (!categoriesData) return [];
-    return categoriesData.map((category) => category.name).filter(Boolean);
-  }, [categoriesData]);
-
-  const navigateToWorkoutDetail = (workoutId: number) => {
-    router.push(`/(modals)/workout-detail?workoutId=${workoutId}`);
+  const handleClassSelection = (workoutClass: WorkoutClass) => {
+    workoutStore.selectedClass.set(workoutClass);
+    router.push(`/(tabs)/workouts/${workoutClass.name}`);
   };
 
-  const handleViewAllWorkouts = () => {
-    router.push("/(modals)/all-workouts");
+  const getClassConfig = (className: string) => {
+    switch (className.toLowerCase()) {
+      case "pilates":
+        return {
+          icon: "meditation" as keyof typeof MaterialCommunityIcons.glyphMap,
+          gradientColors: ["#EC4899", "#BE185D", "#9D174D"] as [
+            string,
+            string,
+            string,
+          ],
+        };
+      case "gym":
+        return {
+          icon: "dumbbell" as keyof typeof MaterialCommunityIcons.glyphMap,
+          gradientColors: ["#3B82F6", "#1D4ED8", "#1E40AF"] as [
+            string,
+            string,
+            string,
+          ],
+        };
+      case "home":
+        return {
+          icon: "home-heart" as keyof typeof MaterialCommunityIcons.glyphMap,
+          gradientColors: ["#10B981", "#059669", "#047857"] as [
+            string,
+            string,
+            string,
+          ],
+        };
+      default:
+        return {
+          icon: "fitness" as keyof typeof MaterialCommunityIcons.glyphMap,
+          gradientColors: ["#6B7280", "#4B5563", "#374151"] as [
+            string,
+            string,
+            string,
+          ],
+        };
+    }
   };
 
   return (
     <LinearGradient
-      colors={["#e5e7eb", "#fff"]}
-      style={{ flexGrow: 1, paddingTop: Constants.statusBarHeight }}
+      colors={["#f9fafb", "#fff"]}
+      style={{ flex: 1, paddingTop: Constants.statusBarHeight, paddingBottom: bottom }}
     >
-      {/* Header */}
       <View className="flex-row items-center justify-between p-6">
         <Text className="font-inter-bold text-2xl text-black">Workouts</Text>
-        <View className="flex-row gap-2">
-          <Pressable
-            className="rounded-full bg-gray-100 p-2"
-            onPress={() => setShowMilestone(true)}
-          >
-            <MaterialCommunityIcons
-              name="trophy-outline"
-              size={24}
-              color="#f472b6"
-            />
-          </Pressable>
-        </View>
+      </View>
+      {/* Today's Plan */}
+      <View className="px-6 pb-4">
+        <TodaysPlanCard />
       </View>
 
-      {/* Workout Lists */}
-      <ScrollView
-        className="flex-1 px-6"
-        refreshControl={
-          <RefreshControl refreshing={isRefetching} onRefresh={refetch} />
-        }
-      >
-        <TodaysPlanCard />
+      {/* Header */}
+      <View className="flex-row items-center justify-between px-6 pb-4">
+        <Text className="font-inter-bold text-2xl text-black">
+          Choose Your Workout Style
+        </Text>
+      </View>
 
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          className="mb-6"
-        >
-          <View className="flex-row py-2">
-            {categories.map((cat) => (
-              <CategoryPill
-                key={cat}
-                label={cat}
-                isActive={activeCategory === cat}
-                onPress={() => setActiveCategory(cat)}
+      {/* Workout Classes */}
+      {isLoading ? (
+        <LoadingScreen message="Loading workout classes..." />
+      ) : (
+        <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false}>
+          {workoutClassesData?.map((workoutClass: WorkoutClass) => {
+            const config = getClassConfig(workoutClass.name);
+            return (
+              <WorkoutClassCard
+                key={workoutClass.id}
+                name={workoutClass.name}
+                description={workoutClass.description ?? ""}
+                icon={config.icon}
+                gradientColors={config.gradientColors}
+                onPress={() => handleClassSelection(workoutClass)}
               />
-            ))}
-          </View>
+            );
+          })}
         </ScrollView>
-
-        {/* Stats Summary */}
-        <StatsSummary stats={stats} />
-
-        {isLoading ? (
-          <LoadingScreen message="Loading workouts..." />
-        ) : (
-          <>
-            <Text className="font-inter-bold mb-4 text-lg text-black">
-              Recommended For You
-            </Text>
-            <View className="mb-8">
-              {recommendedWorkouts.length > 0 ? (
-                recommendedWorkouts.map((workout) => (
-                  <WorkoutCardLarge
-                    key={`rec-${workout.id}`}
-                    id={workout.id}
-                    title={workout.title}
-                    duration={`${workout.durationMinutes} min`}
-                    description={workout.description ?? ""}
-                    rating={workout.rating ?? "4.5"}
-                    imageUrl={
-                      workout.imageUrl ??
-                      "https://images.unsplash.com/photo-1517836357463-d25dfeac3438"
-                    }
-                    onPress={navigateToWorkoutDetail}
-                  />
-                ))
-              ) : (
-                <Text className="py-4 italic text-gray-500">
-                  No recommended workouts found
-                </Text>
-              )}
-            </View>
-
-            <Text className="font-inter-bold mb-4 text-lg text-black">
-              Quick Workouts
-            </Text>
-            <View className="grid grid-cols-2 gap-4 pb-6">
-              {quickWorkouts.length > 0 ? (
-                quickWorkouts.map((workout) => (
-                  <View key={`quick-${workout.id}`} className="flex-1">
-                    <WorkoutCardSmall
-                      id={workout.id}
-                      title={workout.title}
-                      description={workout.description ?? ""}
-                      imageUrl={
-                        workout.imageUrl ??
-                        "https://images.unsplash.com/photo-1574680178050-55c6a6a96e0a"
-                      }
-                      onPress={navigateToWorkoutDetail}
-                    />
-                  </View>
-                ))
-              ) : (
-                <Text className="py-4 italic text-gray-500">
-                  No quick workouts found
-                </Text>
-              )}
-            </View>
-
-            {/* View All Workouts Button */}
-            <View className="mb-8 mt-4">
-              <StyledButton
-                title="View All Workouts"
-                onPress={handleViewAllWorkouts}
-                variant="secondary"
-              />
-            </View>
-          </>
-        )}
-      </ScrollView>
-
-      <MilestoneModal
-        isVisible={showMilestone}
-        onClose={() => setShowMilestone(false)}
-        type="workout"
-      />
+      )}
     </LinearGradient>
   );
 }

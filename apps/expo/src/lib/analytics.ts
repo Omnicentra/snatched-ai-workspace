@@ -1,3 +1,4 @@
+import { logger } from './logger';
 import { mixpanel } from './utils';
 
 export interface UserProfile {
@@ -29,6 +30,12 @@ export const Analytics = {
         user_id: userId,
         visited_screens: Array.from(visitedScreens),
         timestamp: new Date().toISOString(),
+      });
+      logger.debug("trackOnboardingScreenView", {
+        screenName,
+        deviceId,
+        userId,
+        visitedScreens: Array.from(visitedScreens),
       });
     }
   },
@@ -109,6 +116,34 @@ export const Analytics = {
       device_id: deviceId,
       user_id: userId,
       action,
+      timestamp: new Date().toISOString(),
+    });
+  },
+
+  trackSpecialOfferView: (deviceId: string, userId?: string) => {
+    void mixpanel.track('special_offer_viewed', {
+      device_id: deviceId,
+      user_id: userId,
+      discount_percentage: 80,
+      timestamp: new Date().toISOString(),
+    });
+  },
+
+  trackSpecialOfferPurchase: (
+    deviceId: string,
+    userId: string,
+    planDetails: {
+      planId: string;
+      planName: string;
+      price: number;
+      currency: string;
+    }
+  ) => {
+    void mixpanel.track('special_offer_purchased', {
+      device_id: deviceId,
+      user_id: userId,
+      ...planDetails,
+      discount_percentage: 80,
       timestamp: new Date().toISOString(),
     });
   },

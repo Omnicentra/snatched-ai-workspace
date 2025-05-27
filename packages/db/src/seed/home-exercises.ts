@@ -3,7 +3,7 @@ import { exercises } from '../schema'
 import { eq } from 'drizzle-orm'
 
 export async function seedExercises() {
-  console.log('🌱 Seeding exercises...')
+  console.log('🌱 Seeding home exercises...')
 
   try {
     const exercisesData = [

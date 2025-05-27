@@ -23,19 +23,10 @@ function ReviewScreen() {
   useEffect(() => {
     const checkReview = async () => {
       const isAvailable = await StoreReview.isAvailableAsync();
-      if (isAvailable) {
-        Sentry.captureMessage("StoreReview is available", {
-          level: "info",
-        });
+      if (isAvailable) {        
         await StoreReview.requestReview();
       } else {
-        logger.error("StoreReview is not available");
-        const storeUrl = StoreReview.storeUrl();
-        if (storeUrl) {
-          Sentry.captureException(new Error("StoreReview is not available", {
-            cause: `Store URL: ${storeUrl}`,
-          }));
-        }
+        logger.warn("StoreReview is not available");
       }
     };
 

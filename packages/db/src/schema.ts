@@ -202,6 +202,49 @@ export const workouts = pgTable(
   ],
 );
 
+export const workoutClasses = pgTable(
+  "workout_classes",
+  {
+    id: serial().primaryKey().notNull(),
+    name: varchar({ length: 50 }).notNull(),
+    description: text(),
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+      mode: "string",
+    }).default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    unique("workout_classes_name_key").on(table.name),
+  ],
+);
+
+export const workoutToClass = pgTable(
+  "workout_to_class",
+  {
+    workoutId: integer("workout_id").notNull(),
+    classId: integer("class_id").notNull(),
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+      mode: "string",
+    }).default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.workoutId, table.classId] }),
+    workoutIdx: index("idx_workout_to_class_workout").on(table.workoutId),
+    classIdx: index("idx_workout_to_class_class").on(table.classId),
+    workoutFk: foreignKey({
+      columns: [table.workoutId],
+      foreignColumns: [workouts.id],
+      name: "workout_to_class_workout_id_fkey",
+    }),
+    classFk: foreignKey({
+      columns: [table.classId],
+      foreignColumns: [workoutClasses.id],
+      name: "workout_to_class_class_id_fkey",
+    }),
+  }),
+);
+
 export const healthConditions = pgTable(
   "health_conditions",
   {

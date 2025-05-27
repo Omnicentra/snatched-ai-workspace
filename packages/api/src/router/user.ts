@@ -52,7 +52,6 @@ export const userRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      console.log(JSON.stringify(input, null, 2));
       // Extract urls for each body angle
       const { imageKeys, desiredBodyShape } = input;
 
@@ -366,7 +365,7 @@ export const userRouter = createTRPCRouter({
         return null;
       }
 
-      console.log(bodyRating.bodyRating);
+      ctx.logger.info("Body rating", { bodyRating });
 
       return {
         ...bodyRating,

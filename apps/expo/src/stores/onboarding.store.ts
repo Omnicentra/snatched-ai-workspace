@@ -4,7 +4,7 @@ import { syncObservable } from "@legendapp/state/sync";
 import { desiredBodyShapeEnum } from "@omc/validators/onboarding";
 import { z } from "zod";
 
-type desiredBodyShape = z.infer<typeof desiredBodyShapeEnum>
+export type DesiredBodyShape = z.infer<typeof desiredBodyShapeEnum>
 
 // Type your Store interface
 interface Onboarding {
@@ -31,7 +31,7 @@ interface Onboarding {
   frontViewPhoto: string;
   sideViewPhoto: string;
   backViewPhoto: string;  
-  desiredShape: desiredBodyShape;
+  desiredShape: DesiredBodyShape;
   goalTimeline: string;
 }
 
@@ -54,7 +54,7 @@ export const onboardingStore$ = observable<Store>({
     frontViewPhoto: "",
     sideViewPhoto: "",
     backViewPhoto: "",
-    desiredShape: "" as desiredBodyShape,
+    desiredShape: "" as DesiredBodyShape,
     goalTimeline: "",
     bodyDescription: [],
     otherBodyDetails: "",

@@ -33,6 +33,7 @@ export const NutritionStats = ({
     snatchedImage,
     nextImageTransformationTime,
   } = use$(transformationStore$);
+  const frontImageKey = use$(onboardingStore$.onboarding.frontViewPhoto);
 
   // Convert date to ISO string for API call
   const dateString = selectedDate.toISOString();
@@ -41,7 +42,7 @@ export const NutritionStats = ({
   const { data } = api.user.getBodyRatingByDate.useQuery(
     { date: dateString },
     { enabled: !!dateString },
-  );
+);
 
   // Sync DB body rating with transformation store when data changes
   useEffect(() => {
@@ -59,6 +60,15 @@ export const NutritionStats = ({
     require("@/assets/icons/body-parts/posture.png"),
   ]);
 
+  const { canRequest, canShow } = useMemo(() => {
+    const now = new Date();
+    const canRequest =
+      !nextImageTransformationTime ||
+      now >= new Date(nextImageTransformationTime);
+    const canShow = !!currentImage && !!snatchedImage;
+    return { canRequest, canShow };
+  }, [nextImageTransformationTime, currentImage, snatchedImage]);
+
   // Calculate days since last scan
   const { daysSinceLastScan, canTakeNewScan } = useMemo(() => {
     if (!data) {
@@ -71,7 +81,7 @@ export const NutritionStats = ({
     const daysSinceLastScan = lastBodyRating
       ? differenceInDays(now, lastBodyRatingDate)
       : null;
-    const canTakeNewScan = daysSinceLastScan === null || daysSinceLastScan >= 7;
+    const canTakeNewScan = (daysSinceLastScan === null || daysSinceLastScan >= 7);
     logger.debug(
       `daysSinceLastScan: ${daysSinceLastScan}, canTakeNewScan: ${canTakeNewScan}`,
     );
@@ -90,17 +100,6 @@ export const NutritionStats = ({
         Sentry.captureException(error);
       },
     });
-
-  const frontImageKey = use$(onboardingStore$.onboarding.frontViewPhoto);
-
-  const { canRequest, canShow } = useMemo(() => {
-    const now = new Date();
-    const canRequest =
-      !nextImageTransformationTime ||
-      now >= new Date(nextImageTransformationTime);
-    const canShow = !!currentImage && !!snatchedImage;
-    return { canRequest, canShow };
-  }, [nextImageTransformationTime, currentImage, snatchedImage]);
 
   const buttonDisabled = !canShow && !canRequest;
 
@@ -199,7 +198,7 @@ export const NutritionStats = ({
           {/* Days Until Next Scan */}
           {!canTakeNewScan && daysSinceLastScan !== null && (
             <Text className="font-inter mb-3 text-sm text-gray-500">
-              Next scan available in {7 - daysSinceLastScan} days
+              Next scan available in {Math.max(7 - daysSinceLastScan, 0)} days
             </Text>
           )}
 

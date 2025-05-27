@@ -3,7 +3,7 @@ import { workouts, workoutCategories } from '../schema'
 import { eq } from 'drizzle-orm'
 
 export async function seedWorkouts() {
-  console.log('🌱 Seeding workouts...')
+  console.log('🌱 Seeding home workouts...')
 
   try {
     // First, get all category IDs
