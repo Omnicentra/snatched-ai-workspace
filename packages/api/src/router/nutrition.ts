@@ -690,10 +690,11 @@ export const nutritionRouter = {
         const ingredientsToInsert = ingredients.map((ingredient, index) => ({
           recipeId: recipe.id,
           ingredientName: ingredient.name,
-          amount: ingredient.amount.toString(),
+          amount: ingredient.amount.toFixed(2),
           unit: ingredient.unit,
           orderIndex: index + 1,
         }));
+        ctx.logger.info("Ingredients to insert", { ingredientsToInsert });
 
         await ctx.db.insert(recipeIngredients).values(ingredientsToInsert);
 
@@ -703,6 +704,7 @@ export const nutritionRouter = {
           stepNumber: instruction.stepNumber,
           instruction: instruction.instruction,
         }));
+        ctx.logger.info("Instructions to insert", { instructionsToInsert });
 
         await ctx.db.insert(recipeInstructions).values(instructionsToInsert);
 
