@@ -92,10 +92,10 @@ export const recipeSchema = z.object({
   description: z.string().nullable(),
   servings: z.number(),
   prepTimeMinutes: z.number().nullable(),
-  calories: z.number(),
-  proteinGrams: z.number(),
-  carbsGrams: z.number(),
-  fatsGrams: z.number(),
+  calories: z.union([z.number(), z.string()]),
+  proteinGrams: z.union([z.number(), z.string()]),
+  carbsGrams: z.union([z.number(), z.string()]),
+  fatsGrams: z.union([z.number(), z.string()]),
   imageUrl: z.string().nullable(),
   rating: z.string().nullable(),
   reviewCount: z.number().nullable(),
@@ -132,33 +132,14 @@ export const foodAnalysisSchema = z.object({
 });
 
 /**
- * Schema for meal log entries
- */
-export const mealLogSchema = z.object({
-  id: z.number(),
-  mealType: z.string(),
-  scheduledTime: z.string(),
-  completedAt: z.string().nullable(),
-  recipe: z.object({
-    id: z.number(),
-    title: z.string(),
-    imageUrl: z.string().nullable(),
-    calories: z.number(),
-    proteinGrams: z.number(),
-    carbsGrams: z.number(),
-    fatsGrams: z.number(),
-  }),
-});
-
-/**
  * Schema for submitting scanned meals
  */
 export const scannedMealSubmissionSchema = z.object({
   foodName: z.string(),
-  calories: z.number(),
-  protein: z.number(),
-  carbs: z.number(),
-  fats: z.number(),
+  calories: z.number().multipleOf(0.01),
+  protein: z.number().multipleOf(0.01),
+  carbs: z.number().multipleOf(0.01),
+  fats: z.number().multipleOf(0.01),
   imageKey: z.string().optional(),
   imageBase64: z.string().optional(),
   mealType: z.string(),
@@ -174,5 +155,4 @@ export type Meal = z.infer<typeof mealSchema>;
 export type Recipe = z.infer<typeof recipeSchema>;
 export type MealPlan = z.infer<typeof mealPlanSchema>;
 export type FoodAnalysis = z.infer<typeof foodAnalysisSchema>;
-export type MealLog = z.infer<typeof mealLogSchema>;
 export type ScannedMealSubmission = z.infer<typeof scannedMealSubmissionSchema>; 

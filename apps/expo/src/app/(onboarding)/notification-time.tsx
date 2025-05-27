@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { requestNotificationPermissions } from "@/lib/notifications";
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -135,6 +136,7 @@ const TimeSelectionRow = ({
 function NotificationTimeScreen() {
   const router = useRouter();
   
+  
   // Get default values from store for morning
   const [morningTime, setMorningTime] = useState(() => {
     const defaultHour = notificationsStore$.times.morning.hour.get();
@@ -164,6 +166,10 @@ function NotificationTimeScreen() {
     time.setHours(defaultHour, defaultMinute, 0, 0);
     return time;
   });
+
+  useEffect(() => {
+    void requestNotificationPermissions();
+  }, []);
 
   const handleSaveAndContinue = async () => {
     try {

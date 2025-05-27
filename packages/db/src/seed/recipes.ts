@@ -205,13 +205,13 @@ export async function seedRecipes() {
     
     // Insert recipe
     const [insertedRecipe] = await db.insert(recipes).values({
-        calories: recipe.calories,
-        carbsGrams: recipe.carbsGrams,
+        calories: recipe.calories.toFixed(2),
+        carbsGrams: recipe.carbsGrams.toFixed(2),
         categoryId: recipe.categoryId,
         description: recipe.description,
-        fatsGrams: recipe.fatsGrams,
+        fatsGrams: recipe.fatsGrams.toFixed(2),
         imageUrl: recipe.imageUrl,
-        proteinGrams: recipe.proteinGrams,
+        proteinGrams: recipe.proteinGrams.toFixed(2),
         reviewCount: recipe.reviewCount,
         servings: recipe.servings,
         title: recipe.title,

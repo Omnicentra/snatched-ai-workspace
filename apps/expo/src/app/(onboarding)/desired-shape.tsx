@@ -175,7 +175,7 @@ const BodyShapeCard = ({
 
 function DesiredShape() {
   const router = useRouter()
-  const params = useLocalSearchParams<{ skipped?: string }>()
+  const params = useLocalSearchParams<{ progress?: string, skipped?: string }>()
   const [currentPageIndex, setCurrentPageIndex] = useState(0)
   const [selectedShapeId, setSelectedShapeId] = useState<BodyShapeId | null>(null)
   const flatListRef = useRef<FlatList>(null)
@@ -188,7 +188,9 @@ function DesiredShape() {
         onboardingStore$.onboarding.desiredShape.set(validatedShape)
         
         // Pass along the skipped parameter if it exists
-        if (params.skipped === 'true') {
+        if (params.progress === 'true') {
+          router.push('/(onboarding)/analyzing?progress=true')
+        } else if (params.skipped === 'true') {
           router.push('/(onboarding)/timeline-goal?skipped=true')
         } else {
           router.push('/(onboarding)/timeline-goal')

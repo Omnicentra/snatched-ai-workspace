@@ -1,5 +1,6 @@
-import React, { useState } from "react";
-import { Modal, Pressable, ScrollView, Text, View } from "react-native";
+import React, { useState, useRef, useCallback } from "react";
+import type { GestureResponderEvent } from "react-native";
+import { Modal, Pressable, ScrollView, Text, View, Animated, Easing, RefreshControl } from "react-native";
 import Constants from "expo-constants";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
@@ -7,26 +8,42 @@ import { useRouter } from "expo-router";
 import { api } from "@/utils/api";
 import type { RouterOutputs } from "@/utils/api";
 import { MEAL_TYPES } from "@omc/validators/nutrition";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import { BackButton } from "@/components/common/BackButton";
 
 const DEFAULT_IMAGE = "https://images.unsplash.com/photo-1495521821757-a1efb6729352?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80";
 
 type Recipe = RouterOutputs["nutrition"]["getRecipesByUser"][number];
 
+interface AnimationValues {
+  scaleAnim: Animated.Value;
+  rotateAnim: Animated.Value;
+  opacityAnim: Animated.Value;
+}
+
 export default function SavedFoodsScreen() {
   const router = useRouter();
   const utils = api.useUtils();
+  const [isRefreshing, setRefreshing] = useState(false);
   const [selectedMeal, setSelectedMeal] = useState<Recipe | null>(null);
   const [mealTypeModalVisible, setMealTypeModalVisible] = useState(false);
 
   const { data: meals, refetch: refetchMeals } = api.nutrition.getRecipesByUser.useQuery();
+  const { data: recentMeals = [], refetch: refetchRecentMeals } = api.nutrition.getRecentlyLoggedMeals.useQuery();
+  const { mutate: toggleMealCompletionByRecipeId } = api.mealSchedule.toggleMealCompletionByRecipeId.useMutation({
+    onSuccess: () => {
+      void refetchMeals();
+      void refetchRecentMeals();
+      void utils.nutrition.getTodaysMealPlan.invalidate();
+      void utils.nutrition.getUserMealSchedules.invalidate();
+    },
+  });
   const { mutate: toggleFavorite } = api.nutrition.toggleFavoriteRecipe.useMutation({
     onSuccess: () => {
       void utils.nutrition.getRecipesByUser.invalidate();
     },
   });
-  const { mutate: logMeal , isPending } = api.nutrition.logSavedMeal.useMutation({
+  const { mutate: logMeal, isPending } = api.nutrition.logSavedMeal.useMutation({
     onSuccess: () => {
       setMealTypeModalVisible(false);
       setSelectedMeal(null);
@@ -37,9 +54,90 @@ export default function SavedFoodsScreen() {
     },
   });
 
+  // Animation refs for each meal
+  const animationRefs = useRef<Record<number, AnimationValues>>({});
+
+  // Check if a meal has been logged today
+  const isMealLoggedToday = useCallback((mealId: number) => {
+    return recentMeals.some(loggedMeal => loggedMeal.recipe.id === mealId);
+  }, [recentMeals]);
+
+  // Initialize animation values for a meal
+  const getAnimatedValues = (mealId: number) => {
+    if (!animationRefs.current[mealId]) {
+      const isLogged = isMealLoggedToday(mealId);
+      animationRefs.current[mealId] = {
+        scaleAnim: new Animated.Value(1),
+        rotateAnim: new Animated.Value(isLogged ? 2 : 0),
+        opacityAnim: new Animated.Value(1),
+      };
+    }
+    return animationRefs.current[mealId];
+  };
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    void Promise.all([
+      refetchMeals(),
+      refetchRecentMeals(),
+    ]).finally(() => {
+      setRefreshing(false);
+    });
+  };
+
   const handleLogMeal = (meal: Recipe) => {
     setSelectedMeal(meal);
     setMealTypeModalVisible(true);
+  };
+
+  const handleTogglePress = (e: GestureResponderEvent, meal: Recipe, animations: AnimationValues) => {
+    e.stopPropagation();
+    const isLogged = isMealLoggedToday(meal.id);
+
+    if (isLogged) {
+      toggleMealCompletionByRecipeId({ recipeId: meal.id });
+    }
+
+    // Reset opacity to 1 before starting new animation
+    animations.opacityAnim.setValue(1);
+
+    // Start animation sequence
+    Animated.sequence([
+      Animated.parallel([
+        Animated.timing(animations.scaleAnim, {
+          toValue: 0.95,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+        Animated.timing(animations.rotateAnim, {
+          toValue: 2,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]),
+      Animated.parallel([
+        Animated.timing(animations.scaleAnim, {
+          toValue: 1,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+        Animated.timing(animations.opacityAnim, {
+          toValue: 0.3,
+          duration: 100,
+          useNativeDriver: true,
+          easing: Easing.linear,
+        }),
+      ]),
+      Animated.timing(animations.opacityAnim, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      if (!isLogged) {
+        handleLogMeal(meal);
+      }
+    });
   };
 
   return (
@@ -51,115 +149,155 @@ export default function SavedFoodsScreen() {
         <BackButton title="Saved Foods" />
       </View>
 
-      <ScrollView className="flex-1 px-6 pt-4">
-        {meals?.map((meal) => (
-          <View 
-            key={meal.id} 
-            className="mb-4 overflow-hidden rounded-2xl bg-white shadow-lg"
-            style={{
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.05,
-              shadowRadius: 15,
-              elevation: 2,
-            }}
-          >
-            <Pressable
-              className="flex-row"
-              onPress={() => {
-                router.push(`/(modals)/recipe-detail?mealId=${meal.id}`);
+      <ScrollView className="flex-1 px-6 pt-4" refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />}>
+        {meals?.map((meal) => {
+          const animations = getAnimatedValues(meal.id);
+          const isLogged = isMealLoggedToday(meal.id);
+          const spin = animations.rotateAnim.interpolate({
+            inputRange: [0, 1],
+            outputRange: ["0deg", "180deg"],
+          });
+
+          return (
+            <View 
+              key={meal.id} 
+              className="mb-4 overflow-hidden rounded-2xl bg-white shadow-lg"
+              style={{
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.05,
+                shadowRadius: 15,
+                elevation: 2,
               }}
             >
-              {/* Left Content */}
-              <View className="flex-1 p-4">
-                <View className="flex-row items-center justify-between -translate-y-1">
-                  <View className="flex-row items-center">
-                    <MaterialCommunityIcons
-                      name="clock-outline"
-                      size={16}
-                      color="#666"
-                    />
-                    <Text className="font-inter-medium ml-1 text-sm text-gray-500">
-                      {meal.prepTimeMinutes ?? "15"} min
-                    </Text>
-                  </View>
-                  <View className="flex-row items-center gap-x-2">
-                    <Pressable
-                      className="rounded-full bg-pink-50 p-2"
-                      onPress={(e) => {
-                        e.stopPropagation();
-                        handleLogMeal(meal);
-                      }}
-                      disabled={isPending}
-                    >
+              <Pressable
+                className="flex-row"
+                onPress={() => {
+                  router.push(`/(modals)/recipe-detail?mealId=${meal.id}`);
+                }}
+              >
+                {/* Left Content */}
+                <View className="flex-1 p-4">
+                  <View className="flex-row items-center justify-between -translate-y-1">
+                    <View className="flex-row items-center">
                       <MaterialCommunityIcons
-                        name="plus-circle"
-                        size={24}
-                        color="#ec4899"
+                        name="clock-outline"
+                        size={16}
+                        color="#666"
                       />
-                    </Pressable>
-                    <Pressable
-                      className="rounded-full p-2"
-                      onPress={(e) => {
-                        e.stopPropagation();
-                        toggleFavorite({ recipeId: meal.id });
-                      }}
-                    >
-                      <MaterialCommunityIcons
-                        name={meal.isFavorite ? "heart" : "heart-outline"}
-                        size={24}
-                        color={meal.isFavorite ? "#ec4899" : "#666"}
-                      />
-                    </Pressable>
+                      <Text className="font-inter-medium ml-1 text-sm text-gray-500">
+                        {meal.prepTimeMinutes ?? "15"} min
+                      </Text>
+                    </View>
+                    <View className="flex-row items-center gap-x-2">
+                      <Animated.View
+                        style={{
+                          opacity: animations.opacityAnim,
+                          transform: [{ scale: animations.scaleAnim }, { rotate: spin }],
+                        }}
+                      >
+                        <Pressable
+                          className={isLogged ? "rounded-full bg-green-100 p-2" : "rounded-full bg-pink-50 p-2"}
+                          onPress={(e) => handleTogglePress(e, meal, animations)}
+                          disabled={isPending}
+                        >
+                          {isLogged ? (
+                            <Ionicons
+                              name="checkmark-circle"
+                              size={24}
+                              color="#22C55E"
+                            />
+                          ) : (
+                            <MaterialCommunityIcons
+                              name="plus-circle"
+                              size={24}
+                              color="#ec4899"
+                            />
+                          )}
+                        </Pressable>
+                      </Animated.View>
+                      <Pressable
+                        className="rounded-full p-2"
+                        onPress={(e) => {
+                          e.stopPropagation();
+                          toggleFavorite({ recipeId: meal.id });
+                        }}
+                      >
+                        <MaterialCommunityIcons
+                          name={meal.isFavorite ? "heart" : "heart-outline"}
+                          size={24}
+                          color={meal.isFavorite ? "#ec4899" : "#666"}
+                        />
+                      </Pressable>
+                    </View>
                   </View>
+
+                  <Text 
+                    className="font-inter-semibold mb-2 text-lg text-gray-900"
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                  >
+                    {meal.title}
+                  </Text>
+
+                    {/* Macros */}
+                    <ScrollView 
+                      horizontal 
+                      contentContainerClassName="flex-row gap-2"
+                      onStartShouldSetResponder={() => true}
+                      onResponderTerminationRequest={() => false}
+                      showsHorizontalScrollIndicator={false}
+                    >
+                      <View className="flex-row items-center rounded-xl bg-gray-50 px-2 py-1.5">
+                        <Text className="font-inter-medium text-sm text-gray-900">
+                          {meal.calories}
+                        </Text>
+                        <Text className="font-inter ml-1 text-xs text-gray-500">cal</Text>
+                      </View>
+                      <View className="flex-row items-center rounded-xl bg-gray-50 px-2 py-1.5">
+                        <Text className="font-inter-medium text-sm text-gray-900">
+                          {meal.proteinGrams}g
+                        </Text>
+                        <Text className="font-inter ml-1 text-xs text-gray-500">protein</Text>
+                      </View>
+                      <View className="flex-row items-center rounded-xl bg-gray-50 px-2 py-1.5">
+                        <Text className="font-inter-medium text-sm text-gray-900">
+                          {meal.carbsGrams}g
+                        </Text>
+                        <Text className="font-inter ml-1 text-xs text-gray-500">carbs</Text>
+                      </View>
+                      <View className="flex-row items-center rounded-xl bg-gray-50 px-2 py-1.5">
+                        <Text className="font-inter-medium text-sm text-gray-900">
+                          {meal.fatsGrams}g
+                        </Text>
+                        <Text className="font-inter ml-1 text-xs text-gray-500">fats</Text>
+                      </View>
+                    </ScrollView>
                 </View>
 
-                <Text 
-                  className="font-inter-semibold mb-2 text-lg text-gray-900"
-                  numberOfLines={1}
-                  ellipsizeMode="tail"
-                >
-                  {meal.title}
-                </Text>
-
-                <View className="flex-row gap-2">
-                  <View className="flex-row items-center rounded-xl bg-gray-50 px-2 py-1.5">
-                    <Text className="font-inter-medium text-sm text-gray-900">
-                      {meal.calories}
-                    </Text>
-                    <Text className="font-inter ml-1 text-xs text-gray-500">cal</Text>
-                  </View>
-                  <View className="flex-row items-center rounded-xl bg-gray-50 px-2 py-1.5">
-                    <Text className="font-inter-medium text-sm text-gray-900">
-                      {meal.proteinGrams}g
-                    </Text>
-                    <Text className="font-inter ml-1 text-xs text-gray-500">protein</Text>
-                  </View>
+                {/* Right Image */}
+                <View className="w-32">
+                  <Image
+                    source={{ uri: meal.imageUrl ?? DEFAULT_IMAGE }}
+                    style={{
+                      height: "100%",
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      borderTopRightRadius: 16,
+                      borderBottomRightRadius: 16,
+                    }}
+                    contentFit="cover"
+                    cachePolicy="memory-disk"
+                    transition={200}
+                  />
                 </View>
-              </View>
-
-              {/* Right Image */}
-              <View className="w-32">
-                <Image
-                  source={{ uri: meal.imageUrl ?? DEFAULT_IMAGE }}
-                  style={{
-                    height: "100%",
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    borderTopRightRadius: 16,
-                    borderBottomRightRadius: 16,
-                  }}
-                  contentFit="cover"
-                  cachePolicy="memory-disk"
-                  transition={200}
-                />
-              </View>
-            </Pressable>
-          </View>
-        ))}
+              </Pressable>
+            </View>
+          );
+        })}
 
         {meals?.length === 0 && (
           <View className="items-center justify-center py-12">

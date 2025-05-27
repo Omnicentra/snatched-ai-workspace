@@ -1,7 +1,11 @@
+import type { S3Client } from "@aws-sdk/client-s3";
 import type { TRPCRouterRecord } from "@trpc/server";
+import type { Exercise, WeeklyPlan, Workout } from "@omc/validators/workout";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { GoogleGenAI, Type } from "@google/genai";
 import { TRPCError } from "@trpc/server";
 import { and, desc, eq, gte, sql } from "drizzle-orm";
+import { OpenAI } from "openai";
 import { z } from "zod";
 
 import { db } from "@omc/db/client";
@@ -9,59 +13,30 @@ import {
   workoutCategories as _workoutCategories,
   exercises as exercisesTable,
   fitnessGoals,
+  milestoneLevels,
   user,
+  userMilestoneProgress,
   userWorkoutProgress,
+  workoutClasses,
   workoutExercises,
   workoutPlanDays,
   workoutPlans,
   workouts,
-  userMilestoneProgress,
-  milestoneLevels,
+  workoutToClass,
 } from "@omc/db/schema";
+import { prettyPrint, slugify } from "@omc/validators";
+import { exerciseSchema } from "@omc/validators/workout";
 
 import { adminProcedure, protectedProcedure, publicProcedure } from "../trpc";
-import { prettyPrint, slugify } from "@omc/validators";
-import type { S3Client } from "@aws-sdk/client-s3";
-import { PutObjectCommand } from "@aws-sdk/client-s3";
-import { OpenAI } from "openai";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY });
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-const exerciseSchema = z.object({
-  name: z.string(),
-  targetMuscles: z.string(),
-  sets: z.number(),
-  reps: z.number(),
-  restSeconds: z.number(),
-});
-
-const workoutSchema = z.object({
-  title: z.string(),
-  description: z.string(),
-  durationMinutes: z.number(),
-  difficultyLevel: z.string(),
-  caloriesBurn: z.number(),
-  categoryId: z.number(),
-  exercises: z.array(exerciseSchema),
-});
-
-const _weeklyPlanSchema = z.object({
-  workouts: z.array(
-    z.object({
-      dayNumber: z.number(),
-      workout: workoutSchema,
-    }),
-  ),
-  targetCaloriesBurn: z.number(),
-});
-
-type WeeklyPlan = z.infer<typeof _weeklyPlanSchema>;
-type Workout = z.infer<typeof workoutSchema>;
-type Exercise = z.infer<typeof exerciseSchema>;
-
-const generateAndUploadImage = async (s3: S3Client, workoutName: string): Promise<string> => {
+const generateAndUploadImage = async (
+  s3: S3Client,
+  workoutName: string,
+): Promise<string> => {
   const img = await openai.images.generate({
     model: "gpt-image-1",
     prompt: `Thumbnail image for ${workoutName}. The image should be a high-quality, professional-looking thumbnail for a workout video with no text or watermarks. Prefer a female model.`,
@@ -89,7 +64,10 @@ const generateAndUploadImage = async (s3: S3Client, workoutName: string): Promis
 };
 
 // Helper function to check exercise similarity using Gemini
-async function checkExerciseSimilarity(exercise: Exercise, existingExercises: (typeof exercisesTable.$inferSelect)[]) {
+async function checkExerciseSimilarity(
+  exercise: Exercise,
+  existingExercises: (typeof exercisesTable.$inferSelect)[],
+) {
   const similarityResponse = await ai.models.generateContent({
     model: "gemini-2.0-flash",
     contents: `Compare this exercise:
@@ -179,7 +157,7 @@ Respond with just the ID number or null, nothing else.`,
 // Helper function to create a new workout with exercises
 async function createNewWorkout(s3: S3Client, workout: Workout) {
   const imageUrl = await generateAndUploadImage(s3, workout.title);
-  
+
   const [insertedWorkout] = await db
     .insert(workouts)
     .values({
@@ -189,7 +167,7 @@ async function createNewWorkout(s3: S3Client, workout: Workout) {
       difficultyLevel: workout.difficultyLevel,
       caloriesBurn: workout.caloriesBurn,
       categoryId: workout.categoryId,
-      imageUrl
+      imageUrl,
     })
     .returning();
 
@@ -203,7 +181,10 @@ async function createNewWorkout(s3: S3Client, workout: Workout) {
   await Promise.all(
     workout.exercises.map(async (exercise, index) => {
       // Check if a similar exercise already exists
-      const similarExerciseId = await checkExerciseSimilarity(exercise, existingExercises);
+      const similarExerciseId = await checkExerciseSimilarity(
+        exercise,
+        existingExercises,
+      );
       if (similarExerciseId) {
         await db.insert(workoutExercises).values({
           workoutId: insertedWorkout.id,
@@ -242,14 +223,72 @@ async function createNewWorkout(s3: S3Client, workout: Workout) {
 }
 
 export const workoutRouter = {
-  getWorkouts: publicProcedure.query(async () => {
-    const workouts = await db.query.workouts.findMany();
-    return workouts;
+  getWorkouts: publicProcedure.query(async ({ ctx }) => {
+    try {
+      const workoutResults = await ctx.db
+        .select({
+          id: workouts.id,
+          title: workouts.title,
+          description: workouts.description,
+          durationMinutes: workouts.durationMinutes,
+          difficultyLevel: workouts.difficultyLevel,
+          caloriesBurn: workouts.caloriesBurn,
+          rating: workouts.rating,
+          imageUrl: workouts.imageUrl,
+          categoryId: workouts.categoryId,
+          classes: sql<{ id: number; name: string; description: string | null }[]>`
+            COALESCE(
+              json_agg(
+                json_build_object(
+                  'id', ${workoutClasses.id},
+                  'name', ${workoutClasses.name},
+                  'description', ${workoutClasses.description}
+                )
+              ) FILTER (WHERE ${workoutClasses.id} IS NOT NULL),
+              '[]'
+            )
+          `.as('classes'),
+        })
+        .from(workouts)
+        .leftJoin(workoutToClass, eq(workouts.id, workoutToClass.workoutId))
+        .leftJoin(
+          workoutClasses,
+          eq(workoutToClass.classId, workoutClasses.id),
+        )
+        .groupBy(workouts.id);
+
+      // ctx.logger.debug(`workoutResults: ${workoutResults.length}`);
+      console.log(`\n`);
+
+      return workoutResults;
+    } catch (error) {
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Failed to fetch workouts",
+        cause: error,
+      });
+    }
   }),
 
   getWorkoutCategories: publicProcedure.query(async () => {
     const categories = await db.query.workoutCategories.findMany();
     return categories;
+  }),
+
+  getWorkoutClasses: publicProcedure.query(async ({ ctx }) => {
+    try {
+      const classes = await db.query.workoutClasses.findMany();
+
+      // ctx.logger.info(`Found ${classes.length} workout classes`);
+      return classes;
+    } catch (error) {
+      ctx.logger.error("Failed to fetch workout classes", error);
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Failed to fetch workout classes",
+        cause: error,
+      });
+    }
   }),
 
   getWorkoutWithExercises: protectedProcedure
@@ -260,7 +299,7 @@ export const workoutRouter = {
     )
     .query(async ({ ctx, input }) => {
       const { workoutId } = input;
-      let workoutPlanDay: (typeof workoutPlanDays.$inferSelect) | undefined;
+      let workoutPlanDay: typeof workoutPlanDays.$inferSelect | undefined;
 
       const workout = await db.query.workouts.findFirst({
         where: eq(workouts.id, workoutId),
@@ -274,7 +313,7 @@ export const workoutRouter = {
           gte(workoutPlans.endDate, new Date().toISOString()),
         ),
       });
-      
+
       // check if the workout is in the workout plan days
       if (workoutPlan) {
         workoutPlanDay = await db.query.workoutPlanDays.findFirst({
@@ -432,7 +471,7 @@ export const workoutRouter = {
     .query(async ({ ctx, input }) => {
       try {
         const { period } = input;
-        const { user } = ctx.session;
+        const userId = Number(ctx.session.user.id);
 
         // Build date filter based on period
         let dateFilter = undefined;
@@ -451,7 +490,7 @@ export const workoutRouter = {
         // Get user workout progress records
         const workoutRecords = await db.query.userWorkoutProgress.findMany({
           where: (fields) => {
-            const userFilter = eq(fields.userId, Number(user.id));
+            const userFilter = eq(fields.userId, userId);
             return period === "all"
               ? userFilter
               : sql`${userFilter} AND ${dateFilter}`;
@@ -528,11 +567,13 @@ export const workoutRouter = {
       const [activeWorkoutPlan] = await db
         .select()
         .from(workoutPlans)
-        .where(and(
-          eq(workoutPlans.userId, userId),
-          eq(workoutPlans.status, "active"),
-          gte(workoutPlans.endDate, new Date().toISOString()),
-        ))
+        .where(
+          and(
+            eq(workoutPlans.userId, userId),
+            eq(workoutPlans.status, "active"),
+            gte(workoutPlans.endDate, new Date().toISOString()),
+          ),
+        )
         .execute();
 
       if (activeWorkoutPlan) {
@@ -604,7 +645,11 @@ export const workoutRouter = {
                         durationMinutes: { type: Type.NUMBER },
                         difficultyLevel: { type: Type.STRING },
                         caloriesBurn: { type: Type.NUMBER },
-                        categoryId: { type: Type.NUMBER, minimum: 1, maximum: 6 },
+                        categoryId: {
+                          type: Type.NUMBER,
+                          minimum: 1,
+                          maximum: 6,
+                        },
                         exercises: {
                           type: Type.ARRAY,
                           items: {
@@ -865,7 +910,7 @@ export const workoutRouter = {
     .mutation(async ({ ctx, input }) => {
       const { planId, dayNumber, workoutId } = input;
       const userId = Number(ctx.session.user.id);
-      ctx.logger.info(`Completing workout plan ${planId} day ${dayNumber}`);
+      // ctx.logger.info(`Completing workout plan ${planId} day ${dayNumber}`);
 
       // Update workout plan day completion
       const [updatedPlanDay] = await db
@@ -901,7 +946,7 @@ export const workoutRouter = {
       const currentMilestone = await db.query.userMilestoneProgress.findFirst({
         where: and(
           eq(userMilestoneProgress.userId, userId),
-          eq(userMilestoneProgress.completed, false)
+          eq(userMilestoneProgress.completed, false),
         ),
         orderBy: [desc(userMilestoneProgress.id)],
       });
@@ -988,7 +1033,7 @@ export const workoutRouter = {
     const currentMilestone = await db.query.userMilestoneProgress.findFirst({
       where: and(
         eq(userMilestoneProgress.userId, userId),
-        eq(userMilestoneProgress.completed, false)
+        eq(userMilestoneProgress.completed, false),
       ),
       orderBy: [desc(userMilestoneProgress.id)],
     });
@@ -1000,12 +1045,15 @@ export const workoutRouter = {
       });
 
       if (firstLevel) {
-        const [newMilestone] = await db.insert(userMilestoneProgress).values({
-          userId,
-          levelId: firstLevel.id,
-          currentDay: 1,
-          completed: false,
-        }).returning();
+        const [newMilestone] = await db
+          .insert(userMilestoneProgress)
+          .values({
+            userId,
+            levelId: firstLevel.id,
+            currentDay: 1,
+            completed: false,
+          })
+          .returning();
 
         if (!newMilestone) {
           throw new Error("Failed to create new milestone");

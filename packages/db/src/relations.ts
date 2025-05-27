@@ -1,5 +1,39 @@
 import { relations } from "drizzle-orm/relations";
-import { user, bodyMeasurements, fitnessBlockers, foodCravings, previousExperiences, workoutCategories, workouts, healthConditions, bodyConsiderations, userWorkoutProgress, fitnessGoals, workoutExercises, exercises, recipes, recipeIngredients, mealPlans, mealSchedule, userMilestoneProgress, milestoneLevels, recipeInstructions, userRecipes, recipeCategories, session, account, workoutPlans, workoutPlanDays, userDevices } from "./schema";
+import {
+	user,
+	bodyMeasurements,
+	fitnessBlockers,
+	foodCravings,
+	previousExperiences,
+	workoutCategories,
+	workouts,
+	healthConditions,
+	bodyConsiderations,
+	userWorkoutProgress,
+	fitnessGoals,
+	workoutExercises,
+	exercises,
+	recipes,
+	recipeIngredients,
+	mealPlans,
+	mealSchedule,
+	userMilestoneProgress,
+	milestoneLevels,
+	recipeInstructions,
+	userRecipes,
+	recipeCategories,
+	session,
+	account,
+	workoutPlans,
+	workoutPlanDays,
+	userDevices,
+	workoutClasses,
+	workoutToClass,
+	userBodyRatings,
+	userImageTransformations,
+	snatchHacks,
+	userSnatchHacks,
+} from "./schema";
 
 export const bodyMeasurementsRelations = relations(bodyMeasurements, ({one}) => ({
 	user: one(user, {
@@ -24,6 +58,9 @@ export const userRelations = relations(user, ({many}) => ({
 	accounts: many(account),
 	workoutPlans: many(workoutPlans),
 	devices: many(userDevices),
+	bodyRatings: many(userBodyRatings),
+	imageTransformations: many(userImageTransformations),
+	snatchHacks: many(userSnatchHacks),
 }));
 
 export const fitnessBlockersRelations = relations(fitnessBlockers, ({one}) => ({
@@ -54,10 +91,27 @@ export const workoutsRelations = relations(workouts, ({one, many}) => ({
 	}),
 	userWorkoutProgresses: many(userWorkoutProgress),
 	workoutExercises: many(workoutExercises),
+	workoutToClasses: many(workoutToClass),
+	workoutPlanDays: many(workoutPlanDays),
 }));
 
 export const workoutCategoriesRelations = relations(workoutCategories, ({many}) => ({
 	workouts: many(workouts),
+}));
+
+export const workoutClassesRelations = relations(workoutClasses, ({many}) => ({
+	workoutToClasses: many(workoutToClass),
+}));
+
+export const workoutToClassRelations = relations(workoutToClass, ({one}) => ({
+	workout: one(workouts, {
+		fields: [workoutToClass.workoutId],
+		references: [workouts.id]
+	}),
+	workoutClass: one(workoutClasses, {
+		fields: [workoutToClass.classId],
+		references: [workoutClasses.id]
+	}),
 }));
 
 export const healthConditionsRelations = relations(healthConditions, ({one}) => ({
@@ -114,11 +168,15 @@ export const recipeIngredientsRelations = relations(recipeIngredients, ({one}) =
 	}),
 }));
 
-export const recipesRelations = relations(recipes, ({many}) => ({
+export const recipesRelations = relations(recipes, ({one, many}) => ({
 	recipeIngredients: many(recipeIngredients),
 	mealSchedules: many(mealSchedule),
 	recipeInstructions: many(recipeInstructions),
 	userRecipes: many(userRecipes),
+	category: one(recipeCategories, {
+		fields: [recipes.categoryId],
+		references: [recipeCategories.id]
+	}),
 }));
 
 export const mealScheduleRelations = relations(mealSchedule, ({one}) => ({
@@ -214,5 +272,34 @@ export const userDevicesRelations = relations(userDevices, ({one}) => ({
 	user: one(user, {
 		fields: [userDevices.userId],
 		references: [user.id]
+	}),
+}));
+
+export const userBodyRatingsRelations = relations(userBodyRatings, ({one}) => ({
+	user: one(user, {
+		fields: [userBodyRatings.userId],
+		references: [user.id]
+	}),
+}));
+
+export const userImageTransformationsRelations = relations(userImageTransformations, ({one}) => ({
+	user: one(user, {
+		fields: [userImageTransformations.userId],
+		references: [user.id]
+	}),
+}));
+
+export const snatchHacksRelations = relations(snatchHacks, ({many}) => ({
+	userSnatchHacks: many(userSnatchHacks),
+}));
+
+export const userSnatchHacksRelations = relations(userSnatchHacks, ({one}) => ({
+	user: one(user, {
+		fields: [userSnatchHacks.userId],
+		references: [user.id]
+	}),
+	snatchHack: one(snatchHacks, {
+		fields: [userSnatchHacks.snatchHackId],
+		references: [snatchHacks.id]
 	}),
 }));

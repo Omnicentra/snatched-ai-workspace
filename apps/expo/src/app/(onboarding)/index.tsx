@@ -37,7 +37,7 @@ function SplashScreen() {
 
   const handleSkip = () => {
     void Haptics.selectionAsync().then(() => {
-      router.push("/(onboarding)/transformation-intro");
+      router.push("/(onboarding)/special-offer");
     });
   };
 

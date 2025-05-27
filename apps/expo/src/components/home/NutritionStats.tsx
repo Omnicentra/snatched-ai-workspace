@@ -13,7 +13,7 @@ import { api } from "@/utils/api";
 import { Ionicons } from "@expo/vector-icons";
 import { use$ } from "@legendapp/state/react";
 import * as Sentry from "@sentry/react-native";
-import { differenceInDays } from "date-fns";
+import { differenceInDays, isToday } from "date-fns";
 
 import { formatPostgresTimestampToDate } from "@omc/validators";
 
@@ -33,6 +33,7 @@ export const NutritionStats = ({
     snatchedImage,
     nextImageTransformationTime,
   } = use$(transformationStore$);
+  const frontImageKey = use$(onboardingStore$.onboarding.frontViewPhoto);
 
   // Convert date to ISO string for API call
   const dateString = selectedDate.toISOString();
@@ -58,6 +59,20 @@ export const NutritionStats = ({
     require("@/assets/icons/body-parts/back_definition.png"),
     require("@/assets/icons/body-parts/posture.png"),
   ]);
+
+  const { canRequest, canShow } = useMemo(() => {
+    const now = new Date();
+    const canRequest =
+      !nextImageTransformationTime ||
+      now >= new Date(nextImageTransformationTime);
+    const canShow = !!currentImage && !!snatchedImage;
+    return { canRequest, canShow };
+  }, [nextImageTransformationTime, currentImage, snatchedImage]);
+
+  const transformationButtonDisabled = useMemo(
+    () => !canShow && !canRequest,
+    [canShow, canRequest],
+  );
 
   // Calculate days since last scan
   const { daysSinceLastScan, canTakeNewScan } = useMemo(() => {
@@ -90,19 +105,6 @@ export const NutritionStats = ({
         Sentry.captureException(error);
       },
     });
-
-  const frontImageKey = use$(onboardingStore$.onboarding.frontViewPhoto);
-
-  const { canRequest, canShow } = useMemo(() => {
-    const now = new Date();
-    const canRequest =
-      !nextImageTransformationTime ||
-      now >= new Date(nextImageTransformationTime);
-    const canShow = !!currentImage && !!snatchedImage;
-    return { canRequest, canShow };
-  }, [nextImageTransformationTime, currentImage, snatchedImage]);
-
-  const buttonDisabled = !canShow && !canRequest;
 
   const handlePress = canShow
     ? () => router.push("/(modals)/transformation-preview")
@@ -184,10 +186,11 @@ export const NutritionStats = ({
           </View>
 
           {/* New Scan Button */}
-          {canTakeNewScan && (
+          {canTakeNewScan && isToday(selectedDate) && (
             <Pressable
               className="mb-3 flex-row items-center rounded-full bg-pink-50 px-4 py-2"
               onPress={() => router.push("/(modals)/progress-front")}
+              disabled={!canShow && !canRequest}
             >
               <Ionicons name="camera" size={18} color="#F472B6" />
               <Text className="font-inter-medium ml-2 text-sm text-pink-500">
@@ -199,17 +202,18 @@ export const NutritionStats = ({
           {/* Days Until Next Scan */}
           {!canTakeNewScan && daysSinceLastScan !== null && (
             <Text className="font-inter mb-3 text-sm text-gray-500">
-              Next scan available in {7 - daysSinceLastScan} days
+              Next scan available in {Math.max(7 - daysSinceLastScan, 0)} days
             </Text>
           )}
 
           {/* Transformation Button */}
+
           <Pressable
             className={`flex-row items-center rounded-full px-4 py-2 ${
               canShow || canRequest ? "bg-pink-50" : "bg-gray-100"
             }`}
             onPress={handlePress}
-            disabled={buttonDisabled}
+            disabled={transformationButtonDisabled}
           >
             <Ionicons
               name="image"

@@ -19,6 +19,7 @@ import { useRouter } from "expo-router";
 import { BackButton } from "@/components/common/BackButton";
 import { api } from "@/utils/api";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 // Define types for clarity
 type MealPlanData = RouterOutputs["nutrition"]["getTodaysMealPlan"];
@@ -31,7 +32,7 @@ const MacroPill = ({
   unit = "g",
 }: {
   label: string;
-  amount: number;
+  amount: number | string;
   unit?: string;
 }) => (
   <View className="flex-row items-center rounded-xl bg-gray-50 px-1.5 py-2.5">
@@ -57,10 +58,10 @@ const MealCard = ({
   onToggleComplete,
 }: {
   title: string;
-  calories: number;
-  proteinGrams: number;
-  carbsGrams: number;
-  fatsGrams: number;
+  calories: number | string;
+  proteinGrams: number | string;
+  carbsGrams: number | string;
+  fatsGrams: number | string;
   imageUrl: string | null;
   time: string;
   completed: boolean;
@@ -251,10 +252,12 @@ export default function MealPlanScreen() {
     router.push(`/(modals)/recipe-detail?mealId=${mealId}`);
   };
 
+  const { bottom } = useSafeAreaInsets();
+
   return (
     <LinearGradient
       colors={["#e5e7eb", "#fff"]}
-      style={{ flexGrow: 1, paddingTop: Constants.statusBarHeight }}
+      style={{ flexGrow: 1, paddingTop: Constants.statusBarHeight, paddingBottom: bottom }}
     >
       <View className="px-6 py-4">
         <BackButton title="Meal Plan" />

@@ -92,6 +92,20 @@
       "when": 1747560377840,
       "tag": "0012_minor_black_tarantula",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1748005678764,
+      "tag": "0013_minor_power_pack",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1748347266395,
+      "tag": "0014_fantastic_gambit",
+      "breakpoints": true
     }
   ]
 }

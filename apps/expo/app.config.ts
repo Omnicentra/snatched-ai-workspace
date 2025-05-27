@@ -62,7 +62,7 @@ const createConfig = ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name,
   slug: "snatched-ai",
-  version: "1.1.7",
+  version: "1.1.8",
   orientation: "portrait",
   icon,
   scheme,

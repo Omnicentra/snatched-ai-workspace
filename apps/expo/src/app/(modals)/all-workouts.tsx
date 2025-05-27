@@ -161,7 +161,7 @@ export default function AllWorkoutsScreen() {
   const isLoading = isLoadingWorkouts || isLoadingCategories
 
   return (
-    <SafeAreaView style={{ paddingTop: Constants.statusBarHeight }} className="flex-1 bg-white">
+    <SafeAreaView className="flex-1 bg-white">
       {/* Header */}
       <View className="flex-row items-center justify-between border-b border-gray-100 p-4">
         <View className="flex-row items-center">

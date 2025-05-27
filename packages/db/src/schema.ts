@@ -202,6 +202,49 @@ export const workouts = pgTable(
   ],
 );
 
+export const workoutClasses = pgTable(
+  "workout_classes",
+  {
+    id: serial().primaryKey().notNull(),
+    name: varchar({ length: 50 }).notNull(),
+    description: text(),
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+      mode: "string",
+    }).default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    unique("workout_classes_name_key").on(table.name),
+  ],
+);
+
+export const workoutToClass = pgTable(
+  "workout_to_class",
+  {
+    workoutId: integer("workout_id").notNull(),
+    classId: integer("class_id").notNull(),
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+      mode: "string",
+    }).default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.workoutId, table.classId] }),
+    workoutIdx: index("idx_workout_to_class_workout").on(table.workoutId),
+    classIdx: index("idx_workout_to_class_class").on(table.classId),
+    workoutFk: foreignKey({
+      columns: [table.workoutId],
+      foreignColumns: [workouts.id],
+      name: "workout_to_class_workout_id_fkey",
+    }),
+    classFk: foreignKey({
+      columns: [table.classId],
+      foreignColumns: [workoutClasses.id],
+      name: "workout_to_class_class_id_fkey",
+    }),
+  }),
+);
+
 export const healthConditions = pgTable(
   "health_conditions",
   {
@@ -562,10 +605,10 @@ export const mealPlans = pgTable(
     id: serial().primaryKey().notNull(),
     userId: integer("user_id").notNull(),
     date: date().notNull(),
-    targetCalories: integer("target_calories").notNull(),
-    targetProtein: integer("target_protein").notNull(),
-    targetCarbs: integer("target_carbs").notNull(),
-    targetFats: integer("target_fats").notNull(),
+    targetCalories: numeric("target_calories", { precision: 10, scale: 2 }).notNull(),
+    targetProtein: numeric("target_protein", { precision: 10, scale: 2 }).notNull(),
+    targetCarbs: numeric("target_carbs", { precision: 10, scale: 2 }).notNull(),
+    targetFats: numeric("target_fats", { precision: 10, scale: 2 }).notNull(),
     createdAt: timestamp("created_at", {
       withTimezone: true,
       mode: "string",
@@ -714,10 +757,10 @@ export const recipes = pgTable(
     description: text(),
     servings: integer().notNull(),
     prepTimeMinutes: integer("prep_time_minutes"),
-    calories: integer().notNull(),
-    proteinGrams: integer("protein_grams").notNull(),
-    carbsGrams: integer("carbs_grams").notNull(),
-    fatsGrams: integer("fats_grams").notNull(),
+    calories: numeric({ precision: 8, scale: 2 }).notNull(),
+    proteinGrams: numeric({ precision: 8, scale: 2 }).notNull(),
+    carbsGrams: numeric({ precision: 8, scale: 2 }).notNull(), 
+    fatsGrams: numeric({ precision: 8, scale: 2 }).notNull(),
     imageUrl: text("image_url"),
     categoryId: integer("category_id"),
     rating: numeric({ precision: 2, scale: 1 }),

@@ -140,9 +140,6 @@ export async function analyzeBodyImages(
     }
 
     const result = JSON.parse(response.text) as BodyRatingResponse;
-
-    prettyPrint(result);
-
     return result;
   } catch (error) {
     console.error("Error analyzing body images:", error);

@@ -17,7 +17,7 @@ import * as MediaLibrary from 'expo-media-library'
 import { useRouter } from 'expo-router'
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'
 import { BlurView } from 'expo-blur'
-import { onboardingStore$ } from '@/stores/onboarding.store'
+import { DesiredBodyShape, onboardingStore$ } from '@/stores/onboarding.store'
 import { api } from '@/utils/api'
 import { getOrCreateDeviceId } from '@/utils/device-id'
 import { uploadToS3 } from '@/utils/s3'
@@ -121,6 +121,7 @@ export default function ProgressBackScreen() {
   // Get the mutations from tRPC
   const generatePhotoUploadUrl = api.user.generatePhotoUploadUrl.useMutation();
   const validateUploadedImage = api.user.validateUploadedImage.useMutation();
+  const desiredBodyShape = use$(onboardingStore$.onboarding.desiredShape) as DesiredBodyShape | undefined;
   const { mutate: imageTransformation } = api.user.imageTransformation.useMutation();
 
   useEffect(() => {
@@ -219,7 +220,11 @@ export default function ProgressBackScreen() {
         });
         setNextImageTransformationTime()
         // Navigate to next screen
-        router.push('/(onboarding)/analyzing?progress=true');
+        if (!desiredBodyShape) {
+          router.push('/(onboarding)/desired-shape?progress=true');
+        } else {
+          router.push('/(onboarding)/analyzing?progress=true');
+        }
       } else {
         Alert.alert('Upload Failed', 'Failed to upload image. Please try again.');
       }
