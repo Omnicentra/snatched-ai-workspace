@@ -38,7 +38,7 @@ export function usePostAuth({ onSuccess, onTrack }: UsePostAuthProps) {
           const info = await Purchases.logIn(session.user.email);
 
           // Set up analytics
-          void mixpanel.identify(session.user.id);
+          void mixpanel.identify(session.user.email);
           void mixpanel.getPeople().setOnce({
             email: session.user.email,
             name: session.user.name,

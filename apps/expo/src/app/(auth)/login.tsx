@@ -15,6 +15,7 @@ import { authClient } from "@/utils/auth";
 import { Ionicons } from "@expo/vector-icons";
 import { usePostAuth } from "@/hooks/usePostAuth";
 import type { CustomerInfo } from "react-native-purchases";
+import { logger } from "@/lib/logger";
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -22,6 +23,7 @@ export default function LoginScreen() {
 
   usePostAuth({
     onSuccess: (customerInfo: CustomerInfo) => {
+      logger.info("customerInfo", { ...customerInfo });
       if (customerInfo.activeSubscriptions.length > 0) {
         router.push("/(tabs)/home");
       } else {

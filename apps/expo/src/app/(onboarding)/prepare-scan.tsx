@@ -1,5 +1,5 @@
 import React from "react";
-import { Linking, SafeAreaView, ScrollView, Text, View } from "react-native";
+import { Linking, ScrollView, Text, View } from "react-native";
 import Constants from "expo-constants";
 import { useRouter } from "expo-router";
 import { InfoCard, OnboardingHeader, StyledButton } from "@/components/core";
@@ -8,6 +8,7 @@ import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { Analytics } from "@/lib/analytics";
 import { getOrCreateDeviceId } from "@/utils/device-id";
 import { authClient } from "@/utils/auth";
+import { SafeAreaViewWrapper } from "@/components/common/platform-safe-area-view";
 
 // Reusable Tip Card Component
 const TipCard = ({ icon, text }: { icon: React.ReactNode; text: string }) => (
@@ -50,11 +51,10 @@ function PrepareScanScreen() {
   };
 
   return (
-    <SafeAreaView
-      style={{ paddingTop: Constants.statusBarHeight }}
-      className="flex-1 bg-white"
+    <SafeAreaViewWrapper
+      className="flex-1 bg-white pb-4"
     >
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }} className="p-8">
+      <ScrollView contentContainerStyle={{ flexGrow: 1 }} contentContainerClassName="p-8">
         <OnboardingHeader progress={17 / 20} />
 
         {/* Hourglass Icon in Circle */}
@@ -193,7 +193,7 @@ function PrepareScanScreen() {
           </Text>
         </View>
       </View>
-    </SafeAreaView>
+    </SafeAreaViewWrapper>
   );
 }
 

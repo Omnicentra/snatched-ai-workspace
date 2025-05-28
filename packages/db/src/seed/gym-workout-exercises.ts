@@ -17,7 +17,7 @@ export async function seedGymWorkoutExercises() {
 
     // Define gym exercise names
     const gymExerciseNames = [
-      'Barbell Back Squat',
+      'Barbell Back Squats',
       'Deadlifts',
       'Barbell Bench Press',
       'Overhead Press',
@@ -28,20 +28,21 @@ export async function seedGymWorkoutExercises() {
       'Pull-ups',
       'Lat Pulldown',
       'Face Pulls',
-      'Romanian Deadlift',
-      'Bulgarian Split Squat',
+      'Romanian Deadlifts',
+      'Bulgarian Split Squats',
       'Hip Thrust',
       'Cable Woodchop',
       'Hanging Leg Raise',
       'Ab Wheel Rollout',
-      'Dumbbell Lateral Raise',
+      'Lateral Raises',
       'Tricep Pushdown',
-      'Dumbbell Curl',
+      'Dumbbell Curls',
       'Box Jumps',
       'Medicine Ball Slam',
       'Battle Ropes',
       'Burpees',
-      'Mountain Climbers'
+      'Mountain Climbers',
+      'Kettlebell Swings'
     ]
 
     // Get all gym exercises
@@ -59,7 +60,6 @@ export async function seedGymWorkoutExercises() {
       'Beginner Full Body',
       'Upper Body Push Power',
       'Back & Biceps Blast',
-      'Leg Day Power',
       'Glute Builder',
       'Core Strength & Power',
       'Foundation Core',
@@ -67,18 +67,16 @@ export async function seedGymWorkoutExercises() {
       'Beginner HIIT',
       'Powerlifting Basics',
       'Athletic Power',
-      'Shoulder Sculptor',
       'Functional Strength',
-      'Active Recovery',
+      // 'Active Recovery',
       'Lower Body Strength',
       'Booty Builder',
       'Leg Day',
       'Leg Day Intensity',
-      'Leg Day Power',
       'Lower Body Burn',
       'Lower Body Power',
       'Lower Body Strength',
-      'Arms & Shoulders Sculptor',
+      'Shoulder Sculptor', 
       'Upper Body Power',
       'Upper Body Powerhouse',
       'Upper Body Strength',
@@ -125,7 +123,7 @@ export async function seedGymWorkoutExercises() {
       {
         workoutId: workoutMap.get('Full Body Power'),
         exercises: [
-          { name: 'Barbell Back Squat', sets: 5, reps: 5, restSeconds: 180, orderIndex: 1 },
+          { name: 'Barbell Back Squats', sets: 5, reps: 5, restSeconds: 180, orderIndex: 1 },
           { name: 'Deadlifts', sets: 5, reps: 5, restSeconds: 180, orderIndex: 2 },
           { name: 'Barbell Bench Press', sets: 5, reps: 5, restSeconds: 180, orderIndex: 3 },
           { name: 'Barbell Row', sets: 4, reps: 8, restSeconds: 120, orderIndex: 4 },
@@ -138,10 +136,10 @@ export async function seedGymWorkoutExercises() {
       {
         workoutId: workoutMap.get('Beginner Full Body'),
         exercises: [
-          { name: 'Barbell Back Squat', sets: 3, reps: 10, restSeconds: 90, orderIndex: 1 },
+          { name: 'Barbell Back Squats', sets: 3, reps: 10, restSeconds: 90, orderIndex: 1 },
           { name: 'Dumbbell Shoulder Press', sets: 3, reps: 12, restSeconds: 60, orderIndex: 2 },
           { name: 'Lat Pulldown', sets: 3, reps: 12, restSeconds: 60, orderIndex: 3 },
-          { name: 'Romanian Deadlift', sets: 3, reps: 10, restSeconds: 90, orderIndex: 4 }
+          { name: 'Romanian Deadlifts', sets: 3, reps: 10, restSeconds: 90, orderIndex: 4 }
         ]
       },
 
@@ -153,7 +151,7 @@ export async function seedGymWorkoutExercises() {
           { name: 'Overhead Press', sets: 4, reps: 8, restSeconds: 120, orderIndex: 2 },
           { name: 'Incline Dumbbell Press', sets: 4, reps: 10, restSeconds: 90, orderIndex: 3 },
           { name: 'Dips', sets: 3, reps: 12, restSeconds: 90, orderIndex: 4 },
-          { name: 'Dumbbell Lateral Raise', sets: 3, reps: 15, restSeconds: 60, orderIndex: 5 },
+          { name: 'Lateral Raises', sets: 3, reps: 15, restSeconds: 60, orderIndex: 5 },
           { name: 'Tricep Pushdown', sets: 3, reps: 15, restSeconds: 60, orderIndex: 6 }
         ]
       },
@@ -166,7 +164,7 @@ export async function seedGymWorkoutExercises() {
           { name: 'Barbell Row', sets: 4, reps: 10, restSeconds: 90, orderIndex: 2 },
           { name: 'Lat Pulldown', sets: 3, reps: 12, restSeconds: 90, orderIndex: 3 },
           { name: 'Face Pulls', sets: 3, reps: 15, restSeconds: 60, orderIndex: 4 },
-          { name: 'Dumbbell Curl', sets: 3, reps: 12, restSeconds: 60, orderIndex: 5 }
+          { name: 'Dumbbell Curls', sets: 3, reps: 12, restSeconds: 60, orderIndex: 5 }
         ]
       },
 
@@ -174,9 +172,9 @@ export async function seedGymWorkoutExercises() {
       {
         workoutId: workoutMap.get('Leg Day Power'),
         exercises: [
-          { name: 'Barbell Back Squat', sets: 5, reps: 5, restSeconds: 180, orderIndex: 1 },
-          { name: 'Romanian Deadlift', sets: 4, reps: 8, restSeconds: 120, orderIndex: 2 },
-          { name: 'Bulgarian Split Squat', sets: 3, reps: 12, restSeconds: 90, orderIndex: 3 },
+          { name: 'Barbell Back Squats', sets: 5, reps: 5, restSeconds: 180, orderIndex: 1 },
+          { name: 'Romanian Deadlifts', sets: 4, reps: 8, restSeconds: 120, orderIndex: 2 },
+          { name: 'Bulgarian Split Squats', sets: 3, reps: 12, restSeconds: 90, orderIndex: 3 },
           { name: 'Hip Thrust', sets: 4, reps: 12, restSeconds: 90, orderIndex: 4 },
           { name: 'Box Jumps', sets: 3, reps: 8, restSeconds: 120, orderIndex: 5 }
         ]
@@ -209,9 +207,11 @@ export async function seedGymWorkoutExercises() {
       {
         workoutId: workoutMap.get('Powerlifting Basics'),
         exercises: [
-          { name: 'Barbell Back Squat', sets: 5, reps: 5, restSeconds: 180, orderIndex: 1 },
+          { name: 'Barbell Back Squats', sets: 5, reps: 5, restSeconds: 180, orderIndex: 1 },
           { name: 'Barbell Bench Press', sets: 5, reps: 5, restSeconds: 180, orderIndex: 2 },
-          { name: 'Deadlifts', sets: 5, reps: 5, restSeconds: 180, orderIndex: 3 }
+          { name: 'Deadlifts', sets: 5, reps: 5, restSeconds: 180, orderIndex: 3 },
+          // { name: 'Romanian Deadlifts', sets: 5, reps: 5, restSeconds: 180, orderIndex: 4 },
+          { name: 'Kettlebell Swings', sets: 3, reps: 10, restSeconds: 180, orderIndex: 4 }
         ]
       },
 
@@ -221,7 +221,7 @@ export async function seedGymWorkoutExercises() {
         exercises: [
           { name: 'Overhead Press', sets: 4, reps: 8, restSeconds: 120, orderIndex: 1 },
           { name: 'Dumbbell Shoulder Press', sets: 4, reps: 10, restSeconds: 90, orderIndex: 2 },
-          { name: 'Dumbbell Lateral Raise', sets: 3, reps: 15, restSeconds: 60, orderIndex: 3 },
+          { name: 'Lateral Raises', sets: 3, reps: 15, restSeconds: 60, orderIndex: 3 },
           { name: 'Face Pulls', sets: 3, reps: 15, restSeconds: 60, orderIndex: 4 }
         ]
       },
@@ -232,9 +232,20 @@ export async function seedGymWorkoutExercises() {
         exercises: [
           { name: 'Deadlifts', sets: 4, reps: 8, restSeconds: 120, orderIndex: 1 },
           { name: 'Pull-ups', sets: 3, reps: 8, restSeconds: 90, orderIndex: 2 },
-          { name: 'Bulgarian Split Squat', sets: 3, reps: 12, restSeconds: 90, orderIndex: 3 },
+          { name: 'Bulgarian Split Squats', sets: 3, reps: 12, restSeconds: 90, orderIndex: 3 },
           { name: 'Medicine Ball Slam', sets: 3, reps: 15, restSeconds: 60, orderIndex: 4 },
           { name: 'Battle Ropes', sets: 3, reps: 30, restSeconds: 60, orderIndex: 5 }
+        ]
+      },
+
+      // Foundation Core (Intermediate)
+      {
+        workoutId: workoutMap.get('Foundation Core'),
+        exercises: [
+          { name: 'Hanging Leg Raise', sets: 4, reps: 12, restSeconds: 90, orderIndex: 1 },
+          { name: 'Ab Wheel Rollout', sets: 4, reps: 10, restSeconds: 90, orderIndex: 2 },
+          { name: 'Cable Woodchop', sets: 3, reps: 15, restSeconds: 60, orderIndex: 3 },
+          { name: 'Medicine Ball Slam', sets: 3, reps: 15, restSeconds: 60, orderIndex: 4 }
         ]
       },
 
@@ -244,14 +255,15 @@ export async function seedGymWorkoutExercises() {
         exercises: [
           { name: 'Face Pulls', sets: 2, reps: 15, restSeconds: 45, orderIndex: 1 },
           { name: 'Cable Woodchop', sets: 2, reps: 12, restSeconds: 45, orderIndex: 2 },
-          { name: 'Romanian Deadlift', sets: 2, reps: 12, restSeconds: 45, orderIndex: 3 },
-          { name: 'Dumbbell Lateral Raise', sets: 2, reps: 12, restSeconds: 45, orderIndex: 4 }
+          { name: 'Romanian Deadlifts', sets: 2, reps: 12, restSeconds: 45, orderIndex: 3 },
+          { name: 'Lateral Raises', sets: 2, reps: 12, restSeconds: 45, orderIndex: 4 }
         ]
       }
     ]
 
     // Insert workout exercises
     for (const workoutData of workoutExercisesData) {
+      console.log('Workout:', workoutData.workoutId);
       const workoutId = workoutData.workoutId
       if (!workoutId) {
         console.warn('⚠️ Workout ID not found, skipping exercises')
@@ -259,6 +271,8 @@ export async function seedGymWorkoutExercises() {
       }
 
       for (const exercise of workoutData.exercises) {
+        console.log('Exercise:', exercise.name);
+        console.log('-'.repeat(70));
         const exerciseId = exerciseMap.get(exercise.name)
         if (!exerciseId) {
           console.warn(`⚠️ Exercise "${exercise.name}" not found, skipping`)

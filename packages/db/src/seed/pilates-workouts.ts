@@ -19,7 +19,7 @@ export async function seedPilatesWorkouts() {
         difficultyLevel: 'beginner',
         caloriesBurn: 150,
         rating: '4.8',
-        imageUrl: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b',
+        imageUrl: 'https://snatched-ai-bucket.s3.us-east-1.amazonaws.com/workouts/pilates/Core+Control+Pilates.png',
         categoryId: categoryMap.get('Core'),
       },
       {
@@ -29,7 +29,7 @@ export async function seedPilatesWorkouts() {
         difficultyLevel: 'advanced',
         caloriesBurn: 250,
         rating: '4.7',
-        imageUrl: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b',
+        imageUrl: 'https://snatched-ai-bucket.s3.us-east-1.amazonaws.com/workouts/pilates/Advanced+Core+Flow.png',
         categoryId: categoryMap.get('Core'),
       },
       {
@@ -39,7 +39,7 @@ export async function seedPilatesWorkouts() {
         difficultyLevel: 'intermediate',
         caloriesBurn: 180,
         rating: '4.7',
-        imageUrl: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b',
+        imageUrl: 'https://snatched-ai-bucket.s3.us-east-1.amazonaws.com/workouts/pilates/Core+Stability+%26+Balance.png',
         categoryId: categoryMap.get('Core'),
       },
       {
@@ -49,7 +49,7 @@ export async function seedPilatesWorkouts() {
         difficultyLevel: 'advanced',
         caloriesBurn: 220,
         rating: '4.9',
-        imageUrl: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b',
+        imageUrl: 'https://snatched-ai-bucket.s3.us-east-1.amazonaws.com/workouts/pilates/Deep+Core+Power.png',
         categoryId: categoryMap.get('Core'),
       },
 
@@ -61,7 +61,7 @@ export async function seedPilatesWorkouts() {
         difficultyLevel: 'intermediate',
         caloriesBurn: 200,
         rating: '4.9',
-        imageUrl: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b',
+        imageUrl: 'https://snatched-ai-bucket.s3.us-east-1.amazonaws.com/workouts/pilates/Total+Body+Pilates+Sculpt.png',
         categoryId: categoryMap.get('Full Body'),
       },
       {
@@ -71,7 +71,7 @@ export async function seedPilatesWorkouts() {
         difficultyLevel: 'advanced',
         caloriesBurn: 280,
         rating: '4.6',
-        imageUrl: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b',
+        imageUrl: 'https://snatched-ai-bucket.s3.us-east-1.amazonaws.com/workouts/pilates/Power+Pilates+Fusion.png',
         categoryId: categoryMap.get('Full Body'),
       },
       {
@@ -81,7 +81,7 @@ export async function seedPilatesWorkouts() {
         difficultyLevel: 'beginner',
         caloriesBurn: 160,
         rating: '4.8',
-        imageUrl: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b',
+        imageUrl: 'https://snatched-ai-bucket.s3.us-east-1.amazonaws.com/workouts/pilates/Beginner+Full+Body+Flow.png',
         categoryId: categoryMap.get('Full Body'),
       },
       {
@@ -91,7 +91,7 @@ export async function seedPilatesWorkouts() {
         difficultyLevel: 'advanced',
         caloriesBurn: 260,
         rating: '4.7',
-        imageUrl: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b',
+        imageUrl: 'https://snatched-ai-bucket.s3.us-east-1.amazonaws.com/workouts/pilates/Dynamic+Full+Body+Challenge.png',
         categoryId: categoryMap.get('Full Body'),
       },
 
@@ -103,7 +103,7 @@ export async function seedPilatesWorkouts() {
         difficultyLevel: 'intermediate',
         caloriesBurn: 180,
         rating: '4.7',
-        imageUrl: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b',
+        imageUrl: 'https://snatched-ai-bucket.s3.us-east-1.amazonaws.com/workouts/pilates/Lower+Body+Pilates+Tone.png',
         categoryId: categoryMap.get('Lower Body'),
       },
       {
@@ -113,7 +113,7 @@ export async function seedPilatesWorkouts() {
         difficultyLevel: 'advanced',
         caloriesBurn: 220,
         rating: '4.8',
-        imageUrl: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b',
+        imageUrl: 'https://snatched-ai-bucket.s3.us-east-1.amazonaws.com/workouts/pilates/Pilates+Leg+Sculptor.png',
         categoryId: categoryMap.get('Lower Body'),
       },
       {
@@ -123,7 +123,7 @@ export async function seedPilatesWorkouts() {
         difficultyLevel: 'beginner',
         caloriesBurn: 140,
         rating: '4.6',
-        imageUrl: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b',
+        imageUrl: 'https://snatched-ai-bucket.s3.us-east-1.amazonaws.com/workouts/pilates/Gentle+Lower+Body+%26+Core.png',
         categoryId: categoryMap.get('Lower Body'),
       },
       {
@@ -133,7 +133,7 @@ export async function seedPilatesWorkouts() {
         difficultyLevel: 'intermediate',
         caloriesBurn: 200,
         rating: '4.8',
-        imageUrl: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b',
+        imageUrl: 'https://snatched-ai-bucket.s3.us-east-1.amazonaws.com/workouts/pilates/Lower+Body+Power+%26+Balance.png',
         categoryId: categoryMap.get('Lower Body'),
       },
 
@@ -145,7 +145,7 @@ export async function seedPilatesWorkouts() {
         difficultyLevel: 'intermediate',
         caloriesBurn: 160,
         rating: '4.6',
-        imageUrl: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b',
+        imageUrl: 'https://snatched-ai-bucket.s3.us-east-1.amazonaws.com/workouts/pilates/Upper+Body+Pilates+Flow.png',
         categoryId: categoryMap.get('Upper Body'),
       },
       {
@@ -155,7 +155,7 @@ export async function seedPilatesWorkouts() {
         difficultyLevel: 'advanced',
         caloriesBurn: 230,
         rating: '4.7',
-        imageUrl: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b',
+        imageUrl: 'https://snatched-ai-bucket.s3.us-east-1.amazonaws.com/workouts/pilates/Advanced+Arm+%26+Core+Pilates.png',
         categoryId: categoryMap.get('Upper Body'),
       },
       {
@@ -165,7 +165,7 @@ export async function seedPilatesWorkouts() {
         difficultyLevel: 'beginner',
         caloriesBurn: 130,
         rating: '4.8',
-        imageUrl: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b',
+        imageUrl: 'https://snatched-ai-bucket.s3.us-east-1.amazonaws.com/workouts/pilates/Posture+Perfect+Pilates.png',
         categoryId: categoryMap.get('Upper Body'),
       },
       {
@@ -175,7 +175,7 @@ export async function seedPilatesWorkouts() {
         difficultyLevel: 'intermediate',
         caloriesBurn: 190,
         rating: '4.7',
-        imageUrl: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b',
+        imageUrl: 'https://snatched-ai-bucket.s3.us-east-1.amazonaws.com/workouts/pilates/Upper+Body+Strength+%26+Control.png',
         categoryId: categoryMap.get('Upper Body'),
       },
 
@@ -187,7 +187,7 @@ export async function seedPilatesWorkouts() {
         difficultyLevel: 'advanced',
         caloriesBurn: 300,
         rating: '4.9',
-        imageUrl: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b',
+        imageUrl: 'https://snatched-ai-bucket.s3.us-east-1.amazonaws.com/workouts/pilates/Pilates+HIIT+Blend.png',
         categoryId: categoryMap.get('HIIT'),
       },
       {
@@ -197,7 +197,7 @@ export async function seedPilatesWorkouts() {
         difficultyLevel: 'advanced',
         caloriesBurn: 320,
         rating: '4.8',
-        imageUrl: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b',
+        imageUrl: 'https://snatched-ai-bucket.s3.us-east-1.amazonaws.com/workouts/pilates/Power+Pilates+Intervals.png',
         categoryId: categoryMap.get('HIIT'),
       },
 
@@ -209,7 +209,7 @@ export async function seedPilatesWorkouts() {
         difficultyLevel: 'beginner',
         caloriesBurn: 100,
         rating: '4.8',
-        imageUrl: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b',
+        imageUrl: 'https://snatched-ai-bucket.s3.us-east-1.amazonaws.com/workouts/pilates/Gentle+Pilates+Stretch.png',
         categoryId: categoryMap.get('Recovery'),
       },
       {
@@ -219,7 +219,7 @@ export async function seedPilatesWorkouts() {
         difficultyLevel: 'beginner',
         caloriesBurn: 120,
         rating: '4.7',
-        imageUrl: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b',
+        imageUrl: 'https://snatched-ai-bucket.s3.us-east-1.amazonaws.com/workouts/pilates/Mind-Body+Pilates+Flow.png',
         categoryId: categoryMap.get('Recovery'),
       }
     ]

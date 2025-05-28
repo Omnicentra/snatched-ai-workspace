@@ -4,8 +4,7 @@ import { api } from '@/utils/api'
 import { MaterialCommunityIcons, SimpleLineIcons } from '@expo/vector-icons'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import React, { useState } from 'react'
-import { ActivityIndicator, Pressable, Text, View } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { ActivityIndicator, Pressable, SafeAreaView, Text, View } from 'react-native'
 import Share from 'react-native-share'
 
 interface WorkoutStats {
@@ -51,7 +50,7 @@ export default function WorkoutCompleteScreen() {
   const handleFinishWorkout = () => {
     if (!workoutId) return
     // Success - go back to workouts screen
-    router.push('/(tabs)/workouts')
+    router.replace('/(tabs)/workouts')
   }
 
   const handleSaveProgress = async () => {
@@ -68,7 +67,7 @@ export default function WorkoutCompleteScreen() {
       })
       
       // Success - go back to workouts screen
-      router.push('/(tabs)/workouts')
+      router.replace('/(tabs)/workouts')
     } catch (error) {
       console.error('Failed to save workout progress:', error)
     } finally {

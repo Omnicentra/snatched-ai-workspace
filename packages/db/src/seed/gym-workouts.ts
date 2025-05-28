@@ -19,7 +19,7 @@ export async function seedGymWorkouts() {
         difficultyLevel: 'advanced',
         caloriesBurn: 500,
         rating: '4.8',
-        imageUrl: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438',
+        imageUrl: 'https://snatched-ai-bucket.s3.us-east-1.amazonaws.com/workouts/gym/Full+Body+Power.png',
         categoryId: categoryMap.get('Full Body'),
       },
       {
@@ -29,7 +29,7 @@ export async function seedGymWorkouts() {
         difficultyLevel: 'beginner',
         caloriesBurn: 350,
         rating: '4.6',
-        imageUrl: 'https://images.unsplash.com/photo-1574680096145-d05b474e2155',
+        imageUrl: 'https://snatched-ai-bucket.s3.us-east-1.amazonaws.com/workouts/gym/Beginner+Full+Body.png',
         categoryId: categoryMap.get('Full Body'),
       },
 
@@ -41,7 +41,7 @@ export async function seedGymWorkouts() {
         difficultyLevel: 'advanced',
         caloriesBurn: 400,
         rating: '4.7',
-        imageUrl: 'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e',
+        imageUrl: 'https://snatched-ai-bucket.s3.us-east-1.amazonaws.com/workouts/gym/Upper+Body+Push+Power.png',
         categoryId: categoryMap.get('Upper Body'),
       },
       {
@@ -51,7 +51,7 @@ export async function seedGymWorkouts() {
         difficultyLevel: 'intermediate',
         caloriesBurn: 380,
         rating: '4.6',
-        imageUrl: 'https://images.unsplash.com/photo-1598266663439-2056e7d8f93d',
+        imageUrl: 'https://snatched-ai-bucket.s3.us-east-1.amazonaws.com/workouts/gym/Back+%26+Biceps+Blast.png',
         categoryId: categoryMap.get('Upper Body'),
       },
 
@@ -63,7 +63,7 @@ export async function seedGymWorkouts() {
         difficultyLevel: 'advanced',
         caloriesBurn: 450,
         rating: '4.9',
-        imageUrl: 'https://images.unsplash.com/photo-1574680096145-d05b474e2155',
+        imageUrl: 'https://snatched-ai-bucket.s3.us-east-1.amazonaws.com/workouts/gym/Leg+Day+Intensity.png',
         categoryId: categoryMap.get('Lower Body'),
       },
       {
@@ -73,7 +73,7 @@ export async function seedGymWorkouts() {
         difficultyLevel: 'intermediate',
         caloriesBurn: 350,
         rating: '4.8',
-        imageUrl: 'https://images.unsplash.com/photo-1534258936925-c58bed479fcb',
+        imageUrl: 'https://snatched-ai-bucket.s3.us-east-1.amazonaws.com/workouts/gym/Glute+Builder.png',
         categoryId: categoryMap.get('Lower Body'),
       },
 
@@ -85,7 +85,7 @@ export async function seedGymWorkouts() {
         difficultyLevel: 'advanced',
         caloriesBurn: 300,
         rating: '4.7',
-        imageUrl: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b',
+        imageUrl: 'https://snatched-ai-bucket.s3.us-east-1.amazonaws.com/workouts/gym/Core+Strength+%26+Power.png',
         categoryId: categoryMap.get('Core'),
       },
       {
@@ -95,7 +95,7 @@ export async function seedGymWorkouts() {
         difficultyLevel: 'beginner',
         caloriesBurn: 200,
         rating: '4.5',
-        imageUrl: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b',
+        imageUrl: 'https://snatched-ai-bucket.s3.us-east-1.amazonaws.com/workouts/gym/Foundation+Core.png',
         categoryId: categoryMap.get('Core'),
       },
 
@@ -107,7 +107,7 @@ export async function seedGymWorkouts() {
         difficultyLevel: 'advanced',
         caloriesBurn: 450,
         rating: '4.9',
-        imageUrl: 'https://images.unsplash.com/photo-1599058945522-28d584b6f0ff',
+        imageUrl: 'https://snatched-ai-bucket.s3.us-east-1.amazonaws.com/workouts/gym/Power+HIIT.png',
         categoryId: categoryMap.get('HIIT'),
       },
       {
@@ -117,7 +117,7 @@ export async function seedGymWorkouts() {
         difficultyLevel: 'beginner',
         caloriesBurn: 300,
         rating: '4.6',
-        imageUrl: 'https://images.unsplash.com/photo-1599058945522-28d584b6f0ff',
+        imageUrl: 'https://snatched-ai-bucket.s3.us-east-1.amazonaws.com/workouts/gym/Beginner+HIIT.png',
         categoryId: categoryMap.get('HIIT'),
       },
 
@@ -129,7 +129,7 @@ export async function seedGymWorkouts() {
         difficultyLevel: 'intermediate',
         caloriesBurn: 450,
         rating: '4.8',
-        imageUrl: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48',
+        imageUrl: 'https://snatched-ai-bucket.s3.us-east-1.amazonaws.com/workouts/gym/Powerlifting+Basics.png',
         categoryId: categoryMap.get('Full Body'),
       },
       {
@@ -139,7 +139,7 @@ export async function seedGymWorkouts() {
         difficultyLevel: 'advanced',
         caloriesBurn: 400,
         rating: '4.7',
-        imageUrl: 'https://images.unsplash.com/photo-1599058945522-28d584b6f0ff',
+        imageUrl: 'https://snatched-ai-bucket.s3.us-east-1.amazonaws.com/workouts/gym/Athletic+Power.png',
         categoryId: categoryMap.get('HIIT'),
       },
 
@@ -151,7 +151,7 @@ export async function seedGymWorkouts() {
         difficultyLevel: 'intermediate',
         caloriesBurn: 350,
         rating: '4.6',
-        imageUrl: 'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e',
+        imageUrl: 'https://snatched-ai-bucket.s3.us-east-1.amazonaws.com/workouts/gym/Shoulder+Sculptor.png',
         categoryId: categoryMap.get('Upper Body'),
       },
       {
@@ -161,7 +161,7 @@ export async function seedGymWorkouts() {
         difficultyLevel: 'intermediate',
         caloriesBurn: 400,
         rating: '4.7',
-        imageUrl: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438',
+        imageUrl: 'https://snatched-ai-bucket.s3.us-east-1.amazonaws.com/workouts/gym/Functional+Strength.png',
         categoryId: categoryMap.get('Full Body'),
       },
 
@@ -173,7 +173,7 @@ export async function seedGymWorkouts() {
         difficultyLevel: 'beginner',
         caloriesBurn: 200,
         rating: '4.5',
-        imageUrl: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b',
+        imageUrl: 'https://snatched-ai-bucket.s3.us-east-1.amazonaws.com/workouts/gym/Active+Recovery.png',
         categoryId: categoryMap.get('Full Body'),
       }
     ]
