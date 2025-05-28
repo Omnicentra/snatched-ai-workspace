@@ -125,7 +125,7 @@ function GoalScreen() {
       {/* Use ScrollView directly */}
       <ScrollView contentContainerStyle={{ flexGrow: 1 }} className="p-8">
         <OnboardingHeader
-          progress={1 / 20} // Adjust total steps
+          progress={1 / 19} // Adjust total steps
           title="What's your goal?"
           subtitle="We'll customize your plan based on what you want to achieve."
         />

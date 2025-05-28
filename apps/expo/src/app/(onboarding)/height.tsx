@@ -127,7 +127,7 @@ function HeightScreen() {
     >
       <View style={{ flexGrow: 1 }} className="p-8">
         <OnboardingHeader
-          progress={6 / 20}
+          progress={6 / 19}
           title="What's your height?"
           subtitle="This helps us calculate your ideal body proportions."
         />

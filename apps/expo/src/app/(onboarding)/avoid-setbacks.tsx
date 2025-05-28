@@ -78,7 +78,7 @@ function AvoidSetbacksScreen() {
     >
       <ScrollView contentContainerStyle={{ flexGrow: 1 }} className="p-6">
         <OnboardingHeader
-          progress={4 / 20}
+          progress={4 / 19}
           title="What have you tried before?"
           subtitle="We'll use this to tailor your plan to what works for you and skip what doesn't."
         />

@@ -1,15 +1,15 @@
-import React, { useState } from 'react'
-import { View, Text, SafeAreaView, Pressable } from 'react-native'
-import { useRouter } from 'expo-router'
-import Constants from 'expo-constants'
 import { OnboardingHeader, StyledButton } from '@/components/core'
-import { Ionicons } from '@expo/vector-icons'
-import * as Haptics from 'expo-haptics'
-import { onboardingStore$ } from '@/stores/onboarding.store'
-import { dietaryPreferenceEnum } from '@omc/validators/onboarding'
-import { z } from 'zod'
-import { use$ } from '@legendapp/state/react'
 import { withOnboardingTracking } from '@/components/core/withOnboardingTracking'
+import { onboardingStore$ } from '@/stores/onboarding.store'
+import { Ionicons } from '@expo/vector-icons'
+import { use$ } from '@legendapp/state/react'
+import { dietaryPreferenceEnum } from '@omc/validators/onboarding'
+import Constants from 'expo-constants'
+import * as Haptics from 'expo-haptics'
+import { useRouter } from 'expo-router'
+import React from 'react'
+import { Pressable, SafeAreaView, Text, View } from 'react-native'
+import { z } from 'zod'
 
 type DietaryPreference = z.infer<typeof dietaryPreferenceEnum>;
 
@@ -121,7 +121,7 @@ function DietaryPreferencesScreen() {
     >
       <View className="flex-1 px-8 pt-8">
         <OnboardingHeader
-          progress={14 / 20}
+          progress={12 / 19}
           title="What is your diet?"
           subtitle="We'll customize your meal plan based on your dietary preferences."
         />

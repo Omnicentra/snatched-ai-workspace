@@ -56,6 +56,7 @@ export const Analytics = {
   },
 
   trackUserSignIn: (deviceId: string, userProfile: UserProfile) => {
+    console.log({visitedScreens});
     // First, identify the user with their email
     void mixpanel.identify(userProfile.email);
     

@@ -69,7 +69,7 @@ function FrequencyScreen() {
     >
       <ScrollView contentContainerStyle={{ flexGrow: 1 }} className="p-6">
         <OnboardingHeader
-          progress={3 / 20}
+          progress={3 / 19}
           title="How often do you work out?"
           subtitle="We'll adjust your plan based on your current activity level."
         />

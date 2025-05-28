@@ -17,7 +17,6 @@ export default function OnboardingLayout() {
       <Stack.Screen name="transformation-intro"/>
       <Stack.Screen name="health" />
       <Stack.Screen name="frequency" />
-      <Stack.Screen name="cycle" />
       <Stack.Screen name="period-date" />
       <Stack.Screen name="cravings" />
       <Stack.Screen name="community" />

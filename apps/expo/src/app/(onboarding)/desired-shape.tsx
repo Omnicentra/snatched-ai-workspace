@@ -242,7 +242,7 @@ function DesiredShape() {
       <View className="flex-1">
         <View className="p-6 pb-0">
           <OnboardingHeader
-            progress={19 / 20}
+            progress={18 / 19}
             title="What's your desired body shape?"
             subtitle="Select the body type you'd like to achieve."
             className="mb-0"

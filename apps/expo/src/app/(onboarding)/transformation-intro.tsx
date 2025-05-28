@@ -1,4 +1,7 @@
 // app/(onboarding)/transformation-intro.tsx // <-- Assuming file name might be this based on component name
+import { OnboardingHeader, StyledButton } from "@/components/core"; // Assuming core components path
+import { withOnboardingTracking } from '@/components/core/withOnboardingTracking';
+import { useRouter } from "expo-router";
 import React, { useEffect } from "react";
 import { Dimensions, SafeAreaView, Text, View } from "react-native";
 import Animated, {
@@ -12,10 +15,6 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import Svg, { Circle, Path } from "react-native-svg";
-import Constants from "expo-constants";
-import { useRouter } from "expo-router";
-import { OnboardingHeader, StyledButton } from "@/components/core"; // Assuming core components path
-import { withOnboardingTracking } from '@/components/core/withOnboardingTracking';
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 // const AnimatedCircle = Animated.createAnimatedComponent(Circle); // Option 1: Animate Circle directly
@@ -104,7 +103,7 @@ function TransformationIntroScreen() {
 
         <OnboardingHeader
           showBack={true}
-          progress={10 / 20}
+          progress={10 / 19}
           title="Snatched AI creates long-term results" // Consistent title
           subtitle="Your final snatch" // Keeping subtitle from original code
           subtitleClassName="text-xl font-inter-bold"

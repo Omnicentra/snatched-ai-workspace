@@ -70,7 +70,7 @@ function BlockersScreen() {
     >
       <ScrollView contentContainerStyle={{ flexGrow: 1 }} className="p-8">
         <OnboardingHeader
-          progress={2 / 20} // Adjust total steps
+          progress={2 / 19} // Adjust total steps
           title="What's stopping you?"
           subtitle="Let us know your challenges so we can help you overcome them. Select all that apply."
         />

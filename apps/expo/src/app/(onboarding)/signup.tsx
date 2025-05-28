@@ -111,7 +111,7 @@ function SignupScreen() {
     >
       <ScrollView contentContainerStyle={{ flexGrow: 1 }} className="p-8">
         <OnboardingHeader
-          progress={18 / 20}
+          progress={17 / 19}
           title="Join Snatched AI"
           subtitle="Create your account to save your progress and get personalized recommendations."
         />

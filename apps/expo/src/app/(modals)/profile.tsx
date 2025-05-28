@@ -12,10 +12,11 @@ import * as Sentry from "@sentry/react-native";
 import * as Notifications from "expo-notifications";
 import Constants from "expo-constants";
 import { LinearGradient } from "expo-linear-gradient";
+import type { Href} from "expo-router";
 import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import { StatusBar } from "expo-status-bar";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert,
   Linking,
@@ -76,15 +77,23 @@ export default function ProfileScreen() {
       }
     });
     if (session?.user) {
-      // void ldc.identify({
-      //   kind: "user",
-      //   key: session.user.email,
-      //   name: session.user.name,
-      //   email: session.user.email,
-      // });
       setUserName(session.user.name);
     }
   }, [session?.user]);
+
+  const logout = useCallback((href: Href) => {
+    void authClient.signOut({
+      fetchOptions: {
+        onSuccess: () => {
+          void Purchases.logOut();
+          void mixpanel.track("log out");
+          void mixpanel.reset();
+          void ldc.flush();
+          router.replace(href);
+        },
+      },
+    });
+  }, []);
 
   const handleNotifications = async () => {
     try {
@@ -162,7 +171,7 @@ export default function ProfileScreen() {
               style: "destructive",
               onPress: () => {
                 void SecureStore.setItemAsync("onboarding_complete", "false");
-                router.replace("/(onboarding)");
+                void logout("/(onboarding)");
               },
             },
           ],
@@ -197,20 +206,6 @@ export default function ProfileScreen() {
       show: true,
     },
   ];
-
-  const logout = () => {
-    void authClient.signOut({
-      fetchOptions: {
-        onSuccess: () => {
-          void Purchases.logOut();
-          void mixpanel.track("log out");
-          void mixpanel.reset();
-          void ldc.flush();
-          router.replace("/(auth)/login");
-        },
-      },
-    });
-  };
 
   useEffect(() => {
     Sentry.captureMessage(resetOnboardingFlag.value ? "resetOnboardingFlag is ACTIVE" : "resetOnboardingFlag is INACTIVE", {
@@ -301,7 +296,7 @@ export default function ProfileScreen() {
         {/* Logout Button */}
         <Pressable
           className="mt-6 w-full items-center justify-center rounded-xl border border-red-200 bg-white py-4 active:bg-red-50"
-          onPress={logout}
+          onPress={() => logout("/(auth)/login")}
         >
           <Text className="font-inter-medium text-red-500">Log Out</Text>
         </Pressable>

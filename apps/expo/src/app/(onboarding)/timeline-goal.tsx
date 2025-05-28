@@ -84,7 +84,7 @@ function TimelineGoalScreen() {
     >
       <ScrollView contentContainerStyle={{ flexGrow: 1 }} className="p-6">
         <OnboardingHeader
-          progress={20 / 20}
+          progress={19 / 19}
           title="When do you want to achieve this?"
           subtitle="We'll create a timeline that works for your goals."
         />

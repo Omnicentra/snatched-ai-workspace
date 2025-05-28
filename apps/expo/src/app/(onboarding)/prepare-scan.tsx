@@ -55,7 +55,7 @@ function PrepareScanScreen() {
       className="flex-1 bg-white pb-4"
     >
       <ScrollView contentContainerStyle={{ flexGrow: 1 }} contentContainerClassName="p-8">
-        <OnboardingHeader progress={17 / 20} />
+        <OnboardingHeader progress={16 / 19} />
 
         {/* Hourglass Icon in Circle */}
         <View className="mb-8 items-center">

@@ -180,7 +180,7 @@ function IdealBodyScreen() {
       className="flex-1 bg-white"
     >
       <ScrollView contentContainerStyle={{ flexGrow: 1 }} className="p-6">
-        <OnboardingHeader progress={5 / 20} />
+        <OnboardingHeader progress={5 / 19} />
         <Text className="mb-5 font-inter-bold text-2xl text-black">
           Snatched AI helps you get your ideal body
         </Text>

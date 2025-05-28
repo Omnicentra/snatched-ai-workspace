@@ -12,7 +12,7 @@ import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   Alert,
   Animated,
@@ -39,10 +39,13 @@ export default function SpecialOfferScreen() {
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [lifetimePrice, setLifetimePrice] = useState<number>(30.29);
   const { data: session } = authClient.useSession();
-  const fadeAnim = new Animated.Value(0);
-  const scaleAnim = new Animated.Value(0.9);
-  const timerOpacity = new Animated.Value(0);
-  const timerScale = new Animated.Value(0.5);
+  
+  // Initialize animations with useRef to persist between renders
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.9)).current;
+  const timerOpacity = useRef(new Animated.Value(0)).current;
+  const timerScale = useRef(new Animated.Value(0.5)).current;
+  
   const frontImageKey = use$(onboardingStore$.onboarding.frontViewPhoto);
   // Initialize timer with 5 minutes (300 seconds)
   const [timeRemaining, setTimeRemaining] = useState(300);
@@ -85,7 +88,7 @@ export default function SpecialOfferScreen() {
         clearInterval(timerId);
       }
     };
-  }, [timeRemaining, router]);
+  }, [timeRemaining]);
 
   const fetchLifetimePackage = async () => {
     const offerings = await Purchases.getOfferings();
@@ -99,13 +102,17 @@ export default function SpecialOfferScreen() {
 
   useEffect(() => {
     // Sequence of animations
-    void fetchLifetimePackage()
-    Animated.sequence([
+    void fetchLifetimePackage();
+    
+    // Log animation start
+    logger.info("Starting special offer animations");
+    
+    const animationSequence = Animated.sequence([
       // Fade in and scale up main content
       Animated.parallel([
         Animated.timing(fadeAnim, {
           toValue: 1,
-          duration: 600,
+          duration: 800,
           useNativeDriver: true,
         }),
         Animated.spring(scaleAnim, {
@@ -119,7 +126,7 @@ export default function SpecialOfferScreen() {
       Animated.parallel([
         Animated.timing(timerOpacity, {
           toValue: 1,
-          duration: 400,
+          duration: 600,
           useNativeDriver: true,
         }),
         Animated.spring(timerScale, {
@@ -129,8 +136,23 @@ export default function SpecialOfferScreen() {
           useNativeDriver: true,
         }),
       ]),
-    ]).start();
-  }, []);
+    ]);
+
+    // Start the animation sequence
+    animationSequence.start((result) => {
+      if (result.finished) {
+        logger.info("Special offer animations completed successfully");
+      } else {
+        logger.warn("Special offer animations did not complete");
+      }
+    });
+
+    // Cleanup function
+    return () => {
+      animationSequence.stop();
+      logger.info("Cleaning up special offer animations");
+    };
+  }, [fadeAnim, scaleAnim, timerOpacity, timerScale]); // Add animation values as dependencies
 
   const handleSuccessfulPurchase = async () => {
     try {
@@ -355,7 +377,6 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
-    paddingTop: Constants.statusBarHeight,
   },
   mainContainer: {
     flex: 1,
@@ -383,6 +404,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     paddingVertical: 20,
+    opacity: 1,
   },
   cardGlow: {
     shadowColor: "#7C3AED",
@@ -431,12 +453,12 @@ const styles = StyleSheet.create({
   timerContainer: {
     alignItems: "center",
     marginBottom: 30,
-    // backgroundColor: "rgba(255, 255, 255, 0.1)",
     padding: 20,
     borderRadius: 16,
     width: width - 80,
-    // borderWidth: 0,
-    // borderColor: "rgba(255, 255, 255, 0.2)",
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.2)",
   },
   timerLabel: {
     fontFamily: "inter-medium",

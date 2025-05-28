@@ -46,7 +46,7 @@ function HealthScreen() {
 
     if (result.success) {
       onboardingStore$.onboarding.hasHealthConditions.set(selectedOption === "Yes");
-      router.push("/(onboarding)/cycle");
+      router.push("/(onboarding)/dietary-preferences");
     } else {
       console.error("Health validation failed:", result.error);
     }

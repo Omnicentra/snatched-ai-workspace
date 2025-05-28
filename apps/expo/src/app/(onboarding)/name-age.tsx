@@ -32,7 +32,7 @@ function NameAgeScreen() {
       }
       onboardingStore$.onboarding.age.set(Number(result.data.age));
 
-      router.push('/(onboarding)/prepare-scan');
+      router.push('/(onboarding)/desired-shape');
     } catch (error) {
       if (error instanceof Error) {
         setValidationError(error.message);
@@ -55,7 +55,7 @@ function NameAgeScreen() {
     >
       <ScrollView contentContainerStyle={{ flexGrow: 1 }} className="p-8">
         <OnboardingHeader
-          progress={16 / 20}
+          progress={15 / 19}
           title="Almost there"
           subtitle="Let's personalize your experience."
         />
