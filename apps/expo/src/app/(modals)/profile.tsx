@@ -28,6 +28,7 @@ import {
 } from "react-native";
 import type { PurchasesEntitlementInfo } from "react-native-purchases";
 import Purchases from "react-native-purchases";
+import { LaunchDarklyFlags } from "@/lib/launchdarkly";
 
 const MenuItem = ({
   icon,
@@ -64,7 +65,7 @@ export default function ProfileScreen() {
   const [subscriptionStatus, setSubscriptionStatus] =
     useState<PurchasesEntitlementInfo | null>(null);
   const resetOnboardingFlag = useBoolVariationDetail(
-    "can-reset-onboarding",
+    LaunchDarklyFlags.CAN_RESET_ONBOARDING,
     false,
   );
   const ldc = useLDClient();

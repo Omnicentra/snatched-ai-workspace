@@ -110,7 +110,7 @@ pnpm db:push
 
 ### 3. Configuring Better Auth to work with Expo
 
-By default, Better Auth is configured to work in your development environment. However, when you’re ready to deploy your app, you’ll need to configure `trustedOrigins` in the `auth` package. This is a list of origins permitted to make requests to the auth server. Be sure to add your Expo scheme to this list and update it in `auth/src/expo.ts` to match your Expo scheme, which is set to "expo" by default.
+By default, Better Auth is configured to work in your development environment. However, when you're ready to deploy your app, you'll need to configure `trustedOrigins` in the `auth` package. This is a list of origins permitted to make requests to the auth server. Be sure to add your Expo scheme to this list and update it in `auth/src/expo.ts` to match your Expo scheme, which is set to "expo" by default.
 
 ### 4a. When it's time to add a new UI component
 

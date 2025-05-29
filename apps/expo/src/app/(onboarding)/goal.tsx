@@ -10,6 +10,10 @@ import * as Haptics from 'expo-haptics'
 import { useRouter } from 'expo-router'
 import { goalEnum } from "@omc/validators/onboarding"
 import { withOnboardingTracking } from '@/components/core/withOnboardingTracking'
+import { ExperimentService } from '@/lib/launchdarkly'
+import { Analytics } from '@/lib/analytics'
+import { getOrCreateDeviceId } from '@/utils/device-id'
+import { logger } from '@/lib/logger';
 // Reusable Goal Card Component (put in components/GoalCard.tsx)
 // Use standard components with className
 const GoalCard = ({
@@ -108,12 +112,35 @@ function GoalScreen() {
     }
   }
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     // Validate all selected goals
     console.log(selectedGoals);
     const validGoals = selectedGoals.every(goal => goalEnum.safeParse(goal).success)
     if (selectedGoals.length && validGoals) {
-      router.push('/(onboarding)/blockers')
+      // A/B Test Logic: Check if user should skip blockers and frequency screens
+      const shouldSkip = ExperimentService.shouldSkipBlockersFrequency()
+      const deviceId = await getOrCreateDeviceId()
+      logger.info("shouldSkip", shouldSkip);
+      if (shouldSkip) {
+        // Test B: Skip blockers and frequency screens
+        Analytics.trackExperimentParticipation(
+          deviceId,
+          'optimize-onboarding',
+          'test_b_skip',
+        )
+        Analytics.trackOnboardingBlockersFrequencySkipped(deviceId)        
+        router.push('/(onboarding)/avoid-setbacks')
+      } else {
+        // Test A: Show blockers and frequency screens (current behavior)
+        Analytics.trackExperimentParticipation(
+          deviceId,
+          'optimize-onboarding',
+          'test_a_show',
+        )
+        Analytics.trackOnboardingBlockersFrequencyShown(deviceId)
+        
+        router.push('/(onboarding)/blockers')
+      }
     }
   }
 

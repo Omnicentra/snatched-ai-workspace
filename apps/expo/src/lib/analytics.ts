@@ -1,5 +1,5 @@
-import { logger } from './logger';
-import { mixpanel } from './utils';
+import { logger } from "./logger";
+import { mixpanel } from "./utils";
 
 export interface UserProfile {
   email: string;
@@ -14,17 +14,21 @@ export const Analytics = {
   trackOnboardingStart: (deviceId: string) => {
     // Reset visited screens when onboarding starts
     visitedScreens.clear();
-    void mixpanel.track('onboarding_started', {
+    void mixpanel.track("onboarding_started", {
       device_id: deviceId,
       timestamp: new Date().toISOString(),
     });
   },
 
-  trackOnboardingScreenView: (screenName: string, deviceId: string, userId?: string) => {
+  trackOnboardingScreenView: (
+    screenName: string,
+    deviceId: string,
+    userId?: string,
+  ) => {
     // Only track if this screen hasn't been visited in this session
     if (!visitedScreens.has(screenName)) {
       visitedScreens.add(screenName);
-      void mixpanel.track('onboarding_screen_viewed', {
+      void mixpanel.track("onboarding_screen_viewed", {
         screen_name: screenName,
         device_id: deviceId,
         user_id: userId,
@@ -40,8 +44,11 @@ export const Analytics = {
     }
   },
 
-  trackPhotoScanStart: (photoType: 'front' | 'side' | 'back', deviceId: string) => {
-    void mixpanel.track('photo_scan_started', {
+  trackPhotoScanStart: (
+    photoType: "front" | "side" | "back",
+    deviceId: string,
+  ) => {
+    void mixpanel.track("photo_scan_started", {
       photo_type: photoType,
       device_id: deviceId,
       timestamp: new Date().toISOString(),
@@ -49,17 +56,17 @@ export const Analytics = {
   },
 
   trackAllPhotosScanned: (deviceId: string) => {
-    void mixpanel.track('all_photos_scanned', {
+    void mixpanel.track("all_photos_scanned", {
       device_id: deviceId,
       timestamp: new Date().toISOString(),
     });
   },
 
   trackUserSignIn: (deviceId: string, userProfile: UserProfile) => {
-    console.log({visitedScreens});
+    console.log(visitedScreens.values());
     // First, identify the user with their email
     void mixpanel.identify(userProfile.email);
-    
+
     // Set user properties
     void mixpanel.getPeople().set({
       $email: userProfile.email,
@@ -69,7 +76,7 @@ export const Analytics = {
     });
 
     // Track the sign-in event
-    void mixpanel.track('user_signed_in', {
+    void mixpanel.track("user_signed_in", {
       device_id: deviceId,
       email: userProfile.email,
       timestamp: new Date().toISOString(),
@@ -77,7 +84,7 @@ export const Analytics = {
   },
 
   trackPaywallView: (deviceId: string, userId?: string) => {
-    void mixpanel.track('paywall_viewed', {
+    void mixpanel.track("paywall_viewed", {
       device_id: deviceId,
       user_id: userId,
       timestamp: new Date().toISOString(),
@@ -85,17 +92,17 @@ export const Analytics = {
   },
 
   trackSubscriptionPurchase: (
-    deviceId: string, 
+    deviceId: string,
     userId: string,
     planDetails: {
       planId: string;
       planName: string;
       price: number;
       currency: string;
-      interval: 'week' | 'month' | 'year';
-    }
+      interval: "week" | "month" | "year";
+    },
   ) => {
-    void mixpanel.track('subscription_purchased', {
+    void mixpanel.track("subscription_purchased", {
       device_id: deviceId,
       user_id: userId,
       ...planDetails,
@@ -104,7 +111,7 @@ export const Analytics = {
   },
 
   trackOnboardingComplete: (deviceId: string, userId?: string) => {
-    void mixpanel.track('onboarding_completed', {
+    void mixpanel.track("onboarding_completed", {
       device_id: deviceId,
       user_id: userId,
       visited_screens: Array.from(visitedScreens),
@@ -112,8 +119,12 @@ export const Analytics = {
     });
   },
 
-  trackPrepareScanAction: (deviceId: string, userId: string | undefined, action: 'continue' | 'skip') => {
-    void mixpanel.track('prepare_scan_action', {
+  trackPrepareScanAction: (
+    deviceId: string,
+    userId: string | undefined,
+    action: "continue" | "skip",
+  ) => {
+    void mixpanel.track("prepare_scan_action", {
       device_id: deviceId,
       user_id: userId,
       action,
@@ -122,7 +133,7 @@ export const Analytics = {
   },
 
   trackSpecialOfferView: (deviceId: string, userId?: string) => {
-    void mixpanel.track('special_offer_viewed', {
+    void mixpanel.track("special_offer_viewed", {
       device_id: deviceId,
       user_id: userId,
       discount_percentage: 80,
@@ -138,9 +149,9 @@ export const Analytics = {
       planName: string;
       price: number;
       currency: string;
-    }
+    },
   ) => {
-    void mixpanel.track('special_offer_purchased', {
+    void mixpanel.track("special_offer_purchased", {
       device_id: deviceId,
       user_id: userId,
       ...planDetails,
@@ -148,4 +159,34 @@ export const Analytics = {
       timestamp: new Date().toISOString(),
     });
   },
-}; 
+
+  // A/B Test Analytics
+  trackExperimentParticipation: (
+    deviceId: string,
+    experimentName: string,
+    variant: string,
+  ) => {
+    void mixpanel.track("experiment_participation", {
+      device_id: deviceId,
+      experiment_name: experimentName,
+      variant,
+      timestamp: new Date().toISOString(),
+    });
+  },
+
+  trackOnboardingBlockersFrequencySkipped: (deviceId: string) => {
+    void mixpanel.track("onboarding_blockers_frequency_skipped", {
+      device_id: deviceId,
+      experiment_variant: "test_b_skip",
+      timestamp: new Date().toISOString(),
+    });
+  },
+
+  trackOnboardingBlockersFrequencyShown: (deviceId: string) => {
+    void mixpanel.track("onboarding_blockers_frequency_shown", {
+      device_id: deviceId,
+      experiment_variant: "test_a_show",
+      timestamp: new Date().toISOString(),
+    });
+  },
+};
