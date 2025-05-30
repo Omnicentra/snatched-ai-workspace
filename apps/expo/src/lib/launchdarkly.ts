@@ -16,7 +16,7 @@ class LaunchDarklyClient {
       appVariant === 'development' ? 'mob-a16cc7b3-1fbb-465c-a5f4-d23c83d5858c' : 'mob-d140af0b-c264-48cf-be94-09afc4eb6682',
       AutoEnvAttributes.Enabled,
       {
-        debug: appVariant === 'development',
+        debug: false,
         applicationInfo: {
           id: "snatched-ai",
           version: Constants.expoConfig?.version,

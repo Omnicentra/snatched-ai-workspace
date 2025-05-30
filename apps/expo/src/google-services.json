@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "311261953643",
+    "project_id": "snatched-456209",
+    "storage_bucket": "snatched-456209.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:311261953643:android:9daf1d5671ea06a7d47b2e",
+        "android_client_info": {
+          "package_name": "com.omnicentra.snatched_ai"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "311261953643-kv1am6m37cdkm60r10b09t2pagbuae6i.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB8s1ZT47N90tPqun_FAyAAVOSLRsLcFVI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "311261953643-kv1am6m37cdkm60r10b09t2pagbuae6i.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

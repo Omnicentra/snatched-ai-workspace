@@ -233,23 +233,14 @@ function PaywallScreen() {
     ]);
   };
 
-  useEffect(() => {
-    void (async () => {
-      try {
-        const deviceId = await getOrCreateDeviceId();
-        const userId = session?.user.id;
-        Analytics.trackPaywallView(deviceId, userId);
-        await fetchPackages();
-      } catch (error) {
-        logger.error("Error initializing paywall:", error);
-      }
-    })();
-  }, []);
-
   const fetchPackages = async () => {
     try {
+      logger.debug("Fetching packages", Platform.OS);
       const offerings = await Purchases.getOfferings();
+      logger.debug("Offerings: ", offerings);
       const availablePackages = offerings.all.default?.availablePackages;
+
+      logger.debug("All packages: ", availablePackages);
 
       if (availablePackages?.length) {
         // Process packages and create plans
@@ -272,6 +263,7 @@ function PaywallScreen() {
         );
 
         if (weeklyPackage) {
+          logger.debug("Weekly package found", weeklyPackage.product);
           plansObj.weekly = {
             id: weeklyPackage.packageType.toLowerCase(),
             name: "Weekly",
@@ -282,6 +274,7 @@ function PaywallScreen() {
         }
 
         if (lifetimePackage) {
+          logger.debug("Lifetime package found", lifetimePackage.product);
           plansObj.lifetime = {
             id: "lifetime",
             name: "Lifetime",
@@ -300,13 +293,26 @@ function PaywallScreen() {
         setSelectedPackage(defaultPackage);
       }
     } catch (error) {
-      console.error("Error fetching packages:", error);
+      logger.error("Error fetching packages:", error);
       Alert.alert(
         "Error",
         "Failed to load subscription plans. Please try again.",
       );
     }
   };
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const deviceId = await getOrCreateDeviceId();
+        const userId = session?.user.id;
+        Analytics.trackPaywallView(deviceId, userId);
+        await fetchPackages();
+      } catch (error) {
+        logger.error("Error initializing paywall:", error);
+      }
+    })();
+  }, []);
 
   const makePurchase = async () => {
     if (!selectedPackage || isPurchasing) return;

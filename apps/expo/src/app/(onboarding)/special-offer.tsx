@@ -7,22 +7,22 @@ import { authClient } from "@/utils/auth";
 import { getOrCreateDeviceId } from "@/utils/device-id";
 import { use$ } from "@legendapp/state/react";
 import * as Sentry from "@sentry/react-native";
-import Constants from "expo-constants";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Alert,
   Animated,
   Dimensions,
-  SafeAreaView,
+  Platform,
   StyleSheet,
   Text,
-  View,
+  View
 } from "react-native";
 import Purchases from "react-native-purchases";
+import { SafeAreaViewWrapper } from "~/components/common/platform-safe-area-view";
 import { logger } from "~/lib/logger";
 
 const { width } = Dimensions.get("window");
@@ -37,7 +37,8 @@ function formatTime(seconds: number): string {
 export default function SpecialOfferScreen() {
   const router = useRouter();
   const [isPurchasing, setIsPurchasing] = useState(false);
-  const [lifetimePrice, setLifetimePrice] = useState<number>(30.29);
+  const [lifetimePrice, setLifetimePrice] = useState<string>('£30.29');
+  const [specialOfferPrice, setSpecialOfferPrice] = useState<string>('£5.99');
   const { data: session } = authClient.useSession();
   
   // Initialize animations with useRef to persist between renders
@@ -93,19 +94,23 @@ export default function SpecialOfferScreen() {
   const fetchLifetimePackage = async () => {
     const offerings = await Purchases.getOfferings();
     const allPackages = offerings.all.default?.availablePackages;
+    const specialPackages = offerings.all.special?.availablePackages;
+    const specialOfferPackage = specialPackages?.find(pkg => pkg.product.identifier.toLowerCase().includes("snatched_monthly_offer_80"));
     const lifetimePackage = allPackages?.find(pkg => pkg.product.identifier.toLowerCase().includes("lifetime"));
 
+    if (specialOfferPackage) {
+      logger.debug("Special offer package found", specialOfferPackage.product);
+      setSpecialOfferPrice(specialOfferPackage.product.priceString);
+    }
+
     if (lifetimePackage) {
-      setLifetimePrice(lifetimePackage.product.price);
+      setLifetimePrice(lifetimePackage.product.priceString);
     }
   }
 
   useEffect(() => {
     // Sequence of animations
     void fetchLifetimePackage();
-    
-    // Log animation start
-    logger.info("Starting special offer animations");
     
     const animationSequence = Animated.sequence([
       // Fade in and scale up main content
@@ -139,18 +144,11 @@ export default function SpecialOfferScreen() {
     ]);
 
     // Start the animation sequence
-    animationSequence.start((result) => {
-      if (result.finished) {
-        logger.info("Special offer animations completed successfully");
-      } else {
-        logger.warn("Special offer animations did not complete");
-      }
-    });
+    animationSequence.start();
 
     // Cleanup function
     return () => {
       animationSequence.stop();
-      logger.info("Cleaning up special offer animations");
     };
   }, [fadeAnim, scaleAnim, timerOpacity, timerScale]); // Add animation values as dependencies
 
@@ -253,7 +251,7 @@ export default function SpecialOfferScreen() {
       end={{ x: 1, y: 1 }}
       style={styles.container}
     >
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaViewWrapper style={styles.safeArea}>
         <View style={styles.mainContainer}>
           <View className="flex-row items-center justify-center">
             {/* Logo */}
@@ -302,14 +300,14 @@ export default function SpecialOfferScreen() {
             <Text style={styles.subtitle}>You will never see this again</Text>
 
             {/* Timer */}
-            <View style={styles.cardGlow}>
+            <View style={[styles.cardGlow, { width: '100%' }]}>
               <Animated.View 
                 style={[
-                  styles.timerContainer,
                   {
                     opacity: timerOpacity,
                     transform: [{ scale: timerScale }]
-                  }
+                  },
+                  styles.timerContainer,
                 ]}
               >
                 <Text style={styles.timerLabel}>This offer will expire in</Text>
@@ -337,9 +335,9 @@ export default function SpecialOfferScreen() {
                 <View style={styles.priceRow}>
                   <View>
                     <Text style={styles.planType}>Yearly</Text>
-                    <Text style={styles.planDuration}>12mo • £{lifetimePrice}</Text>
+                    <Text style={styles.planDuration}>12mo • {lifetimePrice}</Text>
                   </View>
-                  <Text style={styles.discountedPrice}>£5.99/mo</Text>
+                  <Text style={styles.discountedPrice}>{specialOfferPrice}/mo</Text>
                 </View>
               </LinearGradient>
             </View>
@@ -366,7 +364,7 @@ export default function SpecialOfferScreen() {
             </Text>
           </View>
         </View>
-      </SafeAreaView>
+      </SafeAreaViewWrapper>
     </LinearGradient>
   );
 }
@@ -455,10 +453,10 @@ const styles = StyleSheet.create({
     marginBottom: 30,
     padding: 20,
     borderRadius: 16,
-    width: width - 80,
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.2)",
+    width: '100%',
+    // backgroundColor: "rgba(255, 255, 255, 0.1)",
+    // borderWidth: 1,
+    // borderColor: "rgba(255, 255, 255, 0.2)",
   },
   timerLabel: {
     fontFamily: "inter-medium",

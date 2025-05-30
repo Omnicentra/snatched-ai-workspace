@@ -62,7 +62,7 @@ const createConfig = ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name,
   slug: "snatched-ai",
-  version: "1.1.8",
+  version: "1.1.9",
   orientation: "portrait",
   icon,
   scheme,
@@ -93,6 +93,7 @@ const createConfig = ({ config }: ConfigContext): ExpoConfig => ({
     barStyle: 'dark-content'
   },
   android: {
+    googleServicesFile: "./google-services.json",
     adaptiveIcon: {
       foregroundImage: "./assets/adaptive-icon.png",
       backgroundColor: "#ffffff",
@@ -107,6 +108,7 @@ const createConfig = ({ config }: ConfigContext): ExpoConfig => ({
       "android.permission.BODY_SENSORS",
       "android.permission.BODY_SENSORS_BACKGROUND",
       "android.permission.POST_NOTIFICATIONS",
+      "android.permission.BILLING",
     ],
     intentFilters: [
       {
@@ -145,6 +147,8 @@ const createConfig = ({ config }: ConfigContext): ExpoConfig => ({
           "./src/assets/images/body_positivity.png",
           "./src/assets/images/silhouette_front.png",
           "./src/assets/images/before_after.jpeg",
+          "./src/assets/images/before.jpeg",
+          "./src/assets/images/after.jpeg",
           "./src/assets/images/silhouette_side.png",
           "./src/assets/images/testimonials/image1.jpeg",
           "./src/assets/images/testimonials/image2.jpeg",

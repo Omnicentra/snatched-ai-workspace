@@ -138,7 +138,6 @@ export default function AppEntry() {
 
   // Check if all data is ready
   useEffect(() => {
-    logger.info("isSessionPending", { isSessionPending, session });
     if (!isSessionPending && !session) {
       setIsDataReady(true);
       return;

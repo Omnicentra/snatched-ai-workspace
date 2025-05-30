@@ -112,6 +112,8 @@ function RootLayout() {
     require("@/assets/images/body_positivity.png"),
     require("@/assets/images/silhouette_front.png"),
     require("@/assets/images/before_after.jpeg"),
+    require("@/assets/images/before.jpeg"),
+    require("@/assets/images/after.jpeg"),
     require("@/assets/images/silhouette_side.png"),
     require("@/assets/images/testimonials/image1.jpeg"),
     require("@/assets/images/testimonials/image2.jpeg"),
@@ -130,8 +132,10 @@ function RootLayout() {
     }
     if (Platform.OS === "ios") {
       Purchases.configure({ apiKey: revenuecatProjectAppleApiKey });
+      logger.info("RevenueCat configured for iOS");
     } else if (Platform.OS === "android") {
       Purchases.configure({ apiKey: revenuecatProjectGoogleApiKey });
+      logger.info("RevenueCat configured for Android");
     }
   }, []);
 
