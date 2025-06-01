@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Platform,
   SafeAreaView,
   ScrollView,
   Text,
@@ -129,7 +130,7 @@ function SignupScreen() {
                 icon={<Ionicons name="logo-apple" size={20} color="black" />}
                 className="bg-white"
               />
-              {appVariant !== "production" && (
+              {appVariant !== "production" || Platform.OS === "android" && (
                 <StyledButton
                   title="Continue with Google"
                   onPress={handleGoogleSignIn}

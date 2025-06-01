@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   Linking,
+  Platform,
   Text,
   View,
 } from "react-native";
@@ -128,7 +129,7 @@ export default function LoginScreen() {
                 icon={<Ionicons name="logo-apple" size={20} color="black" />}
                 className="bg-white"
               />
-              {appVariant !== "production" && (
+              {appVariant !== "production" || Platform.OS === "android" && (
                 <StyledButton
                   title="Login with Google"
                   onPress={handleGoogleSignIn}

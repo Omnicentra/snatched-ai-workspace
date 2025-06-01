@@ -32,7 +32,7 @@ function NameAgeScreen() {
       }
       onboardingStore$.onboarding.age.set(Number(result.data.age));
 
-      router.push('/(onboarding)/desired-shape');
+      router.push("/(onboarding)/desired-shape?skipped=true");
     } catch (error) {
       if (error instanceof Error) {
         setValidationError(error.message);
