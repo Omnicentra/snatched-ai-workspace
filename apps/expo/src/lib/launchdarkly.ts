@@ -2,6 +2,7 @@ import { ReactNativeLDClient, AutoEnvAttributes } from "@launchdarkly/react-nati
 import Constants from "expo-constants";
 import { appVariant } from "./utils";
 import { logger } from "./logger";
+import * as Sentry from "@sentry/react-native";
 
 class LaunchDarklyClient {
   private static instance: ReactNativeLDClient | null = null;
@@ -49,10 +50,18 @@ export const ExperimentService = {
         void launchDarklyClient.identify({ key: deviceId, kind: 'ld_device' });
       }
       
-      return launchDarklyClient.boolVariation(
+      const shouldSkip = launchDarklyClient.boolVariation(
         LaunchDarklyFlags.SKIP_BLOCKERS_FREQUENCY, 
         false // default to false (show screens)
       );
+      Sentry.captureMessage(shouldSkip ? 'SKIP_BLOCKERS_FREQUENCY' : 'SHOW_BLOCKERS_FREQUENCY', {
+        level: 'info',
+        extra: {
+          deviceId,
+          shouldSkip,
+        },
+      });
+      return shouldSkip;
     } catch (error) {
       logger.error('Error checking skip blockers frequency flag:', error);
       return false; // Default to showing screens on error

@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { ActivityIndicator, View } from "react-native";
+import { ActivityIndicator, Platform, View } from "react-native";
 import { Redirect } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import * as SplashScreen from "expo-splash-screen";
@@ -9,6 +9,7 @@ import { api } from "@/utils/api";
 import { authClient } from "@/utils/auth";
 import { useLDClient } from "@launchdarkly/react-native-client-sdk";
 import * as Sentry from "@sentry/react-native";
+import { getOrCreateDeviceId } from "@/utils/device-id";
 
 // Check onboarding completion status from SecureStore
 const checkOnboardingStatus = async () => {
@@ -171,17 +172,24 @@ export default function AppEntry() {
         // Check onboarding status
         const completed = await checkOnboardingStatus();
         setIsOnboardingComplete(completed);
+        const deviceId = await getOrCreateDeviceId();
 
         // Hide splash screen only after data is ready
         if (isDataReady) {
           if (session?.user) {
             // Identify user with LaunchDarkly
             void ldc.identify({
-              kind: "user",
-              key: session.user.email,
-              name: session.user.name,
-              email: session.user.email,
-              avatar: session.user.image ?? "",
+              kind: "multi",
+              user: {
+                key: session.user.email,
+                name: session.user.name,
+                email: session.user.email,
+                avatar: session.user.image ?? "",
+              },
+              device: {
+                key: deviceId,
+                type: Platform.OS,
+              },
             });
           }
           await SplashScreen.hideAsync();

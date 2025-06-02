@@ -41,7 +41,7 @@ function CommunityScreen() {
           </Text>
 
           <Text className="font-inter-regular mb-8 text-center text-lg text-gray-600">
-            Over 1,000+ queens are already stretching, flexing, and slaying
+            Over <Text className="font-inter-bold text-purple-600">1,000+ queens</Text> are already stretching, flexing, and slaying
             their way through pilates, yoga, and at-home workouts, and getting
             snatched!
           </Text>

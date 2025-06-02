@@ -1,14 +1,15 @@
+import type { CustomerInfo } from "react-native-purchases";
+import { useEffect } from "react";
+import { Platform } from "react-native";
+import Purchases from "react-native-purchases";
+import * as Device from "expo-device";
+import { logger } from "@/lib/logger";
 import { mixpanel } from "@/lib/utils";
 import { api } from "@/utils/api";
 import { authClient } from "@/utils/auth";
 import { getOrCreateDeviceId } from "@/utils/device-id";
 import { useLDClient } from "@launchdarkly/react-native-client-sdk";
 import * as Sentry from "@sentry/react-native";
-import * as Device from "expo-device";
-import { useEffect } from "react";
-import { Platform } from "react-native";
-import type { CustomerInfo } from "react-native-purchases";
-import Purchases from "react-native-purchases";
 
 interface UsePostAuthProps {
   onSuccess?: (info: CustomerInfo) => void;
@@ -47,20 +48,31 @@ export function usePostAuth({ onSuccess, onTrack }: UsePostAuthProps) {
             device_type: Platform.OS,
             device_name: Device.deviceName,
           });
-          
+
           // Set up Sentry
           Sentry.setUser({
             email: session.user.email,
             id: session.user.id,
           });
 
+          logger.debug("LaunchDarkly context", ldc.getContext());
           // Set up LaunchDarkly
-          void ldc.identify({
-            kind: "user",
-            key: session.user.email,
-            name: session.user.name,
-            email: session.user.email,
-          });
+          void ldc
+            .identify({
+              kind: "multi",
+              user: {
+                key: session.user.email,
+                name: session.user.name,
+                email: session.user.email,
+              },
+              device: {
+                key: deviceId,
+                type: Platform.OS,
+              },
+            })
+            .then(() => {
+              logger.debug("LaunchDarkly context", ldc.getContext());
+            });
 
           // Call success callback if provided
           onSuccess?.(info.customerInfo);

@@ -16,7 +16,6 @@ import {
   Alert,
   Animated,
   Dimensions,
-  Platform,
   StyleSheet,
   Text,
   View
@@ -38,7 +37,7 @@ export default function SpecialOfferScreen() {
   const router = useRouter();
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [lifetimePrice, setLifetimePrice] = useState<string>('£30.29');
-  const [specialOfferPrice, setSpecialOfferPrice] = useState<string>('£5.99');
+  const [specialOfferPrice, setSpecialOfferPrice] = useState<string>('£19.99');
   const { data: session } = authClient.useSession();
   
   // Initialize animations with useRef to persist between renders
@@ -85,9 +84,7 @@ export default function SpecialOfferScreen() {
 
     // Cleanup function
     return () => {
-      if (timerId) {
-        clearInterval(timerId);
-      }
+      clearInterval(timerId);
     };
   }, [timeRemaining]);
 
@@ -95,7 +92,7 @@ export default function SpecialOfferScreen() {
     const offerings = await Purchases.getOfferings();
     const allPackages = offerings.all.default?.availablePackages;
     const specialPackages = offerings.all.special?.availablePackages;
-    const specialOfferPackage = specialPackages?.find(pkg => pkg.product.identifier.toLowerCase().includes("snatched_monthly_offer_80"));
+    const specialOfferPackage = specialPackages?.find(pkg => pkg.product.identifier.toLowerCase().includes("snatched_yearly_offer_80"));
     const lifetimePackage = allPackages?.find(pkg => pkg.product.identifier.toLowerCase().includes("lifetime"));
 
     if (specialOfferPackage) {
@@ -189,7 +186,7 @@ export default function SpecialOfferScreen() {
 
       // Find the special offer package
       const specialOfferPackage = availablePackages.find(
-        (pkg) => pkg.product.identifier === "snatched_monthly_offer_80"
+        (pkg) => pkg.product.identifier === "snatched_yearly_offer_80"
       );
 
       if (!specialOfferPackage) {
@@ -212,7 +209,7 @@ export default function SpecialOfferScreen() {
           planName: specialOfferPackage.product.identifier,
           price: specialOfferPackage.product.price,
           currency: specialOfferPackage.product.currencyCode,
-          interval: "month",
+          interval: "year",
         });
 
         // Track special offer purchase separately
@@ -300,7 +297,7 @@ export default function SpecialOfferScreen() {
             <Text style={styles.subtitle}>You will never see this again</Text>
 
             {/* Timer */}
-            <View style={[styles.cardGlow, { width: '100%' }]}>
+            <View style={[styles.cardGlow, { width: '100%', flexGrow: 1, justifyContent: 'center', alignItems: 'center' }]}>
               <Animated.View 
                 style={[
                   {
@@ -331,13 +328,16 @@ export default function SpecialOfferScreen() {
                 end={{ x: 1, y: 1 }}
                 style={[styles.priceBox, styles.cardBorder]}
               >
-                <Text style={styles.priceLabel}>LOWEST PRICE EVER</Text>
+                <Text style={styles.priceLabel}>YEARLY PLAN • 80% OFF</Text>
                 <View style={styles.priceRow}>
                   <View>
-                    <Text style={styles.planType}>Yearly</Text>
-                    <Text style={styles.planDuration}>12mo • {lifetimePrice}</Text>
+                    <Text style={styles.planType}>Lifetime Access</Text>
+                    <Text style={styles.planDuration}>Regular • {lifetimePrice}</Text>
                   </View>
-                  <Text style={styles.discountedPrice}>{specialOfferPrice}/mo</Text>
+                  <View>
+                    <Text style={styles.discountedPrice}>{specialOfferPrice}</Text>
+                    <Text style={styles.planDuration}>per year</Text>
+                  </View>
                 </View>
               </LinearGradient>
             </View>
@@ -450,8 +450,9 @@ const styles = StyleSheet.create({
   },
   timerContainer: {
     alignItems: "center",
-    marginBottom: 30,
-    padding: 20,
+    justifyContent: "center",
+    // marginBottom: 30,
+    // padding: 20,
     borderRadius: 16,
     width: '100%',
     // backgroundColor: "rgba(255, 255, 255, 0.1)",

@@ -111,8 +111,15 @@ const TestimonialCarousel = () => {
             ]}
             className="rounded-2xl bg-white/90 p-6 shadow-lg shadow-purple-500/30"
           >
+            {/* Stars Row */}
+            <View className="mb-2 flex-row">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <Text key={star} className="text-xl">⭐</Text>
+              ))}
+            </View>
+
             {/* Large pink quote mark */}
-            <Text className="font-inter-bold text-5xl text-pink-200">"</Text>
+            {/* <Text className="font-inter-bold text-5xl text-pink-200">"</Text> */}
 
             <View className="mb-6">
               <Text className="font-inter-medium text-lg leading-8 text-gray-900">
