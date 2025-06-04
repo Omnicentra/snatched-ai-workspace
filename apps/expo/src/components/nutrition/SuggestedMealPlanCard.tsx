@@ -1,25 +1,40 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { useRouter } from "expo-router";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { nutritionStore$ } from "@/stores/nutrition.store";
 import { api } from "@/utils/api";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { use$ } from "@legendapp/state/react";
 
 export const SuggestedMealPlanCard = () => {
   const router = useRouter();
-  const { data: mealPlanData, isLoading } = api.nutrition.getTodaysMealPlan.useQuery();
+  const isRegenerating = use$(nutritionStore$.isRegenerating);
+  const { data: mealPlanData, isLoading: isLoadingMealPlan } =
+    api.nutrition.getTodaysMealPlan.useQuery();
 
   const navigateToMealPlan = () => {
     router.push("/(modals)/meal-plan" as const);
   };
 
+  // Show loading if either the query is loading or the mutation is updating with regeneration
+  const isLoading = useMemo(
+    () => isLoadingMealPlan || isRegenerating,
+    [isLoadingMealPlan, isRegenerating],
+  );
+
   return (
-    <View className="mb-8 rounded-3xl bg-white pt-6 px-6 pb-2 shadow-sm">
+    <View className="mb-8 rounded-3xl bg-white px-6 pb-2 pt-6 shadow-sm">
       <Text className="font-inter-bold mb-6 text-lg text-black">
         Suggested Meal Plan
       </Text>
       {isLoading ? (
         <View className="items-center justify-center py-4">
           <ActivityIndicator color="#F472B6" />
+          {isRegenerating && (
+            <Text className="font-inter-medium mt-2 text-sm text-gray-500">
+              Regenerating meal plan...
+            </Text>
+          )}
         </View>
       ) : !mealPlanData ? (
         <View className="items-center justify-center py-4">
@@ -47,14 +62,14 @@ export const SuggestedMealPlanCard = () => {
                 </Text>
               </View>
             </View>
-            <Text className="font-inter text-sm text-gray-500 ">
-            • {mealPlanData.mealPlan.targetProtein}g protein{'\n'}
-            • {mealPlanData.mealPlan.targetCarbs}g carbs {'\n'}
-            • {mealPlanData.mealPlan.targetFats}g fats
+            <Text className="font-inter text-sm text-gray-500">
+              • {mealPlanData.mealPlan.targetProtein}g protein{"\n"}•{" "}
+              {mealPlanData.mealPlan.targetCarbs}g carbs {"\n"}•{" "}
+              {mealPlanData.mealPlan.targetFats}g fats
             </Text>
           </View>
           <Pressable
-            className="rounded-full bg-black px-5 py-2.5 self-end"
+            className="self-end rounded-full bg-black px-5 py-2.5"
             onPress={navigateToMealPlan}
           >
             <Text className="font-inter-medium text-sm text-white">View</Text>
@@ -63,4 +78,4 @@ export const SuggestedMealPlanCard = () => {
       )}
     </View>
   );
-}; 
+};

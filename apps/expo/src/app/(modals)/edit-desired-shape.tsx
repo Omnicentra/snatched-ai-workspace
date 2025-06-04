@@ -16,6 +16,7 @@ import { use$ } from "@legendapp/state/react";
 import Constants from "expo-constants";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import React, { useRef, useState } from "react";
 import type {
   NativeScrollEvent,
@@ -26,14 +27,13 @@ import {
   Dimensions,
   FlatList,
   Pressable,
-  SafeAreaView,
   ScrollView,
   Text,
-  View,
+  View
 } from "react-native";
-import { StatusBar } from "expo-status-bar";
 import { z } from "zod";
 
+import { workoutStore } from "@/stores/workout.store";
 import { desiredBodyShapeEnum } from "@omc/validators/onboarding";
 import { LinearGradient } from "expo-linear-gradient";
 
@@ -177,7 +177,22 @@ export default function EditDesiredShapeScreen() {
   const currentShape = use$(onboardingStore$.onboarding.desiredShape);
   const [selectedShapeId, setSelectedShapeId] = useState<DesiredBodyShape | null>(currentShape);
   const flatListRef = useRef<FlatList>(null);
-  const updateFitnessGoalsMutation = api.user.updateFitnessGoals.useMutation();
+  const utils = api.useUtils();
+  const {mutate: updateFitnessGoals} = api.user.updateFitnessGoals.useMutation({
+    onMutate: () => {
+      workoutStore.isRegenerating.set(true);
+    },
+    onSuccess: () => {
+      // Refetch the current week plan when fitness goals are updated with regeneration
+      void utils.workout.getCurrentWeekPlan.invalidate().finally(() => {
+        workoutStore.isRegenerating.set(false);
+      });
+    },
+    onError: () => {
+      Alert.alert("Error", "Failed to update fitness goals. Please try again.");
+      workoutStore.isRegenerating.set(false);
+    },
+  });
 
   const handleSave = () => {
     if (!selectedShapeId || selectedShapeId === currentShape) {
@@ -195,7 +210,7 @@ export default function EditDesiredShapeScreen() {
           onPress: () => {
             // Update local store and database without regenerating plans
             onboardingStore$.onboarding.desiredShape.set(selectedShapeId);
-            updateFitnessGoalsMutation.mutate({
+            updateFitnessGoals({
               desiredShape: selectedShapeId,
               regeneratePlans: false,
             });
@@ -208,7 +223,7 @@ export default function EditDesiredShapeScreen() {
           onPress: () => {
             // Update local store and database, triggering plan regeneration
             onboardingStore$.onboarding.desiredShape.set(selectedShapeId);
-            updateFitnessGoalsMutation.mutate({
+            updateFitnessGoals({
               desiredShape: selectedShapeId,
               regeneratePlans: true,
             });

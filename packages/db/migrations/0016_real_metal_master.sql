@@ -1,0 +1,2 @@
+ALTER TABLE "fitness_goals" ADD CONSTRAINT "fitness_goals_user_id_unique" UNIQUE("user_id");--> statement-breakpoint
+ALTER TABLE "meal_schedule" ADD CONSTRAINT "meal_schedule_plan_type_time_key" UNIQUE("meal_plan_id","meal_type");

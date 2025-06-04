@@ -13,6 +13,7 @@ export interface NutritionData {
     carbs: number;
     fats: number;
   };
+  isRegenerating: boolean;
 }
 
 const initialState: NutritionData = {
@@ -22,9 +23,22 @@ const initialState: NutritionData = {
     carbs: 115,
     fats: 50,
   },
+  isRegenerating: false,
 };
 
 export const nutritionStore$ = observable<NutritionData>(initialState);
+
+export const resetNutritionStore = () => {
+  nutritionStore$.set({
+    loggedMeals: {},
+    dailyTargets: {
+      protein: 144,
+      carbs: 115,
+      fats: 50,
+    },
+    isRegenerating: false,
+  });
+};
 
 // Persist the observable
 syncObservable(nutritionStore$, {

@@ -29,17 +29,17 @@ export async function seedRecipeCategories() {
     },
     {
       id: 4,
-      name: "Snacks",
+      name: "Snack",
       description: "Healthy snacks and small bites between meals",
     },
     {
       id: 5,
-      name: "Desserts",
+      name: "Dessert",
       description: "Healthier dessert options for occasional treats",
     },
     {
       id: 6,
-      name: "Smoothies",
+      name: "Smoothie",
       description: "Nutritious and delicious smoothies and drinks",
     },
     {

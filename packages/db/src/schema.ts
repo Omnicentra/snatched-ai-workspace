@@ -351,7 +351,7 @@ export const fitnessGoals = pgTable(
   "fitness_goals",
   {
     id: serial().primaryKey().notNull(),
-    userId: integer("user_id").notNull(),
+    userId: integer("user_id").unique().notNull(),
     desiredShape: varchar("desired_shape", { length: 50 }).notNull(),
     timelineWeeks: integer("timeline_weeks").notNull().default(12),
     createdAt: timestamp("created_at", {
@@ -377,21 +377,6 @@ export const fitnessGoals = pgTable(
       "fitness_goals_timeline_weeks_check",
       sql`timeline_weeks
       > 0`,
-    ),
-    check(
-      "fitness_goals_body_tone_preference_check",
-      sql`(body_tone_preference >= 0)
-          AND (body_tone_preference <= 100)`,
-    ),
-    check(
-      "fitness_goals_style_preference_check",
-      sql`(style_preference >= 0)
-          AND (style_preference <= 100)`,
-    ),
-    check(
-      "fitness_goals_body_ratio_preference_check",
-      sql`(body_ratio_preference >= 0.65)
-          AND (body_ratio_preference <= 0.85)`,
     ),
   ],
 );
@@ -534,6 +519,10 @@ export const mealSchedule = pgTable(
       foreignColumns: [recipes.id],
       name: "meal_schedule_recipe_id_fkey",
     }),
+    unique("meal_schedule_plan_type_time_key").on(
+      table.mealPlanId,
+      table.mealType,
+    ),
   ],
 );
 

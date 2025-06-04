@@ -10,6 +10,8 @@ import { authClient } from "@/utils/auth";
 import { useLDClient } from "@launchdarkly/react-native-client-sdk";
 import * as Sentry from "@sentry/react-native";
 import { getOrCreateDeviceId } from "@/utils/device-id";
+import { resetWorkoutStore } from "@/stores/workout.store";
+import { resetNutritionStore } from "@/stores/nutrition.store";
 
 // Check onboarding completion status from SecureStore
 const checkOnboardingStatus = async () => {
@@ -177,6 +179,10 @@ export default function AppEntry() {
         const completed = await checkOnboardingStatus();
         setIsOnboardingComplete(completed);
         const deviceId = await getOrCreateDeviceId();
+        if (completed) {
+          resetWorkoutStore();
+          resetNutritionStore();
+        }
 
         // Hide splash screen only after data is ready
         if (isDataReady) {

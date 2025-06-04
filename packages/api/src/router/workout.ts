@@ -392,7 +392,6 @@ export const workoutRouter = {
 
       // Generate weekly workout plan using helper function
       const generatedPlan = await generateWeeklyWorkoutPlan(fitnessGoal?.desiredShape as DesiredShape);
-      prettyPrint(generatedPlan);
 
       // Fetch existing workouts for similarity check
       const existingWorkouts = await db.select().from(workouts).execute();

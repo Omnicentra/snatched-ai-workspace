@@ -23,12 +23,12 @@ type ScheduledMeal = MealPlanData["meals"][0];
 
 export default function NutritionPlanScreen() {
   const router = useRouter();
+  const dimensions = useWindowDimensions();
   const [showFoodOptionsModal, setShowFoodOptionsModal] = useState(false);
   const {
     data: mealPlanData,
     refetch,
   } = api.nutrition.getTodaysMealPlan.useQuery();
-  const dimensions = useWindowDimensions();
   const { data: recentMeals = [] } = api.nutrition.getRecentlyLoggedMeals.useQuery();
   const { mutate: generateMealPlan } = api.nutrition.generateMealPlan.useMutation({
     onSuccess: () => {

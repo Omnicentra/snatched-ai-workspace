@@ -18,6 +18,7 @@ import { dietaryPreferenceEnum } from "@omc/validators/onboarding";
 import { LinearGradient } from "expo-linear-gradient";
 import { StatusBar } from "expo-status-bar";
 import { z } from "zod";
+import { nutritionStore$ } from "@/stores/nutrition.store";
 
 type DietaryPreference = z.infer<typeof dietaryPreferenceEnum>;
 
@@ -101,7 +102,21 @@ export default function EditDietaryPreferencesScreen() {
   const router = useRouter();
   const currentDiet = use$(onboardingStore$.onboarding.diet) as DietaryPreference;
   const [selectedDiet, setSelectedDiet] = useState<DietaryPreference | null>(currentDiet);
-  const { mutate: updateDietaryPreferences } = api.user.updateDietaryPreferences.useMutation();
+  const utils = api.useUtils();
+  const { mutate: updateDietaryPreferences } = api.user.updateDietaryPreferences.useMutation({
+    onMutate: () => {
+      nutritionStore$.isRegenerating.set(true);
+    },
+    onSuccess: () => {
+      void utils.nutrition.getTodaysMealPlan.invalidate().finally(() => {
+        nutritionStore$.isRegenerating.set(false);
+      });
+    },
+    onError: () => {
+      Alert.alert("Error", "Failed to update dietary preferences. Please try again.");
+      nutritionStore$.isRegenerating.set(false);
+    },
+  });
 
   const handleSave = () => {
     if (!selectedDiet || selectedDiet === currentDiet) {

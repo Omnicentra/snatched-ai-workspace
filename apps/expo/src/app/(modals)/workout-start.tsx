@@ -15,6 +15,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Circle, Svg } from 'react-native-svg';
 import { LoadingScreen } from "@/components/core/LoadingScreen";
+import { formatTime } from '@omc/validators';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const PADDING = 34; // Total horizontal padding
@@ -226,13 +227,6 @@ export default function WorkoutStartScreen() {
     if (currentExerciseIndex > 0) {
       setCurrentExerciseIndex(prev => prev - 1);
     }
-  };
-
-  // Format time as MM:SS
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
   if (!workoutData || !currentExercise) {

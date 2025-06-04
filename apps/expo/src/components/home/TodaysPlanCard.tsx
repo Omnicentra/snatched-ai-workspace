@@ -1,13 +1,16 @@
+import { workoutStore } from "@/stores/workout.store";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { use$ } from "@legendapp/state/react";
+import { useRouter } from "expo-router";
 import React, { useMemo } from "react";
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import * as Progress from "react-native-progress";
-import { useRouter } from "expo-router";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 import { api } from "../../utils/api";
 
 export const TodaysPlanCard = () => {
   const router = useRouter();
+  const isRegenerating = use$(workoutStore.isRegenerating);
   const { data: weekPlan, isLoading: isLoadingPlan } =
     api.workout.getCurrentWeekPlan.useQuery();
 
@@ -28,14 +31,25 @@ export const TodaysPlanCard = () => {
     }
   };
 
+  // Show loading if either the query is loading or the mutation is updating with regeneration
+  const isLoading = useMemo(
+    () => isLoadingPlan || isRegenerating,
+    [isLoadingPlan, isRegenerating],
+  );
+
   return (
     <View className="mb-8 rounded-3xl bg-white p-6 shadow-sm">
       <Text className="font-inter-bold mb-6 text-lg text-black">
         Today's Plan
       </Text>
-      {isLoadingPlan ? (
+      {isLoading ? (
         <View className="items-center justify-center py-4">
           <ActivityIndicator color="#F472B6" />
+          {isRegenerating && (
+            <Text className="font-inter-medium mt-2 text-sm text-gray-500">
+              Regenerating workout plan...
+            </Text>
+          )}
         </View>
       ) : !weekPlan || !todaysWorkout ? (
         <View className="items-center justify-center py-4">
@@ -91,7 +105,7 @@ export const TodaysPlanCard = () => {
           </View>
           {todaysWorkout.completed === false && (
             <Pressable
-              className={`rounded-full px-5 py-2.5 bg-black`}
+              className={`rounded-full bg-black px-5 py-2.5`}
               onPress={navigateToWorkout}
               disabled={todaysWorkout.completed}
             >

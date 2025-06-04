@@ -2,6 +2,7 @@ import React from "react";
 import { Platform, Pressable, SafeAreaView, Text, View } from "react-native";
 import Constants from "expo-constants";
 import * as Haptics from "expo-haptics";
+import * as SecureStore from "expo-secure-store";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
@@ -29,6 +30,7 @@ function SplashScreen() {
 
   const handleLogin = () => {
     void Haptics.selectionAsync().then(() => {
+      void SecureStore.setItemAsync("onboarding_complete", "true");
       return session?.user
         ? router.replace("/(tabs)/home")
         : router.replace("/(auth)/login");

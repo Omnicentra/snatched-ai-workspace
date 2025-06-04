@@ -30,6 +30,13 @@ export const slugify = (str: string) => {
     .replace(/[^\w-]+/g, "");
 };
 
+// Format time as MM:SS
+export const formatTime = (seconds: number) => {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+};
+
 /**
  * Formats a PostgreSQL timestamp with timezone to 24-hour time format (HH:mm)
  * @param timestamp PostgreSQL timestamp string (e.g. "2025-05-04 11:54:44+00")

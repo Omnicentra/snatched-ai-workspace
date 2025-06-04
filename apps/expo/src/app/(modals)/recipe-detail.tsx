@@ -1,3 +1,8 @@
+import { LoadingScreen } from "@/components/core/LoadingScreen";
+import { api } from "@/utils/api";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import React, { useRef } from "react";
 import {
   Animated,
@@ -7,11 +12,6 @@ import {
   Text,
   View,
 } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { StatusBar } from "expo-status-bar";
-import { api } from "@/utils/api";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { LoadingScreen } from "@/components/core/LoadingScreen";
 
 import { formatPostgresTimestamp } from "@omc/validators";
 
@@ -113,34 +113,6 @@ const RecipeDetailScreen = () => {
   const defaultImage =
     "https://images.unsplash.com/photo-1495521821757-a1efb6729352?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80";
 
-  // Get meal time based on recipe title/category
-  const getMealTime = () => {
-    const title = recipe.title.toLowerCase();
-    if (
-      title.includes("breakfast") ||
-      title.includes("oatmeal") ||
-      title.includes("toast") ||
-      title.includes("parfait")
-    ) {
-      return "8:00 AM";
-    } else if (
-      title.includes("lunch") ||
-      title.includes("salad") ||
-      title.includes("wrap") ||
-      title.includes("bowl")
-    ) {
-      return "12:30 PM";
-    } else if (
-      title.includes("snack") ||
-      title.includes("protein") ||
-      title.includes("energy")
-    ) {
-      return "3:30 PM";
-    } else {
-      return "7:00 PM"; // dinner default
-    }
-  };
-
   return (
     <ScrollView className="flex-1 bg-background">
       <StatusBar style="dark" hidden={true} />
@@ -189,7 +161,7 @@ const RecipeDetailScreen = () => {
           </Text>
           <View className="flex-row items-center">
             <Text className="font-inter-medium mt-1 text-gray-500">
-              {getMealTime()}
+              {mealSchedule?.scheduledTime}
             </Text>
             {isLogged && loggedAt && (
               <View className="absolute right-0 rounded-full bg-green-100 px-3 py-1">

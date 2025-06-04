@@ -1,13 +1,12 @@
-import { Readable } from "stream";
 import { GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { TRPCError } from "@trpc/server";
 import { eq, sql } from "drizzle-orm";
 import sharp from "sharp";
+import { Readable } from "stream";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 
-import type { BodyRatingResponse } from "@omc/validators";
 import {
   fitnessGoals,
   mealPlans,
@@ -20,19 +19,22 @@ import {
   workoutPlans,
   workouts,
 } from "@omc/db/schema";
+import type { BodyRatingResponse } from "@omc/validators";
 import { prettyPrint } from "@omc/validators";
 import {
   desiredBodyShapeEnum,
-  dietaryPreferenceEnum,
-  stylePreferenceEnum,
+  dietaryPreferenceEnum
 } from "@omc/validators/onboarding";
 
-import type { ImageScansKey } from "../utils/types";
 import {
   generateMealPlanWithGemini,
   getOrCreateRecipe,
 } from "../lib/nutrition-helpers";
-import { createNewWorkoutWithExercises, findSimilarWorkout, generateWeeklyWorkoutPlan } from "../lib/workout-helpers";
+import {
+  createNewWorkoutWithExercises,
+  findSimilarWorkout,
+  generateWeeklyWorkoutPlan,
+} from "../lib/workout-helpers";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "../trpc";
 import { images } from "../utils/benchmark-images";
 import {
@@ -41,6 +43,7 @@ import {
   validateUploadedImage,
 } from "../utils/gemini";
 import { transformImage } from "../utils/openai";
+import type { ImageScansKey } from "../utils/types";
 
 type BodyShapeEnum = keyof typeof images;
 
@@ -403,6 +406,7 @@ export const userRouter = createTRPCRouter({
       const userId = Number(ctx.session.user.id);
       let dbWorkoutPlan: typeof workoutPlans.$inferSelect | undefined =
         undefined;
+
       // Update fitness goals in the database
       await ctx.db
         .insert(fitnessGoals)
@@ -425,23 +429,25 @@ export const userRouter = createTRPCRouter({
         const genWorkoutPlan = await generateWeeklyWorkoutPlan(
           input.desiredShape,
         );
-        ctx.logger.info("Generated workout plan", genWorkoutPlan.workouts);
+        // ctx.logger.info("Generated workout plan", genWorkoutPlan.workouts);
         // Check if there is an active workout plan for the user where the current date is between the start and end date
         dbWorkoutPlan = await ctx.db.query.workoutPlans.findFirst({
           where: (workoutPlans, { and, eq, gte, lte }) =>
             and(
               eq(workoutPlans.userId, userId),
-              gte(workoutPlans.startDate, new Date().toISOString()),
-              lte(workoutPlans.endDate, new Date().toISOString()),
+              lte(workoutPlans.startDate, new Date().toISOString()),
+              gte(workoutPlans.endDate, new Date().toISOString()),
               eq(workoutPlans.status, "active"),
             ),
         });
+
+        ctx.logger.info("dbWorkoutPlan", dbWorkoutPlan);
 
         const startDate = new Date();
         const endDate = new Date();
         endDate.setDate(startDate.getDate() + 6);
 
-        let result: typeof workoutPlans.$inferSelect[];
+        let result: (typeof workoutPlans.$inferSelect)[];
 
         if (dbWorkoutPlan) {
           // Update the workout plan
@@ -457,13 +463,16 @@ export const userRouter = createTRPCRouter({
             .returning();
         } else {
           // Create a new workout plan
-          result = await ctx.db.insert(workoutPlans).values({
-            userId: userId,
-            startDate: startDate.toISOString(),
-            endDate: endDate.toISOString(),
-            targetCaloriesBurn: genWorkoutPlan.targetCaloriesBurn,
-            status: "active",
-          }).returning();
+          result = await ctx.db
+            .insert(workoutPlans)
+            .values({
+              userId: userId,
+              startDate: startDate.toISOString(),
+              endDate: endDate.toISOString(),
+              targetCaloriesBurn: genWorkoutPlan.targetCaloriesBurn,
+              status: "active",
+            })
+            .returning();
         }
 
         if (!result[0]) {
@@ -484,22 +493,25 @@ export const userRouter = createTRPCRouter({
 
           // Get or create workout
           const insertedWorkout = similarWorkoutId
-          ? (existingWorkouts.find((w) => w.id === similarWorkoutId) ??
-              await createNewWorkoutWithExercises(ctx.s3, workout))
-          : await createNewWorkoutWithExercises(ctx.s3, workout);
+            ? (existingWorkouts.find((w) => w.id === similarWorkoutId) ??
+              (await createNewWorkoutWithExercises(ctx.s3, workout)))
+            : await createNewWorkoutWithExercises(ctx.s3, workout);
 
           // Upsert plan day entry
-          await ctx.db.insert(workoutPlanDays).values({
-            planId: result[0].id,
-            workoutId: insertedWorkout.id,
-            dayNumber,
-            completed: false,
-          }).onConflictDoUpdate({
-            target: [workoutPlanDays.planId, workoutPlanDays.dayNumber],
-            set: {
+          await ctx.db
+            .insert(workoutPlanDays)
+            .values({
+              planId: result[0].id,
               workoutId: insertedWorkout.id,
-            },
-          });
+              dayNumber,
+              completed: false,
+            })
+            .onConflictDoUpdate({
+              target: [workoutPlanDays.planId, workoutPlanDays.dayNumber],
+              set: {
+                workoutId: insertedWorkout.id,
+              },
+            });
 
           workoutsWithIds.push({
             dayNumber,
@@ -510,7 +522,7 @@ export const userRouter = createTRPCRouter({
           });
         }
       }
-      return { success: true };
+      return { success: true, regenerated: input.regeneratePlans };
     }),
 
   updateDietaryPreferences: protectedProcedure
@@ -538,7 +550,7 @@ export const userRouter = createTRPCRouter({
         // This would involve calling your AI service to regenerate meal plans
         // based on the new dietary preferences\
         const genMealPlan = await generateMealPlanWithGemini(input.diet);
-        console.log(genMealPlan);
+        // ctx.logger.info("Generated meal plan", genMealPlan.meals);
         // Replace the meal plan in the database or insert if one doesn't exist for the current date
         const [dbMealPlan] = await ctx.db
           .insert(mealPlans)
@@ -564,6 +576,7 @@ export const userRouter = createTRPCRouter({
         if (!dbMealPlan) {
           throw new Error("Failed to upsert meal plan");
         }
+        ctx.logger.info("dbMealPlan", dbMealPlan);
 
         // Get existing recipes for similarity check
         const existingRecipes = await ctx.db.select().from(recipes).execute();
@@ -589,11 +602,7 @@ export const userRouter = createTRPCRouter({
                 completed: false,
               })
               .onConflictDoUpdate({
-                target: [
-                  mealSchedule.mealPlanId,
-                  mealSchedule.mealType,
-                  mealSchedule.scheduledTime,
-                ],
+                target: [mealSchedule.mealPlanId, mealSchedule.mealType],
                 set: {
                   recipeId: recipe.id,
                 },
