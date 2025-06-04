@@ -88,11 +88,11 @@ export default function SpecialOfferScreen() {
     };
   }, [timeRemaining]);
 
-  const fetchLifetimePackage = async () => {
+  const fetchPackages = async () => {
     const offerings = await Purchases.getOfferings();
     const allPackages = offerings.all.default?.availablePackages;
     const specialPackages = offerings.all.special?.availablePackages;
-    const specialOfferPackage = specialPackages?.find(pkg => pkg.product.identifier.toLowerCase().includes("snatched_yearly_offer_80"));
+    const specialOfferPackage = specialPackages?.find(pkg => pkg.product.identifier.toLowerCase().includes("snatched_yearly"));
     const lifetimePackage = allPackages?.find(pkg => pkg.product.identifier.toLowerCase().includes("lifetime"));
 
     if (specialOfferPackage) {
@@ -107,7 +107,7 @@ export default function SpecialOfferScreen() {
 
   useEffect(() => {
     // Sequence of animations
-    void fetchLifetimePackage();
+    void fetchPackages();
     
     const animationSequence = Animated.sequence([
       // Fade in and scale up main content
@@ -186,7 +186,7 @@ export default function SpecialOfferScreen() {
 
       // Find the special offer package
       const specialOfferPackage = availablePackages.find(
-        (pkg) => pkg.product.identifier === "snatched_yearly_offer_80"
+        (pkg) => pkg.product.identifier === "snatched_yearly"
       );
 
       if (!specialOfferPackage) {
