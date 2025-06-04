@@ -3,10 +3,12 @@ import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { GoogleGenAI, Type } from "@google/genai";
 import { eq } from "drizzle-orm";
 import OpenAI from "openai";
-import { slugify } from "@omc/validators";
+
 import type { Meal, MealPlan } from "@omc/validators/nutrition";
+import type { DietaryPreference } from "@omc/validators/onboarding";
 import { db } from "@omc/db/client";
 import { recipeIngredients, recipeInstructions, recipes } from "@omc/db/schema";
+import { slugify } from "@omc/validators";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY });
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -73,15 +75,17 @@ export const createNewRecipe = async (s3: S3Client, meal: Meal) => {
 
   // Insert ingredients
   await Promise.all(
-    meal.ingredients.filter((i) => Number(i.amount) > 0).map((ingredient, index) =>
-      db.insert(recipeIngredients).values({
-        recipeId: recipe.id,
-        ingredientName: ingredient.name,
-        amount: ingredient.amount.toFixed(2),
-        unit: ingredient.unit,
-        orderIndex: index + 1,
-      }),
-    ),
+    meal.ingredients
+      .filter((i) => Number(i.amount) > 0)
+      .map((ingredient, index) =>
+        db.insert(recipeIngredients).values({
+          recipeId: recipe.id,
+          ingredientName: ingredient.name,
+          amount: ingredient.amount.toFixed(2),
+          unit: ingredient.unit,
+          orderIndex: index + 1,
+        }),
+      ),
   );
 
   // Insert instructions
@@ -99,7 +103,9 @@ export const createNewRecipe = async (s3: S3Client, meal: Meal) => {
 };
 
 // Helper function to generate meal plan using Gemini
-export async function generateMealPlanWithGemini(): Promise<MealPlan> {
+export async function generateMealPlanWithGemini(
+  diet?: DietaryPreference,
+): Promise<MealPlan> {
   const response = await ai.models.generateContent({
     model: "gemini-2.0-flash",
     contents: `
@@ -116,6 +122,7 @@ export async function generateMealPlanWithGemini(): Promise<MealPlan> {
       - step-by-step cooking instructions
 
       Make it realistic and healthy.
+      ${diet ? `Ensure the meal plan is aligned with the dietary preferences: ${diet}.` : ""}
       Also return the target calories, protein, carbs, and fat for the day.
     `,
     config: {
@@ -238,7 +245,7 @@ export async function getOrCreateRecipe(
   meal: MealPlan["meals"][number],
   existingRecipes: (typeof recipes.$inferSelect)[],
 ): Promise<typeof recipes.$inferSelect> {
-  const similarRecipeId = await findSimilarRecipe(meal.name, existingRecipes);
+  const similarRecipeId = await findSimilarRecipe(meal.name, existingRecipes.slice(0, 50));
 
   if (similarRecipeId) {
     const existingRecipe = existingRecipes.find(
@@ -270,4 +277,4 @@ export async function getOrCreateRecipe(
   // Create new recipe
   const newRecipe = await createNewRecipe(s3, meal);
   return newRecipe;
-} 
+}

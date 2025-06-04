@@ -2,16 +2,37 @@ import { Readable } from "stream";
 import { GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { TRPCError } from "@trpc/server";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import sharp from "sharp";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 
 import type { BodyRatingResponse } from "@omc/validators";
-import { userBodyRatings, userImageTransformations } from "@omc/db/schema";
+import {
+  fitnessGoals,
+  mealPlans,
+  mealSchedule,
+  recipes,
+  user,
+  userBodyRatings,
+  userImageTransformations,
+  workoutPlanDays,
+  workoutPlans,
+  workouts,
+} from "@omc/db/schema";
 import { prettyPrint } from "@omc/validators";
+import {
+  desiredBodyShapeEnum,
+  dietaryPreferenceEnum,
+  stylePreferenceEnum,
+} from "@omc/validators/onboarding";
 
 import type { ImageScansKey } from "../utils/types";
+import {
+  generateMealPlanWithGemini,
+  getOrCreateRecipe,
+} from "../lib/nutrition-helpers";
+import { createNewWorkoutWithExercises, findSimilarWorkout, generateWeeklyWorkoutPlan } from "../lib/workout-helpers";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "../trpc";
 import { images } from "../utils/benchmark-images";
 import {
@@ -26,7 +47,7 @@ type BodyShapeEnum = keyof typeof images;
 async function streamToBuffer(stream: Readable): Promise<Buffer> {
   const chunks: Buffer[] = [];
   return new Promise((resolve, reject) => {
-    stream.on("data", (chunk) => chunks.push(Buffer.from(chunk)));
+    stream.on("data", (chunk) => chunks.push(Buffer.from(chunk as Buffer)));
     stream.on("error", (err) => reject(err));
     stream.on("end", () => resolve(Buffer.concat(chunks)));
   });
@@ -37,9 +58,6 @@ export const userRouter = createTRPCRouter({
    * bodyRating
    * Accepts image URLs and desired body shape to calculate various body-rating scores
    */
-  testHelloWorldQuery: publicProcedure.query(async ({ ctx }) => {
-    return "Hello World";
-  }),
   bodyRating: protectedProcedure
     .input(
       z.object({
@@ -371,5 +389,224 @@ export const userRouter = createTRPCRouter({
         ...bodyRating,
         bodyRating: bodyRating.bodyRating as BodyRatingResponse,
       };
+    }),
+
+  updateFitnessGoals: protectedProcedure
+    .input(
+      z.object({
+        timelineWeeks: z.number().default(12),
+        desiredShape: desiredBodyShapeEnum,
+        regeneratePlans: z.boolean(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const userId = Number(ctx.session.user.id);
+      let dbWorkoutPlan: typeof workoutPlans.$inferSelect | undefined =
+        undefined;
+      // Update fitness goals in the database
+      await ctx.db
+        .insert(fitnessGoals)
+        .values({
+          userId: userId,
+          timelineWeeks: input.timelineWeeks,
+          desiredShape: input.desiredShape,
+        })
+        .onConflictDoUpdate({
+          target: [fitnessGoals.userId],
+          set: {
+            desiredShape: input.desiredShape,
+          },
+        });
+
+      if (input.regeneratePlans) {
+        // TODO: Implement plan regeneration
+        // This would involve calling your AI service to regenerate workout and meal plans
+        // based on the new desired shape
+        const genWorkoutPlan = await generateWeeklyWorkoutPlan(
+          input.desiredShape,
+        );
+        ctx.logger.info("Generated workout plan", genWorkoutPlan.workouts);
+        // Check if there is an active workout plan for the user where the current date is between the start and end date
+        dbWorkoutPlan = await ctx.db.query.workoutPlans.findFirst({
+          where: (workoutPlans, { and, eq, gte, lte }) =>
+            and(
+              eq(workoutPlans.userId, userId),
+              gte(workoutPlans.startDate, new Date().toISOString()),
+              lte(workoutPlans.endDate, new Date().toISOString()),
+              eq(workoutPlans.status, "active"),
+            ),
+        });
+
+        const startDate = new Date();
+        const endDate = new Date();
+        endDate.setDate(startDate.getDate() + 6);
+
+        let result: typeof workoutPlans.$inferSelect[];
+
+        if (dbWorkoutPlan) {
+          // Update the workout plan
+          result = await ctx.db
+            .update(workoutPlans)
+            .set({
+              startDate: startDate.toISOString(),
+              endDate: endDate.toISOString(),
+              targetCaloriesBurn: genWorkoutPlan.targetCaloriesBurn,
+              status: "active",
+            })
+            .where(eq(workoutPlans.id, dbWorkoutPlan.id))
+            .returning();
+        } else {
+          // Create a new workout plan
+          result = await ctx.db.insert(workoutPlans).values({
+            userId: userId,
+            startDate: startDate.toISOString(),
+            endDate: endDate.toISOString(),
+            targetCaloriesBurn: genWorkoutPlan.targetCaloriesBurn,
+            status: "active",
+          }).returning();
+        }
+
+        if (!result[0]) {
+          throw new Error("Failed to upsert workout plan");
+        }
+
+        // Fetch existing workouts for similarity check
+        const existingWorkouts = await ctx.db.select().from(workouts).execute();
+
+        // Create workouts and plan days / replace the workout plan days in the database
+        const workoutsWithIds = [];
+        for (const { dayNumber, workout } of genWorkoutPlan.workouts) {
+          // Check for similar existing workout
+          const similarWorkoutId = await findSimilarWorkout(
+            workout,
+            existingWorkouts.slice(0, 50),
+          );
+
+          // Get or create workout
+          const insertedWorkout = similarWorkoutId
+          ? (existingWorkouts.find((w) => w.id === similarWorkoutId) ??
+              await createNewWorkoutWithExercises(ctx.s3, workout))
+          : await createNewWorkoutWithExercises(ctx.s3, workout);
+
+          // Upsert plan day entry
+          await ctx.db.insert(workoutPlanDays).values({
+            planId: result[0].id,
+            workoutId: insertedWorkout.id,
+            dayNumber,
+            completed: false,
+          }).onConflictDoUpdate({
+            target: [workoutPlanDays.planId, workoutPlanDays.dayNumber],
+            set: {
+              workoutId: insertedWorkout.id,
+            },
+          });
+
+          workoutsWithIds.push({
+            dayNumber,
+            workout: {
+              ...workout,
+              id: insertedWorkout.id,
+            },
+          });
+        }
+      }
+      return { success: true };
+    }),
+
+  updateDietaryPreferences: protectedProcedure
+    .input(
+      z.object({
+        diet: dietaryPreferenceEnum,
+        regeneratePlans: z.boolean(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const userId = Number(ctx.session.user.id);
+
+      // Update dietary preferences in the database
+      const [dbUser] = await ctx.db
+        .update(user)
+        .set({
+          dietaryPreference: input.diet,
+          updatedAt: sql`CURRENT_TIMESTAMP`,
+        })
+        .where(eq(user.id, userId))
+        .returning();
+
+      if (input.regeneratePlans) {
+        // TODO: Implement meal plan regeneration
+        // This would involve calling your AI service to regenerate meal plans
+        // based on the new dietary preferences\
+        const genMealPlan = await generateMealPlanWithGemini(input.diet);
+        console.log(genMealPlan);
+        // Replace the meal plan in the database or insert if one doesn't exist for the current date
+        const [dbMealPlan] = await ctx.db
+          .insert(mealPlans)
+          .values({
+            userId: userId,
+            date: new Date().toISOString(),
+            targetCalories: genMealPlan.targetCalories.toFixed(2),
+            targetProtein: genMealPlan.targetProtein.toFixed(2),
+            targetCarbs: genMealPlan.targetCarbs.toFixed(2),
+            targetFats: genMealPlan.targetFat.toFixed(2),
+          })
+          .onConflictDoUpdate({
+            target: [mealPlans.userId, mealPlans.date],
+            set: {
+              targetCalories: genMealPlan.targetCalories.toFixed(2),
+              targetProtein: genMealPlan.targetProtein.toFixed(2),
+              targetCarbs: genMealPlan.targetCarbs.toFixed(2),
+              targetFats: genMealPlan.targetFat.toFixed(2),
+            },
+          })
+          .returning();
+
+        if (!dbMealPlan) {
+          throw new Error("Failed to upsert meal plan");
+        }
+
+        // Get existing recipes for similarity check
+        const existingRecipes = await ctx.db.select().from(recipes).execute();
+
+        // Process each meal
+        await Promise.all(
+          genMealPlan.meals.map(async (meal) => {
+            // Get or create recipe
+            const recipe = await getOrCreateRecipe(
+              ctx.s3,
+              meal,
+              existingRecipes,
+            );
+
+            // Upsert meal schedule entry
+            await ctx.db
+              .insert(mealSchedule)
+              .values({
+                mealPlanId: dbMealPlan.id,
+                recipeId: recipe.id,
+                mealType: meal.category.toLowerCase(),
+                scheduledTime: meal.time,
+                completed: false,
+              })
+              .onConflictDoUpdate({
+                target: [
+                  mealSchedule.mealPlanId,
+                  mealSchedule.mealType,
+                  mealSchedule.scheduledTime,
+                ],
+                set: {
+                  recipeId: recipe.id,
+                },
+              });
+
+            return {
+              ...meal,
+              id: recipe.id,
+            };
+          }),
+        );
+      }
+
+      return dbUser;
     }),
 });

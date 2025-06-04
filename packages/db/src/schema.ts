@@ -20,6 +20,12 @@ import {
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 
+import { dietaryPreferenceEnum, stylePreferenceEnum } from "@omc/validators/onboarding";
+
+const dietaryPrefs = dietaryPreferenceEnum._def.values;
+
+const stylePrefs = stylePreferenceEnum._def.values;
+
 export const bodyMeasurements = pgTable(
   "body_measurements",
   {
@@ -85,6 +91,12 @@ export const user = pgTable(
     heightCm: integer("height_cm"),
     weightKg: numeric("weight_kg", { precision: 5, scale: 2 }),
     ethnicity: varchar({ length: 50 }),
+    dietaryPreference: varchar({ length: 50, enum: dietaryPrefs })
+      .notNull()
+      .default("Classic"),
+    stylePreference: varchar({ length: 50, enum: stylePrefs })
+      .notNull()
+      .default("CASUAL_ATHLEISURE"),
     createdAt: timestamp("created_at", {
       withTimezone: true,
       mode: "date",
@@ -99,6 +111,7 @@ export const user = pgTable(
       "btree",
       table.createdAt.asc().nullsLast().op("timestamptz_ops"),
     ),
+    index("email_idx").on(table.email),
     check(
       "users_age_check",
       sql`age
@@ -213,9 +226,7 @@ export const workoutClasses = pgTable(
       mode: "string",
     }).default(sql`CURRENT_TIMESTAMP`),
   },
-  (table) => [
-    unique("workout_classes_name_key").on(table.name),
-  ],
+  (table) => [unique("workout_classes_name_key").on(table.name)],
 );
 
 export const workoutToClass = pgTable(
@@ -342,13 +353,7 @@ export const fitnessGoals = pgTable(
     id: serial().primaryKey().notNull(),
     userId: integer("user_id").notNull(),
     desiredShape: varchar("desired_shape", { length: 50 }).notNull(),
-    timelineWeeks: integer("timeline_weeks").notNull(),
-    bodyTonePreference: integer("body_tone_preference"),
-    stylePreference: integer("style_preference"),
-    bodyRatioPreference: numeric("body_ratio_preference", {
-      precision: 3,
-      scale: 2,
-    }),
+    timelineWeeks: integer("timeline_weeks").notNull().default(12),
     createdAt: timestamp("created_at", {
       withTimezone: true,
       mode: "string",
@@ -605,8 +610,14 @@ export const mealPlans = pgTable(
     id: serial().primaryKey().notNull(),
     userId: integer("user_id").notNull(),
     date: date().notNull(),
-    targetCalories: numeric("target_calories", { precision: 10, scale: 2 }).notNull(),
-    targetProtein: numeric("target_protein", { precision: 10, scale: 2 }).notNull(),
+    targetCalories: numeric("target_calories", {
+      precision: 10,
+      scale: 2,
+    }).notNull(),
+    targetProtein: numeric("target_protein", {
+      precision: 10,
+      scale: 2,
+    }).notNull(),
     targetCarbs: numeric("target_carbs", { precision: 10, scale: 2 }).notNull(),
     targetFats: numeric("target_fats", { precision: 10, scale: 2 }).notNull(),
     createdAt: timestamp("created_at", {
@@ -759,7 +770,7 @@ export const recipes = pgTable(
     prepTimeMinutes: integer("prep_time_minutes"),
     calories: numeric({ precision: 8, scale: 2 }).notNull(),
     proteinGrams: numeric({ precision: 8, scale: 2 }).notNull(),
-    carbsGrams: numeric({ precision: 8, scale: 2 }).notNull(), 
+    carbsGrams: numeric({ precision: 8, scale: 2 }).notNull(),
     fatsGrams: numeric({ precision: 8, scale: 2 }).notNull(),
     imageUrl: text("image_url"),
     categoryId: integer("category_id"),
@@ -1201,18 +1212,22 @@ export const createRecipeSchema = createInsertSchema(recipes, {
   updatedAt: true,
 });
 
+export const createRecipeInstructionSchema = createSelectSchema(
+  recipeInstructions,
+  {
+    recipeId: z.number().min(1).max(1000),
+    stepNumber: z.number().min(1).max(1000),
+    instruction: z.string().min(1).max(1000),
+  },
+);
 
-export const createRecipeInstructionSchema = createSelectSchema(recipeInstructions, {
-  recipeId: z.number().min(1).max(1000),
-  stepNumber: z.number().min(1).max(1000),
-  instruction: z.string().min(1).max(1000),
-});
-
-export const createRecipeIngredientSchema = createSelectSchema(recipeIngredients, {
-  recipeId: z.number().min(1).max(1000),
-  ingredientName: z.string().min(1).max(1000),
-  amount: z.string().min(1).max(1000),
-  unit: z.string().min(1).max(1000),
-  orderIndex: z.number().min(1).max(1000),
-});
-
+export const createRecipeIngredientSchema = createSelectSchema(
+  recipeIngredients,
+  {
+    recipeId: z.number().min(1).max(1000),
+    ingredientName: z.string().min(1).max(1000),
+    amount: z.string().min(1).max(1000),
+    unit: z.string().min(1).max(1000),
+    orderIndex: z.number().min(1).max(1000),
+  },
+);

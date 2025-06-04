@@ -53,8 +53,12 @@ export default function AppEntry() {
   });
 
   // Prefetch other data
-  const { isFetched: isWorkoutClassesFetched } = api.workout.getWorkoutClasses.useQuery();
-  const { isFetched: isCategoriesFetched } = api.workout.getWorkoutCategories.useQuery();
+  const { isFetched: isWorkoutClassesFetched } = api.workout.getWorkoutClasses.useQuery(undefined, {
+    enabled: !!session?.user,
+  });
+  const { isFetched: isCategoriesFetched } = api.workout.getWorkoutCategories.useQuery(undefined, {
+    enabled: !!session?.user,
+  });
   const { isFetched: isSnatchHacksFetched } =
     api.snatchHack.getSnatchHacks.useQuery(undefined, {
       enabled: !!session?.user,

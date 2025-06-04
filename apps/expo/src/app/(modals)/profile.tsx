@@ -136,6 +136,12 @@ export default function ProfileScreen() {
       show: true,
     },
     {
+      icon: <Ionicons name="fitness-outline" size={18} color="#1F2937" />,
+      label: "Fitness Goals",
+      onPress: () => router.push("/(modals)/edit-desired-shape"),
+      show: false,
+    },
+    {
       icon: <Ionicons name="card-outline" size={18} color="#1F2937" />,
       label: "Subscription",
       onPress: () => router.push("/(modals)/subscription"),

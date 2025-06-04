@@ -7,6 +7,24 @@ export default function ModalsLayout() {
       headerShown: false,
     }}>
       <Stack.Screen
+        name="edit-desired-shape"
+        options={{
+          presentation: "modal",
+        }}
+      />
+      <Stack.Screen
+        name="edit-dietary-preferences"
+        options={{
+          presentation: "modal",
+        }}
+      />
+      <Stack.Screen
+        name="profile"
+        options={{
+          presentation: "modal",
+        }}
+      />
+      <Stack.Screen
         name="workout-detail"
         options={{
           presentation: "modal",

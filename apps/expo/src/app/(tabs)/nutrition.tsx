@@ -26,9 +26,15 @@ export default function NutritionPlanScreen() {
   const [showFoodOptionsModal, setShowFoodOptionsModal] = useState(false);
   const {
     data: mealPlanData,
+    refetch,
   } = api.nutrition.getTodaysMealPlan.useQuery();
   const dimensions = useWindowDimensions();
   const { data: recentMeals = [] } = api.nutrition.getRecentlyLoggedMeals.useQuery();
+  const { mutate: generateMealPlan } = api.nutrition.generateMealPlan.useMutation({
+    onSuccess: () => {
+      void refetch();
+    },
+  });
 
   // Calculate arrow size based on screen dimensions and aspect ratio
   const arrowSize = Math.sqrt(dimensions.width * dimensions.height) * 0.16; // Size based on geometric mean
@@ -37,7 +43,12 @@ export default function NutritionPlanScreen() {
   // Calculate current macros from completed meals
   const calculateMacros = React.useCallback(
     (macroType: "protein" | "carbs" | "fats") => {
-      if (!mealPlanData) return 0;
+      if (!mealPlanData) {
+        setTimeout(() => {
+          generateMealPlan();
+        }, 2500);
+        return 0;
+      };
 
       return mealPlanData.meals.reduce((acc: number, meal: ScheduledMeal) => {
         if (!meal.completed) return acc;
@@ -86,14 +97,20 @@ export default function NutritionPlanScreen() {
       style={{ flexGrow: 1, paddingTop: Constants.statusBarHeight }}
     >
       {/* Header */}
-      <View className="flex-row items-center justify-between px-6 pb-3 pt-6">
+      <View className="flex-row items-center justify-between px-6 pb-4 pt-6">
         <Text className="font-inter-bold text-2xl text-black">Nutrition</Text>
+        <Pressable
+          onPress={() => router.push("/(modals)/edit-dietary-preferences")}
+          className="h-10 w-10 items-center justify-center rounded-full bg-white/80"
+        >
+          <Ionicons name="restaurant-outline" size={20} color="#1F2937" />
+        </Pressable>
       </View>
 
       {/* Meal Lists */}
       <View className="flex-1 px-6">
         {/* Macro Progress */}
-        <View className="mb-8 overflow-hidden rounded-3xl bg-white p-5 shadow-sm">
+        <View className="mb-8 rounded-3xl bg-white p-5 shadow-sm">
           <View className="flex-row justify-between">
             {macros.map((macro) => (
               <View key={macro.name} className="items-center">

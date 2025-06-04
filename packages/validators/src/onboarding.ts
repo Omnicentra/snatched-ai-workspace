@@ -100,6 +100,17 @@ export const cravingEnum = z.enum([
   "Cheese",
   "Fried Food",
 ]);
+
+export const stylePreferenceEnum = z.enum([
+  "CASUAL_ATHLEISURE",
+  "MINIMALIST_CHIC", 
+  "FEMININE_ROMANTIC",
+  "EDGY_STREETWEAR",
+  "CLASSIC_ELEGANT",
+  "BOHEMIAN_FREE_SPIRIT",
+  "TRENDY_FASHION_FORWARD",
+  "SPORTY_ACTIVE"
+]);
  
 export const nameSchema = z
   .string()
@@ -176,3 +187,7 @@ export const onboardingSchema = z.object({
 });
 
 export type UserProfile = z.infer<typeof onboardingSchema>;
+
+export type DesiredShape = z.infer<typeof desiredBodyShapeEnum>;
+
+export type DietaryPreference = z.infer<typeof dietaryPreferenceEnum>;

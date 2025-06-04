@@ -297,7 +297,7 @@ export default function SpecialOfferScreen() {
             <Text style={styles.subtitle}>You will never see this again</Text>
 
             {/* Timer */}
-            <View style={[styles.cardGlow, { width: '100%', flexGrow: 1, justifyContent: 'center', alignItems: 'center' }]}>
+            <View className="w-full flex-grow justify-center items-center" style={styles.cardGlow}>
               <Animated.View 
                 style={[
                   {

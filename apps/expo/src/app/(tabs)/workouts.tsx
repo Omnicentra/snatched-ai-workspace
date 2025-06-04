@@ -9,6 +9,7 @@ import { TodaysPlanCard } from "@/components/home/TodaysPlanCard";
 import { workoutStore } from "@/stores/workout.store";
 import { api } from "@/utils/api";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 
 interface WorkoutClass {
   id: number;
@@ -113,6 +114,12 @@ export default function WorkoutClassSelectionScreen() {
     >
       <View className="flex-row items-center justify-between p-6">
         <Text className="font-inter-bold text-2xl text-black">Workouts</Text>
+        <Pressable
+          onPress={() => router.push("/(modals)/edit-desired-shape")}
+          className="h-10 w-10 items-center justify-center rounded-full bg-white/80"
+        >
+          <Ionicons name="body-outline" size={20} color="#1F2937" />
+        </Pressable>
       </View>
       {/* Today's Plan */}
       <View className="px-6 pb-4">
