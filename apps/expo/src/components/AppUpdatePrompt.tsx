@@ -1,15 +1,13 @@
+import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import React from 'react';
 import {
   Modal,
-  View,
+  StyleSheet,
   Text,
   TouchableOpacity,
-  StyleSheet,
-  Platform,
-  Image,
+  View
 } from 'react-native';
-import { BlurView } from 'expo-blur';
-import { Ionicons } from '@expo/vector-icons';
 import { useAppUpdateCheck } from '../hooks/useAppUpdateCheck';
 
 export const AppUpdatePrompt: React.FC = () => {
