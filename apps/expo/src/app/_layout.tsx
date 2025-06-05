@@ -41,6 +41,7 @@ import { getOrCreateDeviceId } from "@/utils/device-id";
 import { LDProvider } from "@launchdarkly/react-native-client-sdk";
 import * as Sentry from "@sentry/react-native";
 import { vexo } from "vexo-analytics";
+import { AppUpdatePrompt } from "~/components/AppUpdatePrompt";
 
 const navigationIntegration = Sentry.reactNavigationIntegration({
   enableTimeToInitialDisplay: !isRunningInExpoGo(),
@@ -239,6 +240,7 @@ function RootLayout() {
             {/* <Stack.Screen name="(modals)" options={{ presentation: "modal" }} /> */}
             <Stack.Screen name="(modals)" />
           </Stack>
+          <AppUpdatePrompt />
         </GestureHandlerRootView>
       </LDProvider>
     </TRPCProvider>

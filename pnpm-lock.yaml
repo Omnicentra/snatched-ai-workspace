@@ -297,6 +297,9 @@ importers:
       react-native-svg:
         specifier: 15.8.0
         version: 15.8.0(react-native@0.76.9(@babel/core@7.27.1)(@babel/preset-env@7.27.1(@babel/core@7.27.1))(@types/react@18.3.20)(bufferutil@4.0.9)(react@18.3.1))(react@18.3.1)
+      react-native-version-check:
+        specifier: ^3.5.0
+        version: 3.5.0(react-native@0.76.9(@babel/core@7.27.1)(@babel/preset-env@7.27.1(@babel/core@7.27.1))(@types/react@18.3.20)(bufferutil@4.0.9)(react@18.3.1))
       react-native-web:
         specifier: ~0.19.13
         version: 0.19.13(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -9234,6 +9237,11 @@ packages:
   react-native-uuid@2.0.3:
     resolution: {integrity: sha512-f/YfIS2f5UB+gut7t/9BKGSCYbRA9/74A5R1MDp+FLYsuS+OSWoiM/D8Jko6OJB6Jcu3v6ONuddvZKHdIGpeiw==}
     engines: {node: '>=10.0.0', npm: '>=6.0.0'}
+
+  react-native-version-check@3.5.0:
+    resolution: {integrity: sha512-JJbOQjCcbUvh9wceb6kn4GXwsKWM1TKg8ZDuwhk8pqhSsnrLKn9VtBfw9qLChhx7caHy0gqeKUiH3C1kgZUpMw==}
+    peerDependencies:
+      react-native: '>=0.48.0'
 
   react-native-web@0.19.13:
     resolution: {integrity: sha512-etv3bN8rJglrRCp/uL4p7l8QvUNUC++QwDbdZ8CB7BvZiMvsxfFIRM1j04vxNldG3uo2puRd6OSWR3ibtmc29A==}
@@ -20662,6 +20670,12 @@ snapshots:
       whatwg-url-without-unicode: 8.0.0-3
 
   react-native-uuid@2.0.3: {}
+
+  react-native-version-check@3.5.0(react-native@0.76.9(@babel/core@7.27.1)(@babel/preset-env@7.27.1(@babel/core@7.27.1))(@types/react@18.3.20)(bufferutil@4.0.9)(react@18.3.1)):
+    dependencies:
+      lodash: 4.17.21
+      react-native: 0.76.9(@babel/core@7.27.1)(@babel/preset-env@7.27.1(@babel/core@7.27.1))(@types/react@18.3.20)(bufferutil@4.0.9)(react@18.3.1)
+      semver: 6.3.1
 
   react-native-web@0.19.13(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
     dependencies:
