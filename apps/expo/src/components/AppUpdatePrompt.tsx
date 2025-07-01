@@ -11,7 +11,7 @@ import {
 import { useAppUpdateCheck } from '../hooks/useAppUpdateCheck';
 
 export const AppUpdatePrompt: React.FC = () => {
-  const { updateInfo, openStore, dismissUpdate } = useAppUpdateCheck();
+  const { updateInfo, applyUpdate, dismissUpdate } = useAppUpdateCheck();
 
   // Don't show if no update available or if user dismissed this version
   if (!updateInfo.isUpdateAvailable || updateInfo.isUpdateDismissed) {
@@ -39,7 +39,10 @@ export const AppUpdatePrompt: React.FC = () => {
 
           {/* Description */}
           <Text style={styles.description}>
-            A new version of Snatched is available with awesome new features and improvements.
+            {updateInfo.hasDownloadedUpdate 
+              ? 'A new version of Snatched has been downloaded and is ready to install!'
+              : 'A new version of Snatched is available with awesome new features and improvements.'
+            }
           </Text>
 
           {/* Version info */}
@@ -49,7 +52,7 @@ export const AppUpdatePrompt: React.FC = () => {
             </Text>
             <Ionicons name="arrow-forward" size={16} color="#666" style={styles.arrow} />
             <Text style={[styles.versionText, styles.newVersion]}>
-              New: v{updateInfo.latestVersion}
+              {updateInfo.hasDownloadedUpdate ? 'Ready to install' : 'Downloading...'}
             </Text>
           </View>
 
@@ -57,10 +60,12 @@ export const AppUpdatePrompt: React.FC = () => {
           <View style={styles.buttonContainer}>
             <TouchableOpacity
               style={[styles.button, styles.updateButton]}
-              onPress={openStore}
+              onPress={applyUpdate}
               activeOpacity={0.8}
             >
-              <Text style={styles.updateButtonText}>Update Now</Text>
+              <Text style={styles.updateButtonText}>
+                {updateInfo.hasDownloadedUpdate ? 'Restart App' : 'Download & Install'}
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity

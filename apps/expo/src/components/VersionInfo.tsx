@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAppUpdateCheck } from '../hooks/useAppUpdateCheck';
 
 export const VersionInfo: React.FC = () => {
-  const { updateInfo, isChecking, checkForUpdate, openStore } = useAppUpdateCheck();
+  const { updateInfo, isChecking, checkForUpdate, applyUpdate } = useAppUpdateCheck();
   const currentVersion = Constants.expoConfig?.version ?? updateInfo.currentVersion;
 
   return (
@@ -23,12 +23,15 @@ export const VersionInfo: React.FC = () => {
       {updateInfo.isUpdateAvailable && !updateInfo.isUpdateDismissed && (
         <TouchableOpacity
           style={styles.updateBanner}
-          onPress={openStore}
+          onPress={applyUpdate}
           activeOpacity={0.8}
         >
           <Ionicons name="rocket" size={18} color="#FF6B6B" />
           <Text style={styles.updateText}>
-            Update available: v{updateInfo.latestVersion}
+            {updateInfo.hasDownloadedUpdate 
+              ? 'Update ready - Tap to restart app'
+              : 'Update available - Downloading...'
+            }
           </Text>
           <Ionicons name="chevron-forward" size={18} color="#FF6B6B" />
         </TouchableOpacity>

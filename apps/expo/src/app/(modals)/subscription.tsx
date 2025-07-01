@@ -178,7 +178,7 @@ export default function SubscriptionScreen() {
               </Text>
               <Pressable
                 className="rounded-xl bg-pink-500 px-6 py-3"
-                onPress={() => router.push('/(onboarding)/paywall')}
+                onPress={() => router.replace('/(onboarding)/paywall?inactive=true')}
               >
                 <Text className="font-inter-semibold text-white">
                   View Premium Plans

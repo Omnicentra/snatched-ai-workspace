@@ -1,93 +1,90 @@
 import { useEffect, useState } from 'react';
-import VersionCheck from 'react-native-version-check';
-import { Platform, Linking } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
-const LAST_UPDATE_CHECK_KEY = '@app_last_update_check';
-const UPDATE_DISMISSED_KEY = '@app_update_dismissed_version';
-const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours
+import Constants from 'expo-constants';
+import { logger } from '@/lib/logger';
+import {
+  checkForUpdateManually,
+  applyUpdate,
+  isUpdateDismissed,
+  dismissUpdate as dismissUpdateStorage,
+  resetDismissedUpdate,
+  registerBackgroundUpdateTask,
+} from '@/utils/background-updates';
+import { storage, STORAGE_KEYS } from '@/lib/storage';
 
 interface AppUpdateInfo {
   isUpdateAvailable: boolean;
   currentVersion: string;
-  latestVersion: string | null;
-  storeUrl: string | null;
+  hasDownloadedUpdate: boolean;
   isUpdateDismissed: boolean;
+  manifestId?: string;
 }
 
 export const useAppUpdateCheck = () => {
   const [updateInfo, setUpdateInfo] = useState<AppUpdateInfo>({
     isUpdateAvailable: false,
-    currentVersion: VersionCheck.getCurrentVersion(),
-    latestVersion: null,
-    storeUrl: null,
+    currentVersion: Constants.expoConfig?.version ?? '1.0.0',
+    hasDownloadedUpdate: false,
     isUpdateDismissed: false,
   });
   const [isChecking, setIsChecking] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const checkStoredUpdateStatus = () => {
+    try {
+      // Check if there's a stored update available
+      const isStoredUpdateAvailable = storage.getBoolean(STORAGE_KEYS.UPDATE_AVAILABLE) ?? false;
+      
+      // Get manifest if available
+      const storedManifest = storage.getString(STORAGE_KEYS.LATEST_MANIFEST);
+      let manifestId: string | undefined;
+      
+      if (storedManifest) {
+        try {
+          const manifest = JSON.parse(storedManifest) as { id?: string };
+          manifestId = manifest.id;
+        } catch (e) {
+          logger.error('Error parsing stored manifest:', e);
+        }
+      }
+      
+      // Check if this update was dismissed
+      const isDismissed = manifestId ? isUpdateDismissed(manifestId) : false;
+      
+      setUpdateInfo(prev => ({
+        ...prev,
+        isUpdateAvailable: isStoredUpdateAvailable,
+        hasDownloadedUpdate: isStoredUpdateAvailable,
+        isUpdateDismissed: isDismissed,
+        manifestId,
+      }));
+    } catch (err) {
+      logger.error('Error checking stored update status:', err);
+    }
+  };
 
   const checkForUpdate = async (forceCheck = false) => {
     try {
       setIsChecking(true);
       setError(null);
 
-      // Check if we should skip the check (unless forced)
-      if (!forceCheck) {
-        const lastCheck = await AsyncStorage.getItem(LAST_UPDATE_CHECK_KEY);
-        if (lastCheck) {
-          const lastCheckTime = parseInt(lastCheck, 10);
-          if (Date.now() - lastCheckTime < CHECK_INTERVAL_MS) {
-            setIsChecking(false);
-            return;
-          }
-        }
+      if (forceCheck) {
+        // Manual check - use the utility function
+        const result = await checkForUpdateManually();
+        
+        const manifestId = result.manifest?.id;
+        const isDismissed = manifestId ? isUpdateDismissed(manifestId) : false;
+        
+        setUpdateInfo(prev => ({
+          ...prev,
+          isUpdateAvailable: result.isAvailable,
+          hasDownloadedUpdate: result.isAvailable,
+          isUpdateDismissed: isDismissed,
+          manifestId,
+        }));
+      } else {
+        // Just check stored status (background task handles actual checking)
+        checkStoredUpdateStatus();
       }
-
-      // Get current version
-      const currentVersion = VersionCheck.getCurrentVersion();
-
-      // Get latest version from store
-      let latestVersion: string | null = null;
-      let storeUrl: string | null = null;
-
-      if (Platform.OS === 'ios') {
-        // For iOS, we need to use the app ID
-        const appId = '6744844397'; // From the App Store URL
-        latestVersion = await VersionCheck.getLatestVersion({
-          provider: 'appStore',
-          appID: appId,
-        });
-        storeUrl = `https://apps.apple.com/app/id${appId}`;
-      } else if (Platform.OS === 'android') {
-        // For Android, we need the package name
-        const packageName = await VersionCheck.getPackageName();
-        latestVersion = await VersionCheck.getLatestVersion({
-          provider: 'playStore',
-          packageName,
-        });
-        storeUrl = await VersionCheck.getStoreUrl();
-      }
-
-      // Check if update is available
-      const needUpdate = latestVersion ? await VersionCheck.needUpdate({
-        currentVersion,
-        latestVersion,
-      }) : null;
-
-      // Check if this version was previously dismissed
-      const dismissedVersion = await AsyncStorage.getItem(UPDATE_DISMISSED_KEY);
-      const isUpdateDismissed = dismissedVersion === latestVersion;
-
-      setUpdateInfo({
-        isUpdateAvailable: needUpdate?.isNeeded || false,
-        currentVersion,
-        latestVersion,
-        storeUrl,
-        isUpdateDismissed,
-      });
-
-      // Save last check time
-      await AsyncStorage.setItem(LAST_UPDATE_CHECK_KEY, Date.now().toString());
     } catch (err) {
       console.error('Error checking for app update:', err);
       setError(err instanceof Error ? err.message : 'Failed to check for updates');
@@ -96,31 +93,51 @@ export const useAppUpdateCheck = () => {
     }
   };
 
-  const openStore = async () => {
-    if (updateInfo.storeUrl) {
-      try {
-        await Linking.openURL(updateInfo.storeUrl);
-      } catch (err) {
-        console.error('Error opening store URL:', err);
-      }
+  const applyUpdateNow = async () => {
+    try {
+      await applyUpdate();
+    } catch (err) {
+      console.error('Error applying update:', err);
+      setError(err instanceof Error ? err.message : 'Failed to apply update');
     }
   };
 
-  const dismissUpdate = async () => {
-    if (updateInfo.latestVersion) {
-      await AsyncStorage.setItem(UPDATE_DISMISSED_KEY, updateInfo.latestVersion);
+  const dismissUpdate = () => {
+    if (updateInfo.manifestId) {
+      dismissUpdateStorage(updateInfo.manifestId);
       setUpdateInfo(prev => ({ ...prev, isUpdateDismissed: true }));
     }
   };
 
-  const resetDismissedUpdate = async () => {
-    await AsyncStorage.removeItem(UPDATE_DISMISSED_KEY);
+  const resetDismissedUpdateStatus = () => {
+    resetDismissedUpdate();
     setUpdateInfo(prev => ({ ...prev, isUpdateDismissed: false }));
   };
 
+  // Initialize background update checking and check stored status
   useEffect(() => {
-    // Check for updates on mount
-    checkForUpdate();
+    const initializeUpdateSystem = async () => {
+      try {
+        // Register background update task
+        await registerBackgroundUpdateTask();
+        
+        // Check stored update status
+        checkStoredUpdateStatus();
+      } catch (err) {
+        logger.error('Error initializing update system:', err);
+      }
+    };
+
+    void initializeUpdateSystem();
+  }, []);
+
+  // Set up interval to check stored status periodically
+  useEffect(() => {
+    const interval = setInterval(() => {
+      checkStoredUpdateStatus();
+    }, 30000); // Check every 30 seconds
+
+    return () => clearInterval(interval);
   }, []);
 
   return {
@@ -128,8 +145,9 @@ export const useAppUpdateCheck = () => {
     isChecking,
     error,
     checkForUpdate,
-    openStore,
+    openStore: applyUpdateNow, // For compatibility with existing components
     dismissUpdate,
-    resetDismissedUpdate,
+    resetDismissedUpdate: resetDismissedUpdateStatus,
+    applyUpdate: applyUpdateNow,
   };
 };

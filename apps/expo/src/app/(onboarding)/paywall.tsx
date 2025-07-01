@@ -186,9 +186,11 @@ function PaywallScreen() {
   const params = useLocalSearchParams<{
     skipped?: string;
     specialOffer?: string;
+    inactive?: string;
   }>();
   const isSkipped = params.skipped === "true";
   const isSpecialOffer = params.specialOffer === "true";
+  const isInactive = params.inactive === "true";
   const { data: session } = authClient.useSession();
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [isPromoModalVisible, setIsPromoModalVisible] = useState(false);
@@ -423,7 +425,9 @@ function PaywallScreen() {
               <View className="flex-row items-center justify-center">
                 <Pressable
                   onPress={() => {
-                    if (!isSpecialOffer) {
+                    if (isInactive) {
+                      router.replace("/(modals)/subscription");
+                    } else if (!isSpecialOffer) {
                       router.push("/(onboarding)/special-offer");
                     } else {
                       router.back();

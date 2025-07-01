@@ -42,6 +42,7 @@ import { LDProvider } from "@launchdarkly/react-native-client-sdk";
 import * as Sentry from "@sentry/react-native";
 import { vexo } from "vexo-analytics";
 import { AppUpdatePrompt } from "~/components/AppUpdatePrompt";
+import { registerBackgroundUpdateTask } from "@/utils/background-updates";
 
 const navigationIntegration = Sentry.reactNavigationIntegration({
   enableTimeToInitialDisplay: !isRunningInExpoGo(),
@@ -206,6 +207,7 @@ function RootLayout() {
     void getOrCreateDeviceId();
     void initRevenueCat();
     void checkAndSetupNotifications();
+    void registerBackgroundUpdateTask();
 
     // Set up notification listeners
     const cleanupListeners = setupNotificationListeners();
