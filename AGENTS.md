@@ -40,7 +40,7 @@ Push schema changes: `cd packages/db && pnpm with-env drizzle-kit push`
 
 The `.env` file in the repository root is loaded by `dotenv-cli` via the `with-env` scripts. Required env vars are validated by `@t3-oss/env-nextjs` in `apps/nextjs/src/env.ts` and `packages/auth/env.ts`. Validation is **skipped** when `CI=true` or during `lint`.
 
-**Doppler secrets:** Download dev or prd config into `.env.dev` / `.env.prod`, then activate for local dev:
+**Doppler secrets:** Cloud Agent VMs do not use Cursor “Add secrets” for this repo — use Doppler files in the workspace instead. Download with Doppler CLI, or maintain `.env.dev` / `.env.prod` manually, then activate:
 
 ```bash
 cp .env.dev .env   # development (recommended)
@@ -48,6 +48,8 @@ cp .env.dev .env   # development (recommended)
 ```
 
 Restart the Next.js dev server after changing `.env`. With `DOPPLER_ENVIRONMENT=prd`, `/api/panel` returns 404 by design; use `.env.dev` if you need the tRPC panel UI.
+
+`drizzle-kit push` against the remote dev `POSTGRES_URL` may fail from the VM (pooler/connection drops); the Next.js app and tRPC still load with `.env.dev` — verify with `curl` on `/api/panel` (expect 200 in dev) and `/api/auth/get-session`.
 
 Placeholder values are sufficient for:
 - Running the dev server (homepage/static pages render fine)
